@@ -257,9 +257,6 @@
                         'froot'     : ['ttv-channel', 'apricot'  ],
                         'ironmouse' : ['ttv-channel', 'ironmouse'],
                     },
-                    'Misc Twitch' : {
-                        'bts' : ['ttv-channel', 'btssmash'],
-                    },
                 }
             }
 
@@ -279,6 +276,7 @@
                     'mori'     : 'calliope',
                     'ina'      : 'ina\'nis',
                     'bae'      : 'baelz',
+                    'bts'      : 'ttv-btssmash'
                 }
             }
 
@@ -290,9 +288,10 @@
             }
             function getEmbeds() {
                 return { 
-                    'blank'      :  null,
-                    'yt-video'   :  embedYoutubeVideo,
-                    'yt-channel' :  embedYoutubeChannel,
+                    'blank'       : null,
+                    'yt-video'    : embedYoutubeVideo,
+                    'yt-channel'  : embedYoutubeChannel,
+                    'ttv-video'   : embedTwitchVideo,
                     'ttv-channel' : embedTwitchChannel,
                 }
             }
@@ -300,7 +299,7 @@
             /* TODO: Add Youtube chat embedding if I ever figure out how to 1) obtain permanent chat links, 2) avoid the need to set the embed-domain parameter, 3) do this entirely in-browser */
             function referYoutube(str) {
                 /* Try to treat the string as a URL */
-                try { 
+                try {
                     /* Parse the string to find the type of content */
                     var url = new URL(str)
                     if (url.host.includes('youtube')) {
@@ -314,7 +313,6 @@
                             return ['yt-channel', url.pathname.split('/channel/')[1]]
                         }
                     } else if (url.host.includes('youtu.be')) { /* Short video link, parse out the video id and timestamp (if present) */
-                        var url = new URL(str)
                         var timestamp = url.searchParams.get('t')
                         var extras = timestamp ? '&start=' + timestamp : ''
                         return ['yt-video', url.pathname.substring(1), extras]
@@ -328,24 +326,30 @@
             }
 
             function referTwitch(str) {
-                /* Try to treat the string as a URL */
-                try { 
-                    /* Parse the string to find the type of content */
-                    var url = new URL(str)
-                    if (url.host.includes('twitch.tv')) {
-                        if (url.pathname.includes('/video/')) { /* VOD */
-                            var timeStamp = url.searchParams.get('t')
-                            var extras = timeStamp ? '&time' + timeStamp : ''
-                            return ['ttv-video', url.pathname.split('/video/')[1]]
-                        } else { /* Probably trying to reference a channel, parse out the channel name */
-                            return ['ttv-channel', url.pathname.split('twitch.tv/')[1].split('/')[0]]
-                        }
-                    }
-                    return null
+                /* Start with ttv- as shorthand for twitch channels */
+                if (str.startsWith('ttv-')) {
+                    return ['ttv-channel', str.substring(4)]
                 }
-                /* Wasn't a URL */
-                catch (error) {
-                    return null
+                else {
+                    /* Try to treat the string as a URL */
+                    try {
+                        /* Parse the string to find the type of content */
+                        var url = new URL(str)
+                        if (url.host.includes('twitch.tv')) {
+                            if (url.pathname.includes('/videos/')) { /* VOD */
+                                var timeStamp = url.searchParams.get('t')
+                                var extras = timeStamp ? '&time=' + timeStamp : ''
+                                return ['ttv-video', url.pathname.split('/videos/')[1], extras]
+                            } else { /* Probably trying to reference a channel, parse out the channel name */
+                                return ['ttv-channel', url.pathname.split('/')[1].split('/')[0]]
+                            }
+                        }
+                        return null
+                    }
+                    /* Wasn't a URL */
+                    catch (error) {
+                        return null
+                    }
                 }
             }
 
@@ -358,8 +362,12 @@
                 return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
             }
 
-            function embedTwitchChannel(value, extras) {
-                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1' + extras
+            function embedTwitchChannel(value) {
+                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1'
+            }
+
+            function embedTwitchVideo(value, extras) {
+                return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1' + extras
             }
 
             function openRefererData(type, value, extras) {
@@ -369,6 +377,8 @@
                     window.open('https://www.youtube.com/watch?v=' + value + extras, '_blank')
                 } else if (type == 'ttv-channel') {
                     window.open('https://www.twitch.tv/' + value, '_blank')
+                } else if (type == 'ttv-video') {
+                    window.open('https://www.twitch.tv/videos/' + value, '_blank')
                 }
             }
 
