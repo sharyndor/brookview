@@ -241,9 +241,6 @@
                         'tomoshika' : ['yt-channel', 'UC3vzVK_N_SUVKqbX69L_X4g'],
                         'miuneru'   : ['yt-channel', 'UCE5VgVGRPfNCjXPeTe1QJHA'],
                     },
-                    'Indie' : {
-                        'kson' : ['yt-channel', 'UC9ruVYPv7yJmV0Rh0NKA-Lw'],
-                    },
                     'PhaseConnect' : {
                         'ashelia' : ['yt-channel', 'UCg7sW-h1PUowdiR5K4HlBew'],
                         'nasa'    : ['yt-channel', 'UCB7sSUNwh_dXE7ZL3DsGDpw'],
@@ -253,9 +250,21 @@
                         'uruka'   : ['yt-channel', 'UCjXJYPsKxoJyc-1RPB6dSyw'],
                         'michiru' : ['yt-channel', 'UC1cExET9xoWSO9iSnRsW_1Q'],
                     },
-                    'VShoujo' : {
-                        'froot'     : ['ttv-channel', 'apricot'  ],
-                        'ironmouse' : ['ttv-channel', 'ironmouse'],
+                    'VShojo' : {
+                        'nyanners'      : ['ttv-channel', 'nyanners'     ],
+                        'melody'        : ['ttv-channel', 'projektmelody'],
+                        'apricot'       : ['ttv-channel', 'apricot'      ],
+                        'zentreya'      : ['ttv-channel', 'zentreya'     ],
+                        'silvervale'    : ['ttv-channel', 'silvervale'   ],
+                        'ironmouse'     : ['ttv-channel', 'ironmouse'    ],
+                        'hajime'        : ['ttv-channel', 'hajime'       ],
+                        'veibae'        : ['ttv-channel', 'veibae'       ],
+                    },
+                    'Indie' : {
+                        'kson'     : ['yt-channel',  'UC9ruVYPv7yJmV0Rh0NKA-Lw'],
+                        'snuffy'   : ['ttv-channel', 'snuffy'                  ],
+                        'artemis'  : ['ttv-channel', 'artemisoftheblue'        ],
+                        'girl_dm_' : ['ttv-channel', 'girl_dm_'                ],
                     },
                 }
             }
@@ -276,7 +285,8 @@
                     'mori'     : 'calliope',
                     'ina'      : 'ina\'nis',
                     'bae'      : 'baelz',
-                    'bts'      : 'ttv-btssmash'
+                    'froot'    : 'ttv-apricot',
+                    'bts'      : 'ttv-btssmash',
                 }
             }
 
@@ -458,7 +468,6 @@
                         var [tempType, tempValue, tempExtras] = checkReferers(key)
                         if (key in getEmbeds()) {
                             /* Extra data will precede the embed type to make parsing easier */
-                            console.log(key, value, extras)
                             setElement(grid.children[currentElement], key, value, extras)
                             extras = ''
                             ++currentElement
