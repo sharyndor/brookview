@@ -154,6 +154,8 @@
         <div id=grid></div>
 
         <script>
+            var hostDomain = 'sharyndor.github.io'
+
             function getReserved(str) {
                 /* These words are reserved for internal use */
                 return ['rows', 'columns', 'blank']
@@ -251,6 +253,13 @@
                         'uruka'   : ['yt-channel', 'UCjXJYPsKxoJyc-1RPB6dSyw'],
                         'michiru' : ['yt-channel', 'UC1cExET9xoWSO9iSnRsW_1Q'],
                     },
+                    'VShoujo' : {
+                        'froot'     : ['ttv-channel', 'apricot'  ],
+                        'ironmouse' : ['ttv-channel', 'ironmouse'],
+                    },
+                    'Misc Twitch' : {
+                        'bts' : ['ttv-channel', 'btssmash'],
+                    },
                 }
             }
 
@@ -273,11 +282,19 @@
                 }
             }
 
-            /* TODO: Add Twitch if I ever figure out a way to follow their embed guidelines */
             function getReferFunctions() {
                 return [
                     referYoutube,
+                    referTwitch,
                 ]
+            }
+            function getEmbeds() {
+                return { 
+                    'blank'      :  null,
+                    'yt-video'   :  embedYoutubeVideo,
+                    'yt-channel' :  embedYoutubeChannel,
+                    'ttv-channel' : embedTwitchChannel,
+                }
             }
 
             /* TODO: Add Youtube chat embedding if I ever figure out how to 1) obtain permanent chat links, 2) avoid the need to set the embed-domain parameter, 3) do this entirely in-browser */
@@ -310,13 +327,28 @@
                 }
             }
 
-            function getEmbeds() {
-                return { 
-                    'blank'      : null,
-                    'yt-video'   : embedYoutubeVideo,
-                    'yt-channel' : embedYoutubeChannel,
+            function referTwitch(str) {
+                /* Try to treat the string as a URL */
+                try { 
+                    /* Parse the string to find the type of content */
+                    var url = new URL(str)
+                    if (url.host.includes('twitch.tv')) {
+                        if (url.pathname.includes('/video/')) { /* VOD */
+                            var timeStamp = url.searchParams.get('t')
+                            var extras = timeStamp ? '&time' + timeStamp : ''
+                            return ['ttv-video', url.pathname.split('/video/')[1]]
+                        } else { /* Probably trying to reference a channel, parse out the channel name */
+                            return ['ttv-channel', url.pathname.split('twitch.tv/')[1].split('/')[0]]
+                        }
+                    }
+                    return null
+                }
+                /* Wasn't a URL */
+                catch (error) {
+                    return null
                 }
             }
+
 
             function embedYoutubeVideo(value, extras) {
                 return 'https://www.youtube.com/embed/' + value + '?autoplay=1&mute=1' + extras
@@ -326,11 +358,17 @@
                 return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
             }
 
+            function embedTwitchChannel(value, extras) {
+                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1' + extras
+            }
+
             function openRefererData(type, value, extras) {
                 if (type == 'yt-channel') {
                     window.open('https://www.youtube.com/channel/' + value, '_blank')
                 } else if (type == 'yt-video') {
                     window.open('https://www.youtube.com/watch?v=' + value + extras, '_blank')
+                } else if (type == 'ttv-channel') {
+                    window.open('https://www.twitch.tv/' + value, '_blank')
                 }
             }
 

@@ -3,10 +3,12 @@ A webpage for watching multiple streams/videos.
 
 Set streams based on streamer name, channel link, or video link. A complete list of supported streamers is available via the list ``(l)`` command. Nicknames can be found in the page source in ```getAliases()```.
 
+Completely self-contained. No cookies, no trackers, no external scripts/calls.
+
 # Available Commands
 Commands can be activated by either pressing the associated key over the desired pane or by holding the key and clicking.
 
-Note: Commands cannot be activated while a stream has focus. Easy ways to reset focus include clicking the floating tab (see below) or by double-tapping F6.
+Note: Commands cannot be activated while a stream has focus. Easy ways to reset focus include enabling/clicking the floating tab (see below) or by double-tapping F6.
 
 - ``h`` - Toggles the help overlay
 - ``l`` - Toggles the stream list overlay
