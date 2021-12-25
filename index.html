@@ -455,19 +455,20 @@
                 params.forEach(function(value, key) {
                     if (currentElement < rows * columns)
                     {
-                        var [temp1, temp2, temp3] = checkReferers(key)
-                        if (temp1 || temp2 || temp3) {
+                        var [tempType, tempValue, tempExtras] = checkReferers(key)
+                        if (key in getEmbeds()) {
+                            /* Extra data will precede the embed type to make parsing easier */
+                            console.log(key, value, extras)
+                            setElement(grid.children[currentElement], key, value, extras)
+                            extras = ''
+                            ++currentElement
+                        } else if (tempType || tempValue || tempExtras) {
                             /* Found something, load it */
                             setElementFromString(grid.children[currentElement], key)
                             extras =''
                             ++currentElement
                         }
-                        else if (key in getEmbeds()) {
-                            /* Extra data will precede the embed type to make parsing easier */
-                            setElement(grid.children[currentElement], key, value, extras)
-                            extras = ''
-                            ++currentElement
-                        } else if (getReserved().includes(key)) {
+                        else if (getReserved().includes(key)) {
                             /* Do nothing for reserved keywords */
                         }
                         else {
