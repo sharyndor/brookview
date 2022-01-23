@@ -59,6 +59,26 @@
                 color: #BEBEBE;
             }
 
+            .overlayListElement[type="live"] {
+                color: green
+            }
+
+            .overlayListElement[type="waiting"] {
+                color: yellow
+            }
+
+            .overlayListElement[type="offline"] {
+                color: red
+            }
+
+            .overlayListElement :first-child {
+                display:inline-block
+            }
+
+            .overlayListElement :last-child {
+                display:inline-block
+            }
+
             /* Hide by default, float it in the middle */
             #tab {
                 position:absolute;
@@ -163,6 +183,19 @@
 
             function getReferDicts() {
                 return {
+                    'HoloEN' : {
+                        'calliope' : ['yt-channel', 'UCL_qhgtOy0dy1Agp8vkySQg'],
+                        'kiara'    : ['yt-channel', 'UCHsx4Hqa-1ORjQTh9TYDhww'],
+                        'ina\'nis' : ['yt-channel', 'UCMwGHR0BTZuLsmjY_NT5Pwg'],
+                        'gura'     : ['yt-channel', 'UCoSrY_IQQVpmIRZ9Xf-y93g'],
+                        'amelia'   : ['yt-channel', 'UCyl1z3jo3XHR1riLFKG5UAg'],
+                        'irys'     : ['yt-channel', 'UC8rcEBzJSleTkf_-agPM20g'],
+                        'sana'     : ['yt-channel', 'UCsUj0dszADCGbF3gNrQEuSQ'],
+                        'fauna'    : ['yt-channel', 'UCO_aKKYxn4tvrqPjcTzZ6EQ'],
+                        'kronii'   : ['yt-channel', 'UCmbs8T6MWqUHP1tIQvSgKrg'],
+                        'mumei'    : ['yt-channel', 'UC3n5uGu18FoCy23ggWWp8tA'],
+                        'baelz'    : ['yt-channel', 'UCgmPnx-EEeOrZSg5Tiw7ZRQ'], 
+                    },
                     'HoloJP' : {
                         'sora'     : ['yt-channel', 'UCp6993wxpyDPHUpavwDFqgg'],
                         'roboco'   : ['yt-channel', 'UCDqI2jOz0weumE8s7paEk6g'],
@@ -210,19 +243,6 @@
                         'ollie' : ['yt-channel', 'UCYz_5n-uDuChHtLo7My1HnQ'],
                         'anya'  : ['yt-channel', 'UC727SQYUvx5pDDGQpTICNWg'],
                         'reine' : ['yt-channel', 'UChgTyjG-pdNvxxhdsXfHQ5Q'],
-                    },
-                    'HoloEN' : {
-                        'calliope' : ['yt-channel', 'UCL_qhgtOy0dy1Agp8vkySQg'],
-                        'kiara'    : ['yt-channel', 'UCHsx4Hqa-1ORjQTh9TYDhww'],
-                        'ina\'nis' : ['yt-channel', 'UCMwGHR0BTZuLsmjY_NT5Pwg'],
-                        'gura'     : ['yt-channel', 'UCoSrY_IQQVpmIRZ9Xf-y93g'],
-                        'amelia'   : ['yt-channel', 'UCyl1z3jo3XHR1riLFKG5UAg'],
-                        'irys'     : ['yt-channel', 'UC8rcEBzJSleTkf_-agPM20g'],
-                        'sana'     : ['yt-channel', 'UCsUj0dszADCGbF3gNrQEuSQ'],
-                        'fauna'    : ['yt-channel', 'UCO_aKKYxn4tvrqPjcTzZ6EQ'],
-                        'kronii'   : ['yt-channel', 'UCmbs8T6MWqUHP1tIQvSgKrg'],
-                        'mumei'    : ['yt-channel', 'UC3n5uGu18FoCy23ggWWp8tA'],
-                        'baelz'    : ['yt-channel', 'UCgmPnx-EEeOrZSg5Tiw7ZRQ'], 
                     },
                     'NijiEN' : {
                         'elira'   : ['yt-channel', 'UCIeSUTOTkF9Hs7q3SGcO-Ow'],
@@ -626,9 +646,9 @@
                     summary.textContent = dictName
 
                     for (refName of Object.keys(referDict)) {
-                        var div = document.createElement('div')
-                        div.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
-                        div.onclick = function(name) {
+                        var parentDiv = document.createElement('div')
+                        parentDiv.classList.add('overlayListElement')
+                        parentDiv.onclick = function(name) {
                             return function(event){ 
                                 /* If shift/control is held, open the channel in a new tab instead */
                                 if (event.shiftKey || event.ctrlKey) {
@@ -641,7 +661,16 @@
                                 setOverlayAutoRemoveTimer()
                             }
                         }(refName)
-                        details.appendChild(div)
+                        
+                        var nameDiv = document.createElement('div')
+                        nameDiv.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
+                        parentDiv.appendChild(nameDiv)
+
+                        var titleDiv = document.createElement('div')
+                        titleDiv.textContent = ''
+                        parentDiv.appendChild(titleDiv)
+
+                        details.appendChild(parentDiv)
                     }
 
                     details.append(summary)
@@ -687,6 +716,7 @@
                     'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
                     'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
                     'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
+                    'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data']
                 }
                 return dict
             }
@@ -1051,6 +1081,54 @@
                 }
 
                 return true
+            }
+
+            function requestBackendData(sock) {
+                if (sock.readyState != WebSocket.CLOSED) {
+                    sock.send(JSON.stringify(getReferDicts()))
+                    setTimeout(() => {
+                        requestBackendData(sock)
+                    }, 1 * 60 * 1000);
+                }
+            }
+
+            function connectBackend() {
+                if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
+                    backendSocket = new WebSocket('ws://localhost')
+                    backendSocket.onopen = function() { requestBackendData(backendSocket) }
+                    backendSocket.onmessage = processBackendUpdate
+                } else {
+                    backendSocket.close()
+                }
+                return true
+            }
+
+            function processBackendUpdate(response) {
+                update = JSON.parse(response.data)
+
+                for (element of document.querySelectorAll('.overlayListElement')) {
+                    name = element.children[0].textContent
+                    if (name.toLowerCase() == update.name) {
+                        titleDiv = element.children[1]
+                        for (video of update.videos) {
+                            if (video.viewText.includes('watching')) {
+                                element.setAttribute('type', 'live')
+                                titleDiv.textContent = video.title
+                                return
+                            }
+                        }
+                        for (video of update.videos) {
+                            if (video.viewText.includes('waiting')) {
+                                element.setAttribute('type', 'waiting')
+                                titleDiv.textContent = video.title
+                                return
+                            }
+                        }
+                        element.setAttribute('type', 'offline')
+                        titleDiv.textContent = ''
+                        return
+                    }
+                }
             }
 
             function makeDraggable(element) {
