@@ -60,23 +60,24 @@
             }
 
             .overlayListElement[type="live"] {
-                color: green
+                color: green;
             }
 
             .overlayListElement[type="waiting"] {
-                color: yellow
+                color: yellow;
             }
 
             .overlayListElement[type="offline"] {
-                color: red
+                display: none;
+                color: red;
             }
 
             .overlayListElement :first-child {
-                display:inline-block
+                display:inline-block;
             }
 
             .overlayListElement :last-child {
-                display:inline-block
+                display:inline-block;
             }
 
             /* Hide by default, float it in the middle */
@@ -1119,9 +1120,19 @@
                         }
                         for (video of update.videos) {
                             if (video.viewText.includes('waiting')) {
-                                element.setAttribute('type', 'waiting')
-                                titleDiv.textContent = video.title
-                                return
+                                var now = new Date().getTime() / 1000
+                                var then = video.startTime ?? 0
+
+                                /* Treat as offline if longer than 4 hours til start time */
+                                if ((then - now) > (4 * 60 * 60)) {
+                                    element.setAttribute('type', 'offline')
+                                    return
+                                }
+                                else {
+                                    element.setAttribute('type', 'waiting')
+                                    titleDiv.textContent = video.title
+                                    return
+                                }
                             }
                         }
                         element.setAttribute('type', 'offline')
