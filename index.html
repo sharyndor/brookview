@@ -1075,8 +1075,8 @@
                 if (tab.style.display == 'none') {
                     /* Reposition the window when it gets shown */
                     tab.style.display = 'inline-block'
-                    tab.style.top = '50%'
-                    tab.style.left = '50%'
+                    tab.style.top = (100 / grid.getAttribute('data-rows')) + '%'
+                    tab.style.left = (100 / grid.getAttribute('data-columns')) + '%'
                 } else {
                     tab.style.display = 'none'
                 }
