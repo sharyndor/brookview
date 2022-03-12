@@ -44,10 +44,10 @@
             }
 
             /* Hide by default, float it near the side */
-            #overlayList, #overlayHelp {
-                position:absolute;
+            .overlay {
+                position: absolute;
                 padding-left: 5px;
-                padding-right: 100px;
+                padding-right: 5px;
                 width:auto;
                 height:auto;
                 z-index: 100;
@@ -57,6 +57,10 @@
                 border-color: #A0A0A0;
                 border-radius: 5px;
                 color: #BEBEBE;
+            }
+
+            .overlayListElement > div {
+                display: inline-block
             }
 
             .overlayListElement[type="live"] {
@@ -72,12 +76,18 @@
                 color: red;
             }
 
-            .overlayListElement :first-child {
-                display:inline-block;
+            form {
+                overflow: hidden;
+                align-items: center;
             }
 
-            .overlayListElement :last-child {
-                display:inline-block;
+            label {
+                padding-right: 40px;
+            }
+
+            input {
+                float: right;
+                clear: both;
             }
 
             /* Hide by default, float it in the middle */
@@ -97,6 +107,7 @@
             /* Show overlay items as clickable */
             summary, details > div {
                 cursor: pointer;
+                width: fit-content;
             }
 
             /* Indent the channel names */
@@ -137,9 +148,13 @@
                 user-select: none;
             }
 
+            /* Block iframe interaction when disabled */
+            .grid-element.disabled :last-child {
+                pointer-events: none;
+            }
+
             /* Block iframe interaction and add opacity when hovered */
             .grid-element.disabled:hover :last-child {
-                pointer-events: none;
                 opacity: 50%;
             }
 
@@ -170,8 +185,9 @@
 
     <body>
         <div id=tab style="display: none"></div>
-        <div id=overlayHelp style="display: none"></div>
-        <div id=overlayList style="display: none"></div>
+        <div id=overlayHelp class=overlay style="display: none"></div>
+        <div id=overlayList class=overlay style="display: none"></div>
+        <div id=overlaySettings class=overlay style="display: none"></div>
         <div id=grid></div>
 
         <script>
@@ -281,7 +297,7 @@
                         'hajime'        : ['ttv-channel', 'hajime'       ],
                         'veibae'        : ['ttv-channel', 'veibae'       ],
                     },
-                    'VReverie' : {
+                    'VReverie' : {  
                         'iora'       : ['yt-channel',  'UC0g_U1QjfhMR-kx8XLmWTCA'],
                         'nova'       : ['yt-channel',  'UCA4bOB1Jnw5-lbuoSCfxc-w'],
                         'lilrya'     : ['yt-channel',  'UCt7vm-7hlwPcYsRacX7QJYw'],
@@ -402,11 +418,11 @@
             }
 
             function embedTwitchChannel(value) {
-                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1'
+                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true'
             }
 
             function embedTwitchVideo(value, extras) {
-                return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=1' + extras
+                return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true' + extras
             }
 
             function openRefererData(type, value, extras) {
@@ -457,6 +473,11 @@
                     /* Horrible check to keep prompting until a valid number is entered */
                     do {
                         rows = prompt('Rows:')
+
+                        /* Allow cancellation if the page has already been loaded */
+                        if (rows == null && grid.children.length != 0) {
+                            return
+                        }
                     } while (!(Number(rows) >= 1))
                 }
                 var columns = params.get('columns')
@@ -464,12 +485,19 @@
                     /* Horrible check to keep prompting until a valid number is entered */
                     do {
                         columns = prompt('Columns:')
+
+                        /* Allow cancellation if the page has already been loaded */
+                        if (columns == null && grid.children.length != 0) {
+                            return
+                        }
                     } while (!(Number(columns) >= 1))
-                } 
+                }
+
+                var totalElements = rows * columns
 
                 /* Show the help dialog if the URL is empty */
                 if (Array.from(params).length == 0) {
-                    toggleOverlayHelp();
+                    toggleOverlayHelp()
                 }
 
                 /* Update the css to actually display a grid */
@@ -480,41 +508,62 @@
                 grid.setAttribute('data-rows',    rows)
                 grid.setAttribute('data-columns', columns)
 
-                /* Start with a blank slate */
-                while (grid.firstChild) {
-                    grid.removeChild(grid.firstChild)
-                }
-                for (; grid.children.length < rows * columns; ) {
+                /* If children don't exist yet, this is a fresh page load */
+                var freshGrid = grid.children.length == 0
+                
+                /* Pad out the grid using blank elements */
+                while (grid.children.length < totalElements) {
                     grid.appendChild(makeBlankElement())
                 }
 
-                /* Fill in the grid using the URL */
-                var currentElement = 0
-                var extras = ''
-                params.forEach(function(value, key) {
-                    if (currentElement < rows * columns)
-                    {
-                        var [tempType, tempValue, tempExtras] = checkReferers(key)
-                        if (key in getEmbeds()) {
-                            /* Extra data will precede the embed type to make parsing easier */
-                            setElement(grid.children[currentElement], key, value, extras)
-                            extras = ''
-                            ++currentElement
-                        } else if (tempType || tempValue || tempExtras) {
-                            /* Found something, load it */
-                            setElementFromString(grid.children[currentElement], key)
-                            extras =''
-                            ++currentElement
+                if (freshGrid) {
+                    /* Fill in the grid using the URL */
+                    var currentElement = 0
+                    var extras = ''
+                    params.forEach(function(value, key) {
+                        if (currentElement < totalElements)
+                        {
+                            var [tempType, tempValue, tempExtras] = checkReferers(key)
+                            if (key in getEmbeds()) {
+                                /* Extra data will precede the embed type to make parsing easier */
+                                setElement(grid.children[currentElement], key, value, extras)
+                                extras = ''
+                                ++currentElement
+                            } else if (tempType || tempValue || tempExtras) {
+                                /* Found something, load it */
+                                setElementFromString(grid.children[currentElement], key)
+                                extras =''
+                                ++currentElement
+                            }
+                            else if (getReserved().includes(key)) {
+                                /* Do nothing for reserved keywords */
+                            }
+                            else {
+                                /* Otherwise, must be part of the extra data */
+                                extras += '&' + key + '=' + value
+                            }
                         }
-                        else if (getReserved().includes(key)) {
-                            /* Do nothing for reserved keywords */
-                        }
-                        else {
-                            /* Otherwise, must be part of the extra data */
-                            extras += '&' + key + '=' + value
+                    })
+                } else {
+                    /* If an element is about to be cut off, move it to the first available blank spot */
+                    for (var afterIndex = totalElements; afterIndex < grid.children.length; ++afterIndex) {
+                        /* Swap non-blank trailing elements... */
+                        if (grid.children[afterIndex].getAttribute('data-type') != 'blank') {
+                            /* With... */
+                            for (var currentIndex = 0; currentIndex < totalElements; ++currentIndex) {
+                                /* Any blank leading elements */
+                                if (grid.children[currentIndex].getAttribute('data-type') == 'blank') {
+                                    moveElement(grid.children[afterIndex], grid.children[currentIndex])
+                                }
+                            }
                         }
                     }
-                })
+
+                    /* Cut off elements that couldn't fit */
+                    while (grid.children.length > totalElements) {
+                        grid.removeChild(grid.lastChild)
+                    }
+                }
 
                 /* Grid is created, go ahead and update the URL */
                 updateURL()
@@ -669,11 +718,33 @@
                                 setOverlayAutoRemoveTimer()
                             }
                         }(refName)
-                        
+
+                        parentDiv.onmousedown = function(e) { 
+                            /* Needed to allow dragging from list elements without moving the list */
+                            e.stopPropagation()
+                            /* Treat this as an interaction to prevent the overlay from timing out */
+                            setOverlayAutoRemoveTimer()
+                            /* Disable interactions to allow dropping onto iframes */
+                            disableInteractions()
+                        }
+                        parentDiv.onmouseup = resetInteractions
+
+                        /* Allow the div to be dragged */
+                        parentDiv.setAttribute('draggable', true)
+                        parentDiv.ondragstart = function(name) {
+                            /* Use the refer name as the drop data */
+                            return function(event) {
+                                event.dataTransfer.setData('text/plain', name)
+                            }
+                        }(refName)
+                        parentDiv.ondragend = resetInteractions
+
+                        /* Add first div to contain streamer name */
                         var nameDiv = document.createElement('div')
                         nameDiv.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
                         parentDiv.appendChild(nameDiv)
 
+                        /* Add second div to contain title if backend is active */
                         var titleDiv = document.createElement('div')
                         titleDiv.textContent = ''
                         parentDiv.appendChild(titleDiv)
@@ -684,6 +755,60 @@
                     details.append(summary)
                     overlayList.append(details)
                 }
+            }
+
+            function populateOverlaySettings() {
+                /* Disable key presses while the forms have focus */
+                overlaySettings.addEventListener('focusin', function() { setKeyEvents(false) })
+                overlaySettings.addEventListener('focusout', function() { setKeyEvents(true) })
+
+                var div = overlaySettings.appendChild(document.createElement('div'))
+                overlaySettings.lastChild.textContent = 'Esc to close'
+
+                var form = overlaySettings.appendChild(document.createElement('form'))
+                form.onsubmit = function(e) { e.preventDefault() }
+
+                backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
+
+                overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
+                overlayTimeoutInput.value = overlayTimeoutSeconds = 0
+            }
+
+            function addOverlaySetting(name, type, fun) {
+                var form = overlaySettings.lastChild
+
+                var label = form.appendChild(document.createElement('label'))
+                label.textContent = name
+
+                var input = form.appendChild(document.createElement('input'))
+                input.type = type
+                input.onchange = fun
+
+                /* Leave checkboxes at default width */
+                if (input.type != 'checkbox') {
+                    input.style.width = '50px'
+                }
+
+                /* Line break after each input option */
+                form.appendChild(document.createElement('br'))
+
+                return input
+            }
+
+            function setKeyEvents(enabled) {
+                if (enabled) {
+                    window.onkeydown = myKeyDown
+                    window.onkeyup = myKeyUp
+                } else {
+                    window.onkeydown = null
+                    window.onkeyup = null
+                }
+            }
+
+            function disableInteractions() {
+                document.querySelectorAll('.grid-element').forEach(function(frame) {
+                    frame.classList.add('disabled')
+                })
             }
 
             function resetInteractions() {
@@ -724,7 +849,8 @@
                     'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
                     'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
                     'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
-                    'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data']
+                    'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
+                    '`' : ['settings',      toggleOverlaySettings, 'Toggles the settings menu'],
                 }
                 return dict
             }
@@ -740,12 +866,12 @@
                 lastElement = lastElementClicked
 
                 /* Set the last element clicked now in case the action needs to change it */
-                lastElementClicked = element; 
+                lastElementClicked = element
 
                 /* Do something with the elements, extra arguments will be discarded naturally */
                 if (action(element, lastElement)) {
                     /* Action succeeded when true, reset interactions */
-                    resetInteractions();
+                    resetInteractions()
                 }
 
                 /* Don't reset everything after a click, just the element from a key press */
@@ -758,7 +884,7 @@
                     /* Do something with the elements, extra arguments will be discarded naturally */
                     if (getActions()[key][1](element, firstElementKey)) {
                         /* Action succeeded when true, reset interactions */
-                        resetInteractions();
+                        resetInteractions()
                     }
                 }
             }
@@ -776,7 +902,11 @@
                 if (typeof overlayTimeout != 'undefined') {
                     clearTimeout(overlayTimeout)
                 }
-                overlayTimeout = setTimeout(hideOverlays, 15000)
+
+                if (overlayTimeoutSeconds > 0) {
+                    console.log(overlayTimeoutSeconds)
+                    overlayTimeout = setTimeout(hideOverlays, overlayTimeoutSeconds * 1000)
+                }
                 return true
             }
 
@@ -817,9 +947,9 @@
                 if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
                     if (currentElement != lastElement) {
                         /* Save the last element */
-                        lastType   = lastElement.getAttribute('data-type')
-                        lastValue  = lastElement.getAttribute('data-value')
-                        lastExtras = lastElement.getAttribute('data-extras')
+                        var lastType   = lastElement.getAttribute('data-type')
+                        var lastValue  = lastElement.getAttribute('data-value')
+                        var lastExtras = lastElement.getAttribute('data-extras')
 
                         /* Set last element from the current */
                         setElement(lastElement, currentElement.getAttribute('data-type'), currentElement.getAttribute('data-value'), currentElement.getAttribute('data-extras'))
@@ -858,25 +988,30 @@
             }
 
             function myKeyDown(event) {
-                /* Check specially for escape to close the overlay */
-                if (event.key == 'Escape') {
+                var key = event.key.toLowerCase()
+
+                /* Disallow any modifiers that aren't shift */
+                if (event.ctrlKey || event.altKey || event.metaKey) {
+                    return
+                }
+
+                /* Special case for escape to close the overlay */
+                if (key == 'escape') {
                     hideOverlays()
                     resetInteractions()
                     return
                 }
 
                 /* Only track the first key press and ignore keys that don't have actions */
-                if (lastKey == null && event.key in getActions()) {
+                if (lastKey == null && key in getActions()) {
                     /* Save the pressed key */
-                    lastKey = event.key
+                    lastKey = key
 
                     /* Grab whatever is underneath when an action is started */
                     firstElementKey = document.querySelector('.grid-element:hover')
 
                     /* Disable interactions via css to allow for click events to reach the parent div */
-                    document.querySelectorAll('.grid-element').forEach(function(frame) {
-                        frame.classList.add('disabled')
-                    })
+                    disableInteractions()
 
                     /* Add the overlay text for the active action */
                     document.querySelectorAll('.grid-element :first-child').forEach(function(overlay) {
@@ -886,8 +1021,10 @@
             }
 
             function myKeyUp(event) {
+                var key = event.key.toLowerCase()
+
                 /* Ignore release events that weren't the first key pressed */
-                if (event.key == lastKey) {
+                if (key == lastKey) {
                     /* Complete the action with whatever is under the mouse */
                     setElementFromKey(document.querySelector('.grid-element:hover'), lastKey)
 
@@ -1022,21 +1159,32 @@
                 return true
             }
 
-            function toggleOverlayHelp() {
-                if (overlayHelp.style.display == 'none') {
-                    /* Reposition the window when it gets shown */
-                    overlayHelp.style.display = 'inline-block'
-                    overlayHelp.style.top = '2%'
-                    overlayHelp.style.left = '2%'
+            function toggleOverlays(overlay) {
+                /* Toggle the element passed in, if it exists */
+                if (overlay) {
+                    if (overlay.style.display == 'none') {
+                        /* Reposition the window when it gets shown */
+                        overlay.style.display = 'inline-block'
+                        overlay.style.top = '2%'
+                        overlay.style.left = '2%'
 
-                    /* Hide the other overlay */
-                    overlayList.style.display = 'none'
-
-                    /* Refresh automatic removal */
-                    setOverlayAutoRemoveTimer()
-                } else {
-                    overlayHelp.style.display = 'none'
+                        /* Refresh automatic removal */
+                        setOverlayAutoRemoveTimer()
+                    } else {
+                        overlay.style.display = 'none'
+                    }
                 }
+
+                /* Disable everything else */
+                for (var element of document.querySelectorAll('.overlay')) {
+                    if (element != overlay) {
+                        element.style.display = 'none'
+                    }
+                }
+            }
+
+            function toggleOverlayHelp() {
+                toggleOverlays(overlayHelp)
                 return true
             }
 
@@ -1045,17 +1193,7 @@
                     if (overlayList.style.display == 'none') {
                         /* Save the current element for use with the overlay click handlers */
                         listElement = element
-
-                        /* Reposition the window when it gets shown */
-                        overlayList.style.display = 'inline-block'
-                        overlayList.style.top = '2%'
-                        overlayList.style.left = '2%'
-
-                        /* Hide the other overlay */
-                        overlayHelp.style.display = 'none'
-
-                        /* Refresh automatic removal */
-                        setOverlayAutoRemoveTimer()
+                        toggleOverlays(overlayList)
                     } else {
                         /* If the same element was chosen, close the list */
                         /* Otherwise, just update the active element */
@@ -1070,11 +1208,15 @@
                 return true
             }
 
+            function toggleOverlaySettings(element) {
+                toggleOverlays(overlaySettings)
+                return true
+            }
+
             function hideOverlays() {
                 /* Reset the overlay elements */
                 listElement = null
-                overlayList.style.display = 'none'
-                overlayHelp.style.display = 'none'
+                toggleOverlays(null)
                 return true
             }
 
@@ -1096,7 +1238,7 @@
                     sock.send(JSON.stringify(getReferDicts()))
                     setTimeout(() => {
                         requestBackendData(sock)
-                    }, 1 * 60 * 1000);
+                    }, 1 * 60 * 1000)
                 }
             }
 
@@ -1105,8 +1247,28 @@
                     backendSocket = new WebSocket('ws://localhost')
                     backendSocket.onopen = function() { requestBackendData(backendSocket) }
                     backendSocket.onmessage = processBackendUpdate
+
+                    /* Setup backend error message on second connection attempt */
+                    /* This prevents spurious errors if the backend failed on initial page load */
+                    if (typeof firstAttempt == 'undefined') {
+                        firstAttempt = true
+                    } else {
+                        firstAttempt = false
+                    }
+
+                    /* Update the settings menu checkbox */
+                    backendInput.checked = true
+                    backendSocket.onclose = function() { backendInput.checked = false }
+                    backendSocket.onerror = function() { 
+                        if (firstAttempt == false) {
+                            alert("Backend encountered a problem!")
+                        }
+                    }
                 } else {
                     backendSocket.close()
+                    
+                    /* Update the settings menu checkbox */
+                    backendInput.checked = false
                 }
                 return true
             }
@@ -1158,6 +1320,9 @@
             function dragMouseDown(element, event) {
                 /* Left mouse only */
                 if (event.which == 1) {
+                    /* Disable interactions via css to allow for keep dragging smooth */
+                    disableInteractions()
+
                     dragStartX = event.clientX
                     dragStartY = event.clientY
 
@@ -1170,7 +1335,7 @@
                 }
 
                 /* If an overlay is manipulated, refresh automatic removal */
-                if (element == overlayList || element == overlayHelp) {
+                if (element.classList.contains('overlay')) {
                     setOverlayAutoRemoveTimer()
                 }
             }
@@ -1178,12 +1343,15 @@
             function dragMouseUp(element, event) {
                 /* Left mouse only */
                 if (event.which == 1) {
+                    /* Allow interactions again */
+                    resetInteractions()
+
                     window.onmouseup = null
                     window.onmousemove = null
                 }
 
                 /* If an overlay is manipulated, refresh automatic removal */
-                if (element == overlayList || element == overlayHelp) {
+                if (element.classList.contains('overlay')) {
                     setOverlayAutoRemoveTimer()
                 }
             }
@@ -1206,7 +1374,7 @@
                 dragStartY = event.clientY
 
                 /* If an overlay is manipulated, refresh automatic removal */
-                if (element == overlayList || element == overlayHelp) {
+                if (element.classList.contains('overlay')) {
                     setOverlayAutoRemoveTimer()
                 }
 
@@ -1218,15 +1386,20 @@
             window.onresize = resizeGrid
             window.onkeydown = myKeyDown
             window.onkeyup = myKeyUp
+            window.onfocus = resetInteractions
 
             makeDraggable(tab)
             makeDraggable(overlayHelp)
             makeDraggable(overlayList)
+            makeDraggable(overlaySettings)
 
             createGrid()
             populateOverlayHelp()
             populateOverlayList()
+            populateOverlaySettings()
             resetInteractions()
+
+            connectBackend()
         </script>
     </body>
 </html>
