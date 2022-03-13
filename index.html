@@ -1388,6 +1388,9 @@
             window.onkeyup = myKeyUp
             window.onfocus = resetInteractions
 
+            /* Temporary workaround, set globals here */
+            overlayTimeoutSeconds = 0
+
             makeDraggable(tab)
             makeDraggable(overlayHelp)
             makeDraggable(overlayList)
