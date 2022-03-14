@@ -180,6 +180,11 @@
             .grid-element:hover :nth-child(2) {
                 display: inline
             }
+
+            #chat {
+                float: right;
+                background-color: white;
+            }
         </style>
     </head>
 
@@ -189,6 +194,13 @@
         <div id=overlayList class=overlay style="display: none"></div>
         <div id=overlaySettings class=overlay style="display: none"></div>
         <div id=grid></div>
+        <div id=chat>
+            <label>Chat:</label>
+            <select>
+                <option>Kronii</option>
+            </select>
+            <iframe src="https://www.youtube.com/live_chat?v=RGzQ6zuSJRA&embed_domain=sharyndor.github.io"></iframe>
+        </div>
 
         <script>
             var hostDomain = 'sharyndor.github.io'
@@ -667,6 +679,14 @@
                 var realHeight = Math.floor(window.innerHeight / rows)    * rows
                 var realWidth  = Math.floor(window.innerWidth  / columns) * columns
 
+                if (typeof(chatInput) != 'undefined' && chatInput.checked) {
+                    chatWidth = Math.floor(window.innerWidth * 0.15)
+                    realWidth -= chatWidth;
+
+                    chat.style.width = chatWidth + 'px'
+                    chat.style.height = window.innerHeight + 'px'
+                }
+
                 /* Using px avoids alignment issues */
                 /* Using percents can cause tiny gaps due to rounding */
                 grid.style.width  = realWidth  + 'px'
@@ -770,6 +790,8 @@
 
                 backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
 
+                chatInput = addOverlaySetting('Chat (WIP)h', 'checkbox', toggleChat)
+
                 overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
                 overlayTimeoutInput.value = overlayTimeoutSeconds = 0
             }
@@ -844,7 +866,7 @@
                     'k' : ['previous+',     previousGlobalElement, 'Skips to the previous stream, regardless of current group'],
                     'd' : ['delete',        removeElement,         'Removes the stream'],
                     'm' : ['move',          moveElement,           'Moves the stream between locations'],
-                    'c' : ['copy',          copyElement,           'Copies the stream between locations'],
+                    'c' : ['chat',          toggleChat,            'Toggles the chat panel'],
                     'r' : ['reload',        reloadElement,         'Reloads the stream'],
                     'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
                     'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
@@ -1233,6 +1255,14 @@
                 return true
             }
 
+            function toggleChat() {
+                chatInput.checked = !chatInput.checked
+                
+                resizeGrid()
+
+                return true
+            }
+
             function requestBackendData(sock) {
                 if (sock.readyState != WebSocket.CLOSED) {
                     sock.send(JSON.stringify(getReferDicts()))
@@ -1389,6 +1419,7 @@
             window.onfocus = resetInteractions
 
             /* Temporary workaround, set globals here */
+            chatEnabled = true
             overlayTimeoutSeconds = 0
 
             makeDraggable(tab)
