@@ -197,9 +197,9 @@
         <div id=chat>
             <label>Chat:</label>
             <select>
-                <option>Kronii</option>
+                <option>None</option>
             </select>
-            <iframe src="https://www.youtube.com/live_chat?v=RGzQ6zuSJRA&embed_domain=sharyndor.github.io"></iframe>
+            <div></div>
         </div>
 
         <script>
@@ -453,6 +453,13 @@
                 /* Look for an alias first */
                 var str = getAliases()[str.toLowerCase()] ?? str
 
+                /* Check if data is embedded in the string */
+                for (embed of Object.keys(getEmbeds())) {
+                    if (str.startsWith(embed + '=')) {
+                        return [embed, str.split(embed + '=')[1], []]
+                    }
+                }
+
                 /* Try each method for something that isn't null */
                 for (referDict of Object.values(getReferDicts())) {
                     var result = referDict[str.toLowerCase()]
@@ -668,6 +675,31 @@
 
                 /* Actually replace the URL */
                 window.history.replaceState('', '', baseURL)
+
+                var select = chat.children[1]
+                var currentSelection = select.value
+                while (select.children > 1) {
+                    select.removeChild(select.lastChild)
+                }
+
+                var option = select.appendChild(document.createElement('option'))
+
+                document.querySelectorAll('div[data-type]').forEach(function(element) {
+                    var type  = element.getAttribute('data-type')
+                    if (type == 'yt-video') {
+                        var option = select.appendChild(document.createElement('option'))
+                        option.textContent = element.getAttribute('data-value')
+                    }
+                })
+
+                select.onchange = function(event) {
+                    if (event.target.value == 'None') {
+                        chat.replaceChild(chat.lastChild, document.createElement('div'))
+                    } else {
+                        chat.replaceChild(document.createElement('iframe'), chat.lastChild)
+                        chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + event.target.value + '&embed_domain=' + hostDomain)
+                    }
+                }
             }
 
             function resizeGrid() {
@@ -722,17 +754,14 @@
                     var summary = document.createElement('summary')
                     summary.textContent = dictName
 
-                    for (refName of Object.keys(referDict)) {
+                    for ([refName, [refType, refValue]] of Object.entries(referDict)) {
                         var parentDiv = document.createElement('div')
                         parentDiv.classList.add('overlayListElement')
+                        parentDiv.dataType = refType
+                        parentDiv.dataValue = refValue
                         parentDiv.onclick = function(name) {
                             return function(event){ 
-                                /* If shift/control is held, open the channel in a new tab instead */
-                                if (event.shiftKey || event.ctrlKey) {
-                                    openFromString(name)
-                                } else {
-                                    setElementFromString(listElement, name)
-                                }
+                                setElement(listElement, event.target.dataType, event.target.dataValue, [])
                                 
                                 /* Refresh automatic removal */
                                 setOverlayAutoRemoveTimer()
@@ -752,22 +781,14 @@
                         /* Allow the div to be dragged */
                         parentDiv.setAttribute('draggable', true)
                         parentDiv.ondragstart = function(name) {
-                            /* Use the refer name as the drop data */
+                            /* Use the stream data as the drop data */
                             return function(event) {
-                                event.dataTransfer.setData('text/plain', name)
+                                event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
                             }
                         }(refName)
                         parentDiv.ondragend = resetInteractions
 
-                        /* Add first div to contain streamer name */
-                        var nameDiv = document.createElement('div')
-                        nameDiv.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
-                        parentDiv.appendChild(nameDiv)
-
-                        /* Add second div to contain title if backend is active */
-                        var titleDiv = document.createElement('div')
-                        titleDiv.textContent = ''
-                        parentDiv.appendChild(titleDiv)
+                        parentDiv.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
 
                         details.appendChild(parentDiv)
                     }
@@ -926,7 +947,6 @@
                 }
 
                 if (overlayTimeoutSeconds > 0) {
-                    console.log(overlayTimeoutSeconds)
                     overlayTimeout = setTimeout(hideOverlays, overlayTimeoutSeconds * 1000)
                 }
                 return true
@@ -1307,13 +1327,15 @@
                 update = JSON.parse(response.data)
 
                 for (element of document.querySelectorAll('.overlayListElement')) {
-                    name = element.children[0].textContent
-                    if (name.toLowerCase() == update.name) {
+                    name = element.textContent
+                    if (name.toLowerCase().startsWith(update.name)) {
                         titleDiv = element.children[1]
                         for (video of update.videos) {
                             if (video.viewText.includes('watching')) {
                                 element.setAttribute('type', 'live')
-                                titleDiv.textContent = video.title
+                                element.textContent = update.name + ' ' + video.title
+                                element.dataType = 'yt-video'
+                                element.dataValue = video.id
                                 return
                             }
                         }
@@ -1329,13 +1351,14 @@
                                 }
                                 else {
                                     element.setAttribute('type', 'waiting')
-                                    titleDiv.textContent = video.title
+                                    element.textContent = update.name + ' ' + video.title
+                                    element.dataType = 'yt-video'
+                                    element.dataValue = video.id
                                     return
                                 }
                             }
                         }
                         element.setAttribute('type', 'offline')
-                        titleDiv.textContent = ''
                         return
                     }
                 }
