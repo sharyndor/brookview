@@ -676,6 +676,10 @@
                 /* Actually replace the URL */
                 window.history.replaceState('', '', baseURL)
 
+                updateChat()
+            }
+
+            function updateChat() {
                 var select = chat.children[1]
                 var currentSelection = select.value
                 while (select.children.length > 1) {
@@ -687,7 +691,9 @@
                     var type  = element.getAttribute('data-type')
                     if (type == 'yt-video') {
                         var option = select.appendChild(document.createElement('option'))
-                        option.textContent = element.getAttribute('data-value')
+                        var id = element.getAttribute('data-value')
+                        option.setAttribute('data-value', id)
+                        option.textContent = crossReference.has(id) ? crossReference.get(id) : id
 
                         if (currentSelection == option.textContent) {
                             foundSelection = true
@@ -695,19 +701,22 @@
                     }
                 })
 
+                console.log(currentSelection)
+                chat.children[1].value = currentSelection
+
                 select.onchange = function(event) {
                     if (event.target.value == 'None') {
                         chat.replaceChild(document.createElement('div'), chat.lastChild)
                     } else {
                         chat.replaceChild(document.createElement('iframe'), chat.lastChild)
-                        chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + event.target.value + '&embed_domain=' + hostDomain)
-                    }
-                }
 
-                if (foundSelection) {
-                    select.value = currentSelection
-                } else {
-                    select.value = 'None'
+                        for (var child of event.target.children) {
+                            if (child.textContent == event.target.value) {
+                                chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + child.getAttribute('data-value') + '&embed_domain=' + hostDomain)
+                                break
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1345,6 +1354,9 @@
                                 element.textContent = update.name + ' ' + video.title
                                 element.dataType = 'yt-video'
                                 element.dataValue = video.id
+
+                                crossReference.set(video.id, element.textContent)
+                                updateChat()
                                 return
                             }
                         }
@@ -1363,6 +1375,9 @@
                                     element.textContent = update.name + ' ' + video.title
                                     element.dataType = 'yt-video'
                                     element.dataValue = video.id
+                                    
+                                    crossReference.set(video.id, element.textContent)
+                                    updateChat()
                                     return
                                 }
                             }
@@ -1453,6 +1468,7 @@
             /* Temporary workaround, set globals here */
             chatEnabled = true
             overlayTimeoutSeconds = 0
+            crossReference = new Map()
 
             makeDraggable(tab)
             makeDraggable(overlayHelp)
