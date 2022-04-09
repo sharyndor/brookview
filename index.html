@@ -205,12 +205,12 @@
   <script>
     var hostDomain = 'sharyndor.github.io'
 
-    var backendLocation = 'https://github.com/sharyndor/brookview-backend'
+    var backendRepo = 'https://github.com/sharyndor/brookview-backend'
     var supportedBackendVersion = [0, 2, 2] /* vMajor.Minor.Patch */
     
     function getReserved(str) {
       /* These words are reserved for internal use */
-      return ['rows', 'columns', 'blank']
+      return ['rows', 'columns', 'backend', 'blank']
     }
     
     function getReferFunctions() {
@@ -521,6 +521,11 @@
       /* Add parameters for rows/columns */
       baseURL += '?rows='    + grid.getAttribute('data-rows')
       baseURL += '&columns=' + grid.getAttribute('data-columns')
+
+      /* Save backend location in URL if it isn't the default value */
+      if (backendLocation.toLowerCase() != 'localhost') {
+        baseURL += '&backend=' + backendLocation
+      }
       
       /* Add parameters for the types/value of each piece of the grid */
       document.querySelectorAll('div[data-type]').forEach(function(element) {
@@ -699,8 +704,11 @@
       form.onsubmit = function(e) { e.preventDefault() }
       
       backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
+
+      backendLocationSetting = addOverlaySetting('Backend Location', 'string', updateBackendLocation)
+      backendLocationSetting.value = backendLocation
       
-      chatInput = addOverlaySetting('Chat (WIP)', 'checkbox', toggleChat)
+      chatInput = addOverlaySetting('Chat', 'checkbox', toggleChat)
       
       overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
       overlayTimeoutInput.value = overlayTimeoutSeconds = 0
@@ -718,7 +726,7 @@
       
       /* Leave checkboxes at default width */
       if (input.type != 'checkbox') {
-        input.style.width = '50px'
+        input.style.width = '100px'
       }
       
       /* Line break after each input option */
@@ -1174,6 +1182,11 @@
 
       return true
     }
+
+    function updateBackendLocation(e) {
+      backendLocation = e.target.value
+      updateURL()
+    }
     
     function requestBackendData(sock) {
       if (sock.readyState != WebSocket.CLOSED) {
@@ -1191,7 +1204,7 @@
     
     function connectBackend() {
       if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
-        backendSocket = new WebSocket('ws://localhost')
+        backendSocket = new WebSocket('ws://' + backendLocation)
         backendSocket.onopen = function() { requestBackendData(backendSocket) }
         backendSocket.onmessage = processBackendUpdate
         
@@ -1208,7 +1221,7 @@
         backendSocket.onclose = function() { backendInput.checked = false }
         backendSocket.onerror = function() { 
           if (firstAttempt == false) {
-            alert("Backend encountered a problem!")
+            alert('Backend encountered a problem connecting to: ' + backendLocation)
           }
         }
       } else {
@@ -1293,7 +1306,7 @@
 
           /* Manual update, provide a link to the repo */
           if (manualUpdate) {
-            alert('Please update your backend from: ' + backendLocation)
+            alert('Please update your backend from: ' + backendRepo)
           }
         }
       }
@@ -1438,6 +1451,7 @@
       
       /* Temporary workaround, set globals here */
       overlayTimeoutSeconds = 0
+      backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost'
       crossReference = new Map()
       alreadyWarnedVersion = false
       buildStreamers()
