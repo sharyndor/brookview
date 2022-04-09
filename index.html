@@ -1,1487 +1,2185 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8"/>
-        <!--
-            Copyright 2021 Sharyndor
+<head>
+  <meta charset="utf-8"/>
+  <!--
+    Copyright 2021 Sharyndor
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+  <title>Brookview</title>
+  <style type='text/css'>
+    /* Prefer not to burn out people's eyes */
+    :root {
+      background-color: #202020;
+    }
+    
+    /* Borderless */
+    * {
+      margin:  0;
+      padding: 0;
+    }
+    
+    /* Remove the scrollbar */
+    body {
+      overflow: hidden;
+    }
+    
+    /* Tightly packed grid, rows/columns set via scripts */
+    #grid {
+      display: inline-grid;
+      grid-auto-rows: 1fr;
+      grid-gap: 0px;
+    }
+    
+    /* Hide by default, float it near the side */
+    .overlay {
+      position: absolute;
+      padding-left: 5px;
+      padding-right: 5px;
+      width:auto;
+      height:auto;
+      z-index: 100;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      background-color: #585858;
+      border-style: solid;
+      border-color: #A0A0A0;
+      border-radius: 5px;
+      color: #BEBEBE;
+    }
+    
+    .overlayListElement > div {
+      display: inline-block
+    }
+    
+    .overlayListElement[type="live"] {
+      color: green;
+    }
+    
+    .overlayListElement[type="upcoming"] {
+      color: yellow;
+    }
+    
+    .overlayListElement[type="offline"] {
+      display: none;
+      color: red;
+    }
+    
+    form {
+      overflow: hidden;
+      align-items: center;
+    }
+    
+    label {
+      padding-right: 40px;
+    }
+    
+    input {
+      float: right;
+      clear: both;
+    }
+    
+    /* Hide by default, float it in the middle */
+    #tab {
+      position:absolute;
+      width:2%;
+      height:2%;
+      transform: translate(-50%, -50%);
+      z-index: 200;
+      background-color: #585858;
+      border-style: solid;
+      border-color: #A0A0A0;
+      border-radius: 5px;
+      opacity: 50%;
+    }
+    
+    /* Show overlay items as clickable */
+    summary, details > div {
+      cursor: pointer;
+      width: fit-content;
+    }
+    
+    /* Indent the channel names */
+    details > div {
+      padding-left: 20px;
+    }
+    
+    /* Size iframes to fill the parent div */
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Make it obvious what you have selected */
+    .grid-element:hover {
+      position: relative;
+      background-color: #585858;
+    }
+    
+    /* Center the hover text */
+    .grid-element :first-child {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      
+      font-family: Arial;
+      font-size: 4vw;
+      color: #BEBEBE;
+    }
+    
+    /* Don't allow the hover text to be selectable */
+    .grid-element:hover :first-child {
+      display: inline;
+      user-select: none;
+    }
+    
+    /* Block iframe interaction when disabled */
+    .grid-element.disabled :last-child {
+      pointer-events: none;
+    }
+    
+    /* Block iframe interaction and add opacity when hovered */
+    .grid-element.disabled:hover :last-child {
+      opacity: 50%;
+    }
+    
+    /* Simple pop-up text for next/prev */
+    .grid-element :nth-child(2) {
+      display: none;
+      user-select: none;
+      position: absolute;
+      left: 50%;
+      top: 70%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      
+      font-family: Arial;
+      font-size: 4vw;
+      
+      color:#FFFFFF;
+      -webkit-text-stroke-width: 2px;
+      -webkit-text-stroke-color: black;
+    }
+    
+    /* Only show on hover */
+    .grid-element:hover :nth-child(2) {
+      display: inline
+    }
+    
+    #chat {
+      float: right;
+      background-color: white;
+    }
+  </style>
+</head>
 
-            This program is free software: you can redistribute it and/or modify
-            it under the terms of the GNU General Public License as published by
-            the Free Software Foundation, either version 3 of the License, or
-            (at your option) any later version.
+<body>
+  <div id=tab style="display: none"></div>
+  <div id=overlayHelp class=overlay style="display: none"></div>
+  <div id=overlayList class=overlay style="display: none"></div>
+  <div id=overlaySettings class=overlay style="display: none"></div>
+  <div id=grid></div>
+  <div id=chat>
+    <label>Chat:</label>
+    <select>
+      <option>None</option>
+    </select>
+    <div></div>
+  </div>
+  
+  <script>
+    var hostDomain = 'sharyndor.github.io'
+
+    var backendLocation = 'https://github.com/sharyndor/brookview-backend'
+    var supportedBackendVersion = [0, 2, 0] /* v0.1.0 */
+    
+    function getReserved(str) {
+      /* These words are reserved for internal use */
+      return ['rows', 'columns', 'blank']
+    }
+    
+    function getReferFunctions() {
+      return [
+      referYoutube,
+      referTwitch,
+      ]
+    }
+    function getEmbeds() {
+      return { 
+        'blank'       : null,
+        'yt-video'    : embedYoutubeVideo,
+        'yt-channel'  : embedYoutubeChannel,
+        'ttv-video'   : embedTwitchVideo,
+        'ttv-channel' : embedTwitchChannel,
+      }
+    }
+    
+    /* TODO: Add Youtube chat embedding if I ever figure out how to 1) obtain permanent chat links, 2) avoid the need to set the embed-domain parameter, 3) do this entirely in-browser */
+    function referYoutube(str) {
+      /* Try to treat the string as a URL */
+      try {
+        /* Parse the string to find the type of content */
+        var url = new URL(str)
+        if (url.host.includes('youtube')) {
+          if (url.searchParams.has('v')) { /* Normal video link, parse out the video id and timestamp (if present) */
+            var timeStamp = url.searchParams.get('t')
+            var extras = timeStamp ? '&start=' + timeStamp : ''
+            return ['yt-video', url.searchParams.get('v'), extras]
+          } else if (url.pathname.includes('/c/')) { /* Custom channel link cannot be used, actual channel id is needed instead */
+            return checkReferers(prompt('Embed needs URL with channel ID'))
+          } else if (url.pathname.includes('/channel/')) { /* Normal channel link, parse out the channel id */
+            return ['yt-channel', url.pathname.split('/channel/')[1]]
+          }
+        } else if (url.host.includes('youtu.be')) { /* Short video link, parse out the video id and timestamp (if present) */
+          var timestamp = url.searchParams.get('t')
+          var extras = timestamp ? '&start=' + timestamp : ''
+          return ['yt-video', url.pathname.substring(1), extras]
+        }
+        return null
+      }
+      /* Wasn't a URL */
+      catch (error) {
+        return null
+      }
+    }
+    
+    function referTwitch(str) {
+      /* Start with ttv- as shorthand for twitch channels */
+      if (str.startsWith('ttv-')) {
+        return ['ttv-channel', str.substring(4)]
+      }
+      else {
+        /* Try to treat the string as a URL */
+        try {
+          /* Parse the string to find the type of content */
+          var url = new URL(str)
+          if (url.host.includes('twitch.tv')) {
+            if (url.pathname.includes('/videos/')) { /* VOD */
+              var timeStamp = url.searchParams.get('t')
+              var extras = timeStamp ? '&time=' + timeStamp : ''
+              return ['ttv-video', url.pathname.split('/videos/')[1], extras]
+            } else { /* Probably trying to reference a channel, parse out the channel name */
+              return ['ttv-channel', url.pathname.split('/')[1].split('/')[0]]
+            }
+          }
+          return null
+        }
+        /* Wasn't a URL */
+        catch (error) {
+          return null
+        }
+      }
+    }
+    
+    
+    function embedYoutubeVideo(value, extras) {
+      return 'https://www.youtube.com/embed/' + value + '?autoplay=1&mute=1' + extras
+    }
+    
+    function embedYoutubeChannel(value) {
+      return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
+    }
+    
+    function embedTwitchChannel(value) {
+      return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true&height=100%&width=100%'
+    }
+    
+    function embedTwitchVideo(value, extras) {
+      return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true&height=100%&width=100%' + extras
+    }
+    
+    function openRefererData(type, value, extras) {
+      if (type == 'yt-channel') {
+        window.open('https://www.youtube.com/channel/' + value, '_blank')
+      } else if (type == 'yt-video') {
+        window.open('https://www.youtube.com/watch?v=' + value + extras, '_blank')
+      } else if (type == 'ttv-channel') {
+        window.open('https://www.twitch.tv/' + value, '_blank')
+      } else if (type == 'ttv-video') {
+        window.open('https://www.twitch.tv/videos/' + value, '_blank')
+      }
+    }
+    
+    function checkReferers(str) {
+      /* Check if data is embedded in the string */
+      for (embed of Object.keys(getEmbeds())) {
+        if (str.startsWith(embed + '=')) {
+          return [embed, str.split(embed + '=')[1], []]
+        }
+      }
+      
+      /* Try each method for something that isn't null */
+      if (str.toLowerCase() in aliases) {
+        var streamData = aliases[str.toLowerCase()].streams[0]
+        return [streamData.type, streamData.value, []]
+      }
+      
+      /* Try each method for something that isn't null */
+      for (referFun of getReferFunctions()) {
+        var result = referFun(str)
+        if (result) {
+          return result
+        }
+      }
+      
+      return [null, null, null]
+    }
+    
+    function checkEmbeds(type, value, extras) {
+      return getEmbeds()[type](value, extras)
+    }
+    
+    function createGrid(forcePrompt = false) {
+      var params = new URLSearchParams(window.location.search)
+      
+      /* Build the grid based on the URL, prompt if unavailable */
+      var rows = params.get('rows')
+      if (rows == null || forcePrompt) {
+        /* Horrible check to keep prompting until a valid number is entered */
+        do {
+          rows = prompt('Rows:')
+          
+          /* Allow cancellation if the page has already been loaded */
+          if (rows == null && grid.children.length != 0) {
+            return
+          }
+        } while (!(Number(rows) >= 1))
+      }
+      var columns = params.get('columns')
+      if (columns == null || forcePrompt) {
+        /* Horrible check to keep prompting until a valid number is entered */
+        do {
+          columns = prompt('Columns:')
+          
+          /* Allow cancellation if the page has already been loaded */
+          if (columns == null && grid.children.length != 0) {
+            return
+          }
+        } while (!(Number(columns) >= 1))
+      }
+      
+      var totalElements = rows * columns
+      
+      /* Show the help dialog if the URL is empty */
+      if (Array.from(params).length == 0) {
+        toggleOverlayHelp()
+      }
+      
+      /* Update the css to actually display a grid */
+      grid.style.gridTemplateRows    = 'repeat(' + rows    + ', minmax(0, 1fr))'
+      grid.style.gridTemplateColumns = 'repeat(' + columns + ', minmax(0, 1fr))'
+      
+      /* Add bookkeeping */
+      grid.setAttribute('data-rows',    rows)
+      grid.setAttribute('data-columns', columns)
+      
+      /* If children don't exist yet, this is a fresh page load */
+      var freshGrid = grid.children.length == 0
+      
+      /* Pad out the grid using blank elements */
+      while (grid.children.length < totalElements) {
+        grid.appendChild(makeBlankElement())
+      }
+      
+      if (freshGrid) {
+        /* Fill in the grid using the URL */
+        var currentElement = 0
+        var extras = ''
+        params.forEach(function(value, key) {
+          if (currentElement < totalElements)
+          {
+            var [tempType, tempValue, tempExtras] = checkReferers(key)
+            if (key in getEmbeds()) {
+              /* Extra data will precede the embed type to make parsing easier */
+              setElement(grid.children[currentElement], key, value, extras)
+              extras = ''
+              ++currentElement
+            } else if (tempType || tempValue || tempExtras) {
+              /* Found something, load it */
+              setElementFromString(grid.children[currentElement], key)
+              extras =''
+              ++currentElement
+            }
+            else if (getReserved().includes(key)) {
+              /* Do nothing for reserved keywords */
+            }
+            else {
+              /* Otherwise, must be part of the extra data */
+              extras += '&' + key + '=' + value
+            }
+          }
+        })
+      } else {
+        /* If an element is about to be cut off, move it to the first available blank spot */
+        for (var afterIndex = totalElements; afterIndex < grid.children.length; ++afterIndex) {
+          /* Swap non-blank trailing elements... */
+          if (grid.children[afterIndex].getAttribute('data-type') != 'blank') {
+            /* With... */
+            for (var currentIndex = 0; currentIndex < totalElements; ++currentIndex) {
+              /* Any blank leading elements */
+              if (grid.children[currentIndex].getAttribute('data-type') == 'blank') {
+                moveElement(grid.children[afterIndex], grid.children[currentIndex])
+              }
+            }
+          }
+        }
+        
+        /* Cut off elements that couldn't fit */
+        while (grid.children.length > totalElements) {
+          grid.removeChild(grid.lastChild)
+        }
+      }
+      
+      /* Grid is created, go ahead and update the URL */
+      updateURL()
+      
+      /* Size the grid elements correctly */
+      resizeGrid()
+    }
+    
+    function makeBlankElement() {
+      var div = document.createElement('div')
+      
+      /* Add event listeners */
+      div.onclick    = function (     ) { setElementFromClick(div) }
+      div.ondrop     = function (event) { setElementFromDrop(div, event) }
+      div.ondragover = function (event) { event.preventDefault() }
+      
+      /* Add bookkeeping */
+      div.classList.add('grid-element')
+      div.setAttribute('data-type', 'blank')
+      
+      /* First child is the text displayed on hover */
+      div.appendChild(document.createElement('div'))
+      /* Second child is shown when cycling between next/prev */
+      div.appendChild(document.createElement('div'))
+      /* Last child is the actual content */
+      div.appendChild(document.createElement('div'))
+      
+      /* Add extra variables */
+      div.channelNameTimeout = null
+      return div
+    }
+    
+    function setElement(element, type, value, extras) {
+      /* Can only set non-null elements with a non-null type */
+      if (element && type) {                    
+        /* Clear the element if blank, otherwise construct the embed based on the type/value */
+        if (type == 'blank') {
+          removeElement(element)
+        } else {
+          /* Add bookkeeping */
+          element.setAttribute('data-type', type)
+          
+          /* Ignore value if blank */
+          if (value) {
+            element.setAttribute('data-value', value)
+          } else {
+            element.removeAttribute('data-value')
+          }
+          
+          /* Ignore extras if blank */
+          if (extras) {
+            element.setAttribute('data-extras', extras)
+          } else {
+            element.removeAttribute('data-extras')
+          }
+          
+          /* Create and set up the iframe */
+          var frame = document.createElement('iframe')
+          frame.setAttribute('src', checkEmbeds(type, value, extras))
+          frame.setAttribute('allow', 'fullscreen')
+          
+          /* last child is the actual content */
+          element.replaceChild(frame, element.lastChild)
+          
+          /* Element was modified, update the URL */
+          updateURL()
+        }
+      }
+    }
+    
+    function updateURL() {
+      /* Throw away any existing parameters */
+      var baseURL = window.location.href.split('?')[0]
+      
+      /* Add parameters for rows/columns */
+      baseURL += '?rows='    + grid.getAttribute('data-rows')
+      baseURL += '&columns=' + grid.getAttribute('data-columns')
+      
+      /* Add parameters for the types/value of each piece of the grid */
+      document.querySelectorAll('div[data-type]').forEach(function(element) {
+        var extras = element.getAttribute('data-extras') ?? ''
+        baseURL += extras ? extras : ''
+        
+        var type  = element.getAttribute('data-type')
+        baseURL += '&' + type
+        
+        var value = element.getAttribute('data-value')
+        baseURL += value ? '=' + value : ''
+      })
+      
+      /* Actually replace the URL */
+      window.history.replaceState('', '', baseURL)
+      
+      updateChat()
+    }
+    
+    function updateChat() {
+      var select = chat.children[1]
+      var currentSelection = select.value
+      while (select.children.length > 1) {
+        select.removeChild(select.lastChild)
+      }
+      
+      var foundSelection = false
+      document.querySelectorAll('div[data-type]').forEach(function(element) {
+        var type  = element.getAttribute('data-type')
+        if (type == 'yt-video' || type == 'ttv-channel') {
+          var option = select.appendChild(document.createElement('option'))
+          var id = element.getAttribute('data-value')
+          option.setAttribute('data-type', type)
+          option.setAttribute('data-value', id)
+          option.textContent = crossReference.has(id) ? crossReference.get(id) : id
+          
+          if (currentSelection == option.textContent) {
+            foundSelection = true
+          }
+        }
+      })
+      
+      chat.children[1].value = currentSelection
+      
+      select.onchange = function(event) {
+        if (event.target.value == 'None') {
+          chat.replaceChild(document.createElement('div'), chat.lastChild)
+        } else {
+          chat.replaceChild(document.createElement('iframe'), chat.lastChild)
+          
+          for (var child of event.target.children) {
+            if (child.textContent == event.target.value) {
+              var type = child.getAttribute('data-type')
+              var value = child.getAttribute('data-value')
+              if (type == 'yt-video') {
+                chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
+              }
+              else if (type == 'ttv-channel') {
+                chat.lastChild.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?parent=' + hostDomain)
+              }
+              break
+            }
+          }
+        }
+      }
+    }
+    
+    function resizeGrid() {
+      var params = new URLSearchParams(window.location.search)
+      var rows    = params.get('rows')
+      var columns = params.get('columns')
+      
+      /* Use integer math to find a row/column multiple for evenly sized divs */
+      var realHeight = Math.floor(window.innerHeight / rows)    * rows
+      var realWidth  = Math.floor(window.innerWidth  / columns) * columns
+      
+      if (typeof(chatInput) != 'undefined' && chatInput.checked) {
+        chatWidth = Math.floor(window.innerWidth * 0.15)
+        realWidth -= chatWidth;
+        
+        chat.style.width = chatWidth + 'px'
+        chat.style.height = window.innerHeight + 'px'
+      }
+      
+      /* Using px avoids alignment issues */
+      /* Using percents can cause tiny gaps due to rounding */
+      grid.style.width  = realWidth  + 'px'
+      grid.style.height = realHeight + 'px'
+    }
+    
+    function populateOverlayHelp() {
+      listElement = null
+      
+      var escapeDiv = document.createElement('div')
+      escapeDiv.textContent = ('Esc to close')
+      overlayHelp.append(escapeDiv)
+      
+      var helpText = ""
+      for ([key, value] of Object.entries(getActions())) {
+        var helpDiv = document.createElement('div')
+        helpDiv.textContent = key + ' - ' + value[0] + '\r\n'
+        helpDiv.setAttribute('title', value[2])
+        overlayHelp.append(helpDiv)
+      }
+    }
+    
+    function populateOverlayList() {
+      listElement = null
+      
+      var escapeDiv = document.createElement('div')
+      escapeDiv.textContent = ('Esc to close')
+      overlayList.append(escapeDiv)
+      
+      /* Print each grouping under its own collapsible heading */
+      for (var [groupName, group] of Object.entries(groups)) {
+        var details = document.createElement('details')
+        var summary = details.appendChild(document.createElement('summary'))
+        summary.textContent = groupName
+        
+        for (var [streamerName, data] of Object.entries(group)) {
+          var parentDiv = document.createElement('div')
+          parentDiv.classList.add('overlayListElement')
+          parentDiv.dataType = data.streams[0].type
+          parentDiv.dataValue = data.streams[0].value
+          parentDiv.onclick = function(event){ 
+            setElement(listElement, event.target.dataType, event.target.dataValue, [])
             
-            This program is distributed in the hope that it will be useful,
-            but WITHOUT ANY WARRANTY; without even the implied warranty of
-            MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-            GNU General Public License for more details.
-            
-            You should have received a copy of the GNU General Public License
-            along with this program.  If not, see <https://www.gnu.org/licenses/>.
-        -->
-        <title>Brookview</title>
-        <style type='text/css'>
-            /* Prefer not to burn out people's eyes */
-            :root {
-                background-color: #202020;
-            }
-
-            /* Borderless */
-            * {
-                margin:  0;
-                padding: 0;
-            }
-
-            /* Remove the scrollbar */
-            body {
-                overflow: hidden;
-            }
-
-            /* Tightly packed grid, rows/columns set via scripts */
-            #grid {
-                display: inline-grid;
-                grid-auto-rows: 1fr;
-                grid-gap: 0px;
-            }
-
-            /* Hide by default, float it near the side */
-            .overlay {
-                position: absolute;
-                padding-left: 5px;
-                padding-right: 5px;
-                width:auto;
-                height:auto;
-                z-index: 100;
-                font-family: Verdana, Geneva, Tahoma, sans-serif;
-                background-color: #585858;
-                border-style: solid;
-                border-color: #A0A0A0;
-                border-radius: 5px;
-                color: #BEBEBE;
-            }
-
-            .overlayListElement > div {
-                display: inline-block
-            }
-
-            .overlayListElement[type="live"] {
-                color: green;
-            }
-
-            .overlayListElement[type="waiting"] {
-                color: yellow;
-            }
-
-            .overlayListElement[type="offline"] {
-                display: none;
-                color: red;
-            }
-
-            form {
-                overflow: hidden;
-                align-items: center;
-            }
-
-            label {
-                padding-right: 40px;
-            }
-
-            input {
-                float: right;
-                clear: both;
-            }
-
-            /* Hide by default, float it in the middle */
-            #tab {
-                position:absolute;
-                width:2%;
-                height:2%;
-                transform: translate(-50%, -50%);
-                z-index: 200;
-                background-color: #585858;
-                border-style: solid;
-                border-color: #A0A0A0;
-                border-radius: 5px;
-                opacity: 50%;
-            }
-
-            /* Show overlay items as clickable */
-            summary, details > div {
-                cursor: pointer;
-                width: fit-content;
-            }
-
-            /* Indent the channel names */
-            details > div {
-                padding-left: 20px;
-            }
-
-            /* Size iframes to fill the parent div */
-            iframe {
-                border: none;
-                width: 100%;
-                height: 100%;
-            }
-
-            /* Make it obvious what you have selected */
-            .grid-element:hover {
-                position: relative;
-                background-color: #585858;
-            }
-
-            /* Center the hover text */
-            .grid-element :first-child {
-                display: none;
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                pointer-events: none;
-
-                font-family: Arial;
-                font-size: 4vw;
-                color: #BEBEBE;
-            }
-
-            /* Don't allow the hover text to be selectable */
-            .grid-element:hover :first-child {
-                display: inline;
-                user-select: none;
-            }
-
-            /* Block iframe interaction when disabled */
-            .grid-element.disabled :last-child {
-                pointer-events: none;
-            }
-
-            /* Block iframe interaction and add opacity when hovered */
-            .grid-element.disabled:hover :last-child {
-                opacity: 50%;
-            }
-
-            /* Simple pop-up text for next/prev */
-            .grid-element :nth-child(2) {
-                display: none;
-                user-select: none;
-                position: absolute;
-                left: 50%;
-                top: 70%;
-                transform: translate(-50%, -50%);
-                pointer-events: none;
-
-                font-family: Arial;
-                font-size: 4vw;
-
-                color:#FFFFFF;
-                -webkit-text-stroke-width: 2px;
-                -webkit-text-stroke-color: black;
-            }
-
-            /* Only show on hover */
-            .grid-element:hover :nth-child(2) {
-                display: inline
-            }
-
-            #chat {
-                float: right;
-                background-color: white;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div id=tab style="display: none"></div>
-        <div id=overlayHelp class=overlay style="display: none"></div>
-        <div id=overlayList class=overlay style="display: none"></div>
-        <div id=overlaySettings class=overlay style="display: none"></div>
-        <div id=grid></div>
-        <div id=chat>
-            <label>Chat:</label>
-            <select>
-                <option>None</option>
-            </select>
-            <div></div>
-        </div>
-
-        <script>
-            var hostDomain = 'sharyndor.github.io'
-
-            function getReserved(str) {
-                /* These words are reserved for internal use */
-                return ['rows', 'columns', 'blank']
-            }
-
-            function getReferDicts() {
-                return {
-                    'HoloEN' : {
-                        'calliope' : ['yt-channel', 'UCL_qhgtOy0dy1Agp8vkySQg'],
-                        'kiara'    : ['yt-channel', 'UCHsx4Hqa-1ORjQTh9TYDhww'],
-                        'ina\'nis' : ['yt-channel', 'UCMwGHR0BTZuLsmjY_NT5Pwg'],
-                        'gura'     : ['yt-channel', 'UCoSrY_IQQVpmIRZ9Xf-y93g'],
-                        'amelia'   : ['yt-channel', 'UCyl1z3jo3XHR1riLFKG5UAg'],
-                        'irys'     : ['yt-channel', 'UC8rcEBzJSleTkf_-agPM20g'],
-                        'sana'     : ['yt-channel', 'UCsUj0dszADCGbF3gNrQEuSQ'],
-                        'fauna'    : ['yt-channel', 'UCO_aKKYxn4tvrqPjcTzZ6EQ'],
-                        'kronii'   : ['yt-channel', 'UCmbs8T6MWqUHP1tIQvSgKrg'],
-                        'mumei'    : ['yt-channel', 'UC3n5uGu18FoCy23ggWWp8tA'],
-                        'baelz'    : ['yt-channel', 'UCgmPnx-EEeOrZSg5Tiw7ZRQ'], 
-                    },
-                    'HoloJP' : {
-                        'sora'     : ['yt-channel', 'UCp6993wxpyDPHUpavwDFqgg'],
-                        'roboco'   : ['yt-channel', 'UCDqI2jOz0weumE8s7paEk6g'],
-                        'miko'     : ['yt-channel', 'UC-hM6YJuNYVAmUWxeIr9FeA'],
-                        'suisei'   : ['yt-channel', 'UC5CwaMl1eIgY8h02uZw7u8A'],
-                        'azki'     : ['yt-channel', 'UC0TXe_LYZ4scaW2XMyi5_kw'],
-                        'mel'      : ['yt-channel', 'UCD8HOxPs4Xvsm8H0ZxXGiBw'],
-                        'fubuki'   : ['yt-channel', 'UCdn5BQ06XqgXoAxIhbqw5Rg'],
-                        'matsuri'  : ['yt-channel', 'UCQ0UDLQCjY0rmuxCDE38FGg'],
-                        'aki'      : ['yt-channel', 'UCFTLzh12_nrtzqBPsTCqenA'],
-                        'haato'    : ['yt-channel', 'UC1CfXB_kRs3C-zaeTG3oGyg'],
-                        'aqua'     : ['yt-channel', 'UC1opHUrw8rvnsadT-iGp7Cg'],
-                        'shion'    : ['yt-channel', 'UCXTpFs_3PqI41qX2d9tL2Rw'],
-                        'ayame'    : ['yt-channel', 'UC7fk0CB07ly8oSl0aqKkqFg'],
-                        'choco'    : ['yt-channel', 'UC1suqwovbL1kzsoaZgFZLKg'],
-                        'subaru'   : ['yt-channel', 'UCvzGlP9oQwU--Y0r9id_jnA'],
-                        'fubuki'   : ['yt-channel', 'UCdn5BQ06XqgXoAxIhbqw5Rg'],
-                        'mio'      : ['yt-channel', 'UCp-5t9SrOQwXMU7iIjQfARg'],
-                        'okayu'    : ['yt-channel', 'UCvaTdHTWBGv3MKj3KVqJVCw'],    
-                        'korone'   : ['yt-channel', 'UChAnqc_AY5_I3Px5dig3X1Q'],
-                        'pekora'   : ['yt-channel', 'UC1DCedRgGHBdm81E1llLhOQ'],
-                        'rushia'   : ['yt-channel', 'UCl_gCybOJRIgOXw6Qb4qJzQ'],
-                        'flare'    : ['yt-channel', 'UCvInZx9h3jC2JzsIzoOebWg'],
-                        'noel'     : ['yt-channel', 'UCdyqAaZDKHXg4Ahi7VENThQ'],
-                        'marine'   : ['yt-channel', 'UCCzUftO8KOVkV4wQG1vkUvg'],
-                        'kanata'   : ['yt-channel', 'UCZlDXzGoo7d44bwdNObFacg'],
-                        'watame'   : ['yt-channel', 'UCqm3BQLlJfvkTsX_hvm0UmA'],
-                        'towa'     : ['yt-channel', 'UC1uv2Oq6kNxgATlCiez59hw'],
-                        'luna'     : ['yt-channel', 'UCa9Y57gfeY0Zro_noHRVrnw'],
-                        'coco'     : ['yt-channel', 'UCS9uQI-jC3DE0L4IpXyvr6w'],
-                        'lamy'     : ['yt-channel', 'UCFKOVgVbGmX65RxO3EtH3iw'],
-                        'nene'     : ['yt-channel', 'UCAWSyEs_Io8MtpY3m-zqILA'],
-                        'botan'    : ['yt-channel', 'UCUKD-uaobj9jiqB-VXt71mA'],
-                        'polka'    : ['yt-channel', 'UCK9V2B22uJYu3N7eR_BT9QA'],
-                        'la+'      : ['yt-channel', 'UCENwRMx5Yh42zWpzURebzTw'],
-                        'lui'      : ['yt-channel', 'UCs9_O1tRPMQTHQ-N_L6FU2g'],
-                        'koyori'   : ['yt-channel', 'UC6eWCld0KwmyHFbAqK3V-Rw'],
-                        'chloe'    : ['yt-channel', 'UCIBY1ollUsauvVi4hW4cumw'],
-                        'iroha'    : ['yt-channel', 'UC_vMYWcDjmfdpH6r4TTn1MQ'],
-                    },
-                    'HoloID' : {
-                        'risu'  : ['yt-channel', 'UCOyYb1c43VlX9rc_lT6NKQw'],
-                        'moona' : ['yt-channel', 'UCP0BspO_AMEe3aQqqpo89Dg'],
-                        'io15'  : ['yt-channel', 'UCAoy6rzhSf4ydcYjJw3WoVg'],
-                        'ollie' : ['yt-channel', 'UCYz_5n-uDuChHtLo7My1HnQ'],
-                        'anya'  : ['yt-channel', 'UC727SQYUvx5pDDGQpTICNWg'],
-                        'reine' : ['yt-channel', 'UChgTyjG-pdNvxxhdsXfHQ5Q'],
-                    },
-                    'NijiEN' : {
-                        'elira'   : ['yt-channel', 'UCIeSUTOTkF9Hs7q3SGcO-Ow'],
-                        'pomu'    : ['yt-channel', 'UCP4nMSTdwU1KqYWu3UH5DHQ'],
-                        'finana'  : ['yt-channel', 'UCu-J8uIXuLZh16gG-cT1naw'],
-                        'selen'   : ['yt-channel', 'UCV1xUwfM2v2oBtT3JNvic3w'],
-                        'rosemi'  : ['yt-channel', 'UC4WvIIAo89_AzGUh1AZ6Dkg'],
-                        'petra'   : ['yt-channel', 'UCgA2jKRkqpY_8eysPUs8sjw'],
-                        'reimu'   : ['yt-channel', 'UCBURM8S4LH7cRZ0Clea9RDA'],
-                        'nina'    : ['yt-channel', 'UCkieJGn3pgJikVW8gmMXE2w'],
-                        'millie'  : ['yt-channel', 'UC47rNmkDcNgbOcM-2BwzJTQ'],
-                        'enna'    : ['yt-channel', 'UCR6qhsLpn62WVxCBK1dkLow'],
-                    },
-                    'VOMS' : {
-                        'pikamee'   : ['yt-channel', 'UCajhBT4nMrg3DLS-bLL2RCg'],
-                        'tomoshika' : ['yt-channel', 'UC3vzVK_N_SUVKqbX69L_X4g'],
-                        'miuneru'   : ['yt-channel', 'UCE5VgVGRPfNCjXPeTe1QJHA'],
-                    },
-                    'PhaseConnect' : {
-                        'ashelia' : ['yt-channel', 'UCg7sW-h1PUowdiR5K4HlBew'],
-                        'nasa'    : ['yt-channel', 'UCB7sSUNwh_dXE7ZL3DsGDpw'],
-                        'pippa'   : ['yt-channel', 'UCJ46YTYBQVXsfsp8-HryoUA'],
-                        'tenma'   : ['yt-channel', 'UC3K7pmiHsNSx1y0tdx2bbCw'],
-                        'iori'    : ['yt-channel', 'UCN5bD1YYapThOeadG7YkBOA'],
-                        'uruka'   : ['yt-channel', 'UCjXJYPsKxoJyc-1RPB6dSyw'],
-                        'michiru' : ['yt-channel', 'UC1cExET9xoWSO9iSnRsW_1Q'],
-                    },
-                    'VShojo' : {
-                        'nyanners'      : ['ttv-channel', 'nyanners'     ],
-                        'melody'        : ['ttv-channel', 'projektmelody'],
-                        'apricot'       : ['ttv-channel', 'apricot'      ],
-                        'zentreya'      : ['ttv-channel', 'zentreya'     ],
-                        'silvervale'    : ['ttv-channel', 'silvervale'   ],
-                        'ironmouse'     : ['ttv-channel', 'ironmouse'    ],
-                        'hajime'        : ['ttv-channel', 'hajime'       ],
-                        'veibae'        : ['ttv-channel', 'veibae'       ],
-                    },
-                    'VReverie' : {  
-                        'iora'       : ['yt-channel',  'UC0g_U1QjfhMR-kx8XLmWTCA'],
-                        'nova'       : ['yt-channel',  'UCA4bOB1Jnw5-lbuoSCfxc-w'],
-                        'lilrya'     : ['yt-channel',  'UCt7vm-7hlwPcYsRacX7QJYw'],
-                        'ophelia'    : ['yt-channel',  'UCZyNPQCjju3KIv9X84diljw'],
-                    },
-                    'Indie' : {
-                        'kson'     : ['yt-channel',  'UC9ruVYPv7yJmV0Rh0NKA-Lw'],
-                        'snuffy'   : ['ttv-channel', 'snuffy'                  ],
-                        'artemis'  : ['ttv-channel', 'artemisoftheblue'        ],
-                        'girl_dm_' : ['ttv-channel', 'girl_dm_'                ],
-                    },
-                }
-            }
-
-            function getAliases() {
-                return {
-                    'fbk'      : 'fubuki',
-                    'haachama' : 'haato',
-                    'laplus'   : 'la+',
-                    'nenechi'  : 'nene',
-                    'ame'      : 'amelia',
-                    'tmt'      : 'towa',
-                    'ppt'      : 'kanata',
-                    'akirose'  : 'aki',
-                    'senchou'  : 'marine',
-                    'kaichou'  : 'coco',
-                    'calli'    : 'calliope',
-                    'mori'     : 'calliope',
-                    'ina'      : 'ina\'nis',
-                    'bae'      : 'baelz',
-                    'froot'    : 'ttv-apricot',
-                    'bts'      : 'ttv-btssmash',
-                    'pipkin'   : 'pippa',
-                    'shuba'    : 'subaru',
-                }
-            }
-
-            function getReferFunctions() {
-                return [
-                    referYoutube,
-                    referTwitch,
-                ]
-            }
-            function getEmbeds() {
-                return { 
-                    'blank'       : null,
-                    'yt-video'    : embedYoutubeVideo,
-                    'yt-channel'  : embedYoutubeChannel,
-                    'ttv-video'   : embedTwitchVideo,
-                    'ttv-channel' : embedTwitchChannel,
-                }
-            }
-
-            /* TODO: Add Youtube chat embedding if I ever figure out how to 1) obtain permanent chat links, 2) avoid the need to set the embed-domain parameter, 3) do this entirely in-browser */
-            function referYoutube(str) {
-                /* Try to treat the string as a URL */
-                try {
-                    /* Parse the string to find the type of content */
-                    var url = new URL(str)
-                    if (url.host.includes('youtube')) {
-                        if (url.searchParams.has('v')) { /* Normal video link, parse out the video id and timestamp (if present) */
-                            var timeStamp = url.searchParams.get('t')
-                            var extras = timeStamp ? '&start=' + timeStamp : ''
-                            return ['yt-video', url.searchParams.get('v'), extras]
-                        } else if (url.pathname.includes('/c/')) { /* Custom channel link cannot be used, actual channel id is needed instead */
-                            return checkReferers(prompt('Embed needs URL with channel ID'))
-                        } else if (url.pathname.includes('/channel/')) { /* Normal channel link, parse out the channel id */
-                            return ['yt-channel', url.pathname.split('/channel/')[1]]
-                        }
-                    } else if (url.host.includes('youtu.be')) { /* Short video link, parse out the video id and timestamp (if present) */
-                        var timestamp = url.searchParams.get('t')
-                        var extras = timestamp ? '&start=' + timestamp : ''
-                        return ['yt-video', url.pathname.substring(1), extras]
-                    }
-                    return null
-                }
-                /* Wasn't a URL */
-                catch (error) {
-                    return null
-                }
-            }
-
-            function referTwitch(str) {
-                /* Start with ttv- as shorthand for twitch channels */
-                if (str.startsWith('ttv-')) {
-                    return ['ttv-channel', str.substring(4)]
-                }
-                else {
-                    /* Try to treat the string as a URL */
-                    try {
-                        /* Parse the string to find the type of content */
-                        var url = new URL(str)
-                        if (url.host.includes('twitch.tv')) {
-                            if (url.pathname.includes('/videos/')) { /* VOD */
-                                var timeStamp = url.searchParams.get('t')
-                                var extras = timeStamp ? '&time=' + timeStamp : ''
-                                return ['ttv-video', url.pathname.split('/videos/')[1], extras]
-                            } else { /* Probably trying to reference a channel, parse out the channel name */
-                                return ['ttv-channel', url.pathname.split('/')[1].split('/')[0]]
-                            }
-                        }
-                        return null
-                    }
-                    /* Wasn't a URL */
-                    catch (error) {
-                        return null
-                    }
-                }
-            }
-
-
-            function embedYoutubeVideo(value, extras) {
-                return 'https://www.youtube.com/embed/' + value + '?autoplay=1&mute=1' + extras
-            }
-
-            function embedYoutubeChannel(value) {
-                return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
-            }
-
-            function embedTwitchChannel(value) {
-                return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true'
-            }
-
-            function embedTwitchVideo(value, extras) {
-                return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true' + extras
-            }
-
-            function openRefererData(type, value, extras) {
-                if (type == 'yt-channel') {
-                    window.open('https://www.youtube.com/channel/' + value, '_blank')
-                } else if (type == 'yt-video') {
-                    window.open('https://www.youtube.com/watch?v=' + value + extras, '_blank')
-                } else if (type == 'ttv-channel') {
-                    window.open('https://www.twitch.tv/' + value, '_blank')
-                } else if (type == 'ttv-video') {
-                    window.open('https://www.twitch.tv/videos/' + value, '_blank')
-                }
-            }
-
-            function checkReferers(str) {
-                /* Look for an alias first */
-                var str = getAliases()[str.toLowerCase()] ?? str
-
-                /* Check if data is embedded in the string */
-                for (embed of Object.keys(getEmbeds())) {
-                    if (str.startsWith(embed + '=')) {
-                        return [embed, str.split(embed + '=')[1], []]
-                    }
-                }
-
-                /* Try each method for something that isn't null */
-                for (referDict of Object.values(getReferDicts())) {
-                    var result = referDict[str.toLowerCase()]
-                    if (result) {
-                        return result
-                    }
-                }
-
-                /* Try each method for something that isn't null */
-                for (referFun of getReferFunctions()) {
-                    var result = referFun(str)
-                    if (result) {
-                        return result
-                    }
-                }
-                
-                return [null, null, null]
-            }
-
-            function checkEmbeds(type, value, extras) {
-                return getEmbeds()[type](value, extras)
-            }
-
-            function createGrid(forcePrompt = false) {
-                var params = new URLSearchParams(window.location.search)
-
-                /* Build the grid based on the URL, prompt if unavailable */
-                var rows = params.get('rows')
-                if (rows == null || forcePrompt) {
-                    /* Horrible check to keep prompting until a valid number is entered */
-                    do {
-                        rows = prompt('Rows:')
-
-                        /* Allow cancellation if the page has already been loaded */
-                        if (rows == null && grid.children.length != 0) {
-                            return
-                        }
-                    } while (!(Number(rows) >= 1))
-                }
-                var columns = params.get('columns')
-                if (columns == null || forcePrompt) {
-                    /* Horrible check to keep prompting until a valid number is entered */
-                    do {
-                        columns = prompt('Columns:')
-
-                        /* Allow cancellation if the page has already been loaded */
-                        if (columns == null && grid.children.length != 0) {
-                            return
-                        }
-                    } while (!(Number(columns) >= 1))
-                }
-
-                var totalElements = rows * columns
-
-                /* Show the help dialog if the URL is empty */
-                if (Array.from(params).length == 0) {
-                    toggleOverlayHelp()
-                }
-
-                /* Update the css to actually display a grid */
-                grid.style.gridTemplateRows    = 'repeat(' + rows    + ', minmax(0, 1fr))'
-                grid.style.gridTemplateColumns = 'repeat(' + columns + ', minmax(0, 1fr))'
-
-                /* Add bookkeeping */
-                grid.setAttribute('data-rows',    rows)
-                grid.setAttribute('data-columns', columns)
-
-                /* If children don't exist yet, this is a fresh page load */
-                var freshGrid = grid.children.length == 0
-                
-                /* Pad out the grid using blank elements */
-                while (grid.children.length < totalElements) {
-                    grid.appendChild(makeBlankElement())
-                }
-
-                if (freshGrid) {
-                    /* Fill in the grid using the URL */
-                    var currentElement = 0
-                    var extras = ''
-                    params.forEach(function(value, key) {
-                        if (currentElement < totalElements)
-                        {
-                            var [tempType, tempValue, tempExtras] = checkReferers(key)
-                            if (key in getEmbeds()) {
-                                /* Extra data will precede the embed type to make parsing easier */
-                                setElement(grid.children[currentElement], key, value, extras)
-                                extras = ''
-                                ++currentElement
-                            } else if (tempType || tempValue || tempExtras) {
-                                /* Found something, load it */
-                                setElementFromString(grid.children[currentElement], key)
-                                extras =''
-                                ++currentElement
-                            }
-                            else if (getReserved().includes(key)) {
-                                /* Do nothing for reserved keywords */
-                            }
-                            else {
-                                /* Otherwise, must be part of the extra data */
-                                extras += '&' + key + '=' + value
-                            }
-                        }
-                    })
-                } else {
-                    /* If an element is about to be cut off, move it to the first available blank spot */
-                    for (var afterIndex = totalElements; afterIndex < grid.children.length; ++afterIndex) {
-                        /* Swap non-blank trailing elements... */
-                        if (grid.children[afterIndex].getAttribute('data-type') != 'blank') {
-                            /* With... */
-                            for (var currentIndex = 0; currentIndex < totalElements; ++currentIndex) {
-                                /* Any blank leading elements */
-                                if (grid.children[currentIndex].getAttribute('data-type') == 'blank') {
-                                    moveElement(grid.children[afterIndex], grid.children[currentIndex])
-                                }
-                            }
-                        }
-                    }
-
-                    /* Cut off elements that couldn't fit */
-                    while (grid.children.length > totalElements) {
-                        grid.removeChild(grid.lastChild)
-                    }
-                }
-
-                /* Grid is created, go ahead and update the URL */
-                updateURL()
-
-                /* Size the grid elements correctly */
-                resizeGrid()
-            }
-
-            function makeBlankElement() {
-                var div = document.createElement('div')
-
-                /* Add event listeners */
-                div.onclick    = function (     ) { setElementFromClick(div) }
-                div.ondrop     = function (event) { setElementFromDrop(div, event) }
-                div.ondragover = function (event) { event.preventDefault() }
-
-                /* Add bookkeeping */
-                div.classList.add('grid-element')
-                div.setAttribute('data-type', 'blank')
-
-                /* First child is the text displayed on hover */
-                div.appendChild(document.createElement('div'))
-                /* Second child is shown when cycling between next/prev */
-                div.appendChild(document.createElement('div'))
-                /* Last child is the actual content */
-                div.appendChild(document.createElement('div'))
-
-                /* Add extra variables */
-                div.channelNameTimeout = null
-                return div
-            }
-
-            function setElement(element, type, value, extras) {
-                /* Can only set non-null elements with a non-null type */
-                if (element && type) {                    
-                    /* Clear the element if blank, otherwise construct the embed based on the type/value */
-                    if (type == 'blank') {
-                        removeElement(element)
-                    } else {
-                        /* Add bookkeeping */
-                        element.setAttribute('data-type', type)
-
-                        /* Ignore value if blank */
-                        if (value) {
-                            element.setAttribute('data-value', value)
-                        } else {
-                            element.removeAttribute('data-value')
-                        }
-                        
-                        /* Ignore extras if blank */
-                        if (extras) {
-                            element.setAttribute('data-extras', extras)
-                        } else {
-                            element.removeAttribute('data-extras')
-                        }
-
-                        /* Create and set up the iframe */
-                        var frame = document.createElement('iframe')
-                        frame.setAttribute('src', checkEmbeds(type, value, extras))
-                        frame.setAttribute('allow', 'fullscreen')
-
-                        /* last child is the actual content */
-                        element.replaceChild(frame, element.lastChild)
-
-                        /* Element was modified, update the URL */
-                        updateURL()
-                    }
-                }
-            }
-
-            function updateURL() {
-                /* Throw away any existing parameters */
-                var baseURL = window.location.href.split('?')[0]
-
-                /* Add parameters for rows/columns */
-                baseURL += '?rows='    + grid.getAttribute('data-rows')
-                baseURL += '&columns=' + grid.getAttribute('data-columns')
-
-                /* Add parameters for the types/value of each piece of the grid */
-                document.querySelectorAll('div[data-type]').forEach(function(element) {
-                    var extras = element.getAttribute('data-extras') ?? ''
-                    baseURL += extras ? extras : ''
-
-                    var type  = element.getAttribute('data-type')
-                    baseURL += '&' + type
-
-                    var value = element.getAttribute('data-value')
-                    baseURL += value ? '=' + value : ''
-                })
-
-                /* Actually replace the URL */
-                window.history.replaceState('', '', baseURL)
-
-                updateChat()
-            }
-
-            function updateChat() {
-                var select = chat.children[1]
-                var currentSelection = select.value
-                while (select.children.length > 1) {
-                    select.removeChild(select.lastChild)
-                }
-
-                var foundSelection = false
-                document.querySelectorAll('div[data-type]').forEach(function(element) {
-                    var type  = element.getAttribute('data-type')
-                    if (type == 'yt-video') {
-                        var option = select.appendChild(document.createElement('option'))
-                        var id = element.getAttribute('data-value')
-                        option.setAttribute('data-value', id)
-                        option.textContent = crossReference.has(id) ? crossReference.get(id) : id
-
-                        if (currentSelection == option.textContent) {
-                            foundSelection = true
-                        }
-                    }
-                })
-
-                console.log(currentSelection)
-                chat.children[1].value = currentSelection
-
-                select.onchange = function(event) {
-                    if (event.target.value == 'None') {
-                        chat.replaceChild(document.createElement('div'), chat.lastChild)
-                    } else {
-                        chat.replaceChild(document.createElement('iframe'), chat.lastChild)
-
-                        for (var child of event.target.children) {
-                            if (child.textContent == event.target.value) {
-                                chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + child.getAttribute('data-value') + '&embed_domain=' + hostDomain)
-                                break
-                            }
-                        }
-                    }
-                }
-            }
-
-            function resizeGrid() {
-                var params = new URLSearchParams(window.location.search)
-                var rows    = params.get('rows')
-                var columns = params.get('columns')
-
-                /* Use integer math to find a row/column multiple for evenly sized divs */
-                var realHeight = Math.floor(window.innerHeight / rows)    * rows
-                var realWidth  = Math.floor(window.innerWidth  / columns) * columns
-
-                if (typeof(chatInput) != 'undefined' && chatInput.checked) {
-                    chatWidth = Math.floor(window.innerWidth * 0.15)
-                    realWidth -= chatWidth;
-
-                    chat.style.width = chatWidth + 'px'
-                    chat.style.height = window.innerHeight + 'px'
-                }
-
-                /* Using px avoids alignment issues */
-                /* Using percents can cause tiny gaps due to rounding */
-                grid.style.width  = realWidth  + 'px'
-                grid.style.height = realHeight + 'px'
-            }
-
-            function populateOverlayHelp() {
-                listElement = null
-
-                var escapeDiv = document.createElement('div')
-                escapeDiv.textContent = ('Esc to close')
-                overlayHelp.append(escapeDiv)
-
-                var helpText = ""
-                for ([key, value] of Object.entries(getActions())) {
-                    var helpDiv = document.createElement('div')
-                    helpDiv.textContent = key + ' - ' + value[0] + '\r\n'
-                    helpDiv.setAttribute('title', value[2])
-                    overlayHelp.append(helpDiv)
-                }
-            }
-
-            function populateOverlayList() {
-                listElement = null
-
-                var escapeDiv = document.createElement('div')
-                escapeDiv.textContent = ('Esc to close')
-                overlayList.append(escapeDiv)
-
-                /* Print each grouping under its own collapsible heading */
-                for ([dictName, referDict] of Object.entries(getReferDicts())) {
-                    var details = document.createElement('details')
-                    var summary = document.createElement('summary')
-                    summary.textContent = dictName
-
-                    for ([refName, [refType, refValue]] of Object.entries(referDict)) {
-                        var parentDiv = document.createElement('div')
-                        parentDiv.classList.add('overlayListElement')
-                        parentDiv.dataType = refType
-                        parentDiv.dataValue = refValue
-                        parentDiv.onclick = function(name) {
-                            return function(event){ 
-                                setElement(listElement, event.target.dataType, event.target.dataValue, [])
-                                
-                                /* Refresh automatic removal */
-                                setOverlayAutoRemoveTimer()
-                            }
-                        }(refName)
-
-                        parentDiv.onmousedown = function(e) { 
-                            /* Needed to allow dragging from list elements without moving the list */
-                            e.stopPropagation()
-                            /* Treat this as an interaction to prevent the overlay from timing out */
-                            setOverlayAutoRemoveTimer()
-                            /* Disable interactions to allow dropping onto iframes */
-                            disableInteractions()
-                        }
-                        parentDiv.onmouseup = resetInteractions
-
-                        /* Allow the div to be dragged */
-                        parentDiv.setAttribute('draggable', true)
-                        parentDiv.ondragstart = function(name) {
-                            /* Use the stream data as the drop data */
-                            return function(event) {
-                                event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
-                            }
-                        }(refName)
-                        parentDiv.ondragend = resetInteractions
-
-                        parentDiv.textContent = refName.charAt(0).toUpperCase() + refName.slice(1)
-
-                        details.appendChild(parentDiv)
-                    }
-
-                    details.append(summary)
-                    overlayList.append(details)
-                }
-            }
-
-            function populateOverlaySettings() {
-                /* Disable key presses while the forms have focus */
-                overlaySettings.addEventListener('focusin', function() { setKeyEvents(false) })
-                overlaySettings.addEventListener('focusout', function() { setKeyEvents(true) })
-
-                var div = overlaySettings.appendChild(document.createElement('div'))
-                overlaySettings.lastChild.textContent = 'Esc to close'
-
-                var form = overlaySettings.appendChild(document.createElement('form'))
-                form.onsubmit = function(e) { e.preventDefault() }
-
-                backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
-
-                chatInput = addOverlaySetting('Chat (WIP)h', 'checkbox', toggleChat)
-
-                overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
-                overlayTimeoutInput.value = overlayTimeoutSeconds = 0
-            }
-
-            function addOverlaySetting(name, type, fun) {
-                var form = overlaySettings.lastChild
-
-                var label = form.appendChild(document.createElement('label'))
-                label.textContent = name
-
-                var input = form.appendChild(document.createElement('input'))
-                input.type = type
-                input.onchange = fun
-
-                /* Leave checkboxes at default width */
-                if (input.type != 'checkbox') {
-                    input.style.width = '50px'
-                }
-
-                /* Line break after each input option */
-                form.appendChild(document.createElement('br'))
-
-                return input
-            }
-
-            function setKeyEvents(enabled) {
-                if (enabled) {
-                    window.onkeydown = myKeyDown
-                    window.onkeyup = myKeyUp
-                } else {
-                    window.onkeydown = null
-                    window.onkeyup = null
-                }
-            }
-
-            function disableInteractions() {
-                document.querySelectorAll('.grid-element').forEach(function(frame) {
-                    frame.classList.add('disabled')
-                })
-            }
-
-            function resetInteractions() {
-                /* Reset the global state used for tracking keys/clicks */
-                lastKey = null
-                lastElementClicked = null
-                firstElementKey = null
-
-                /* Allow interactions again */
-                document.querySelectorAll('.grid-element').forEach(function(frame) {
-                    frame.classList.remove('disabled')
-                })
-
-                /* Clear the text */
-                document.querySelectorAll('.grid-element :first-child').forEach(function(text) {
-                    text.textContent = ''
-                })
-            }
-
-            function getActions() {
-                /* Functions here must return true/false */
-                /* Returning true will clear the interactions currently being tracked */
-                /* Returning false should only be used if further selections are needed */
-                /* e.g. Move/Copy require multiple inputs */
-                var dict = {
-                    'h' : ['help',          toggleOverlayHelp,     'Toggles the help overlay'],
-                    'l' : ['list',          toggleOverlayList,     'Toggles the stream list overlay'],
-                    't' : ['floatie tab',   toggleTab,             'Toggles a floating tab for resetting stream focus'],
-                    's' : ['switch',        setElementFromPrompt,  'Prompts to select a new stream'],
-                    'n' : ['next',          nextElement,           'Skips to the next stream within the current group'],
-                    'p' : ['previous',      previousElement,       'Skips to the previous stream within the current group'],
-                    'j' : ['next+',         nextGlobalElement,     'Skips to the next stream, regardless of current group'],
-                    'k' : ['previous+',     previousGlobalElement, 'Skips to the previous stream, regardless of current group'],
-                    'd' : ['delete',        removeElement,         'Removes the stream'],
-                    'm' : ['move',          moveElement,           'Moves the stream between locations'],
-                    'c' : ['chat',          toggleChat,            'Toggles the chat panel'],
-                    'r' : ['reload',        reloadElement,         'Reloads the stream'],
-                    'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
-                    'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
-                    'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
-                    'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
-                    '`' : ['settings',      toggleOverlaySettings, 'Toggles the settings menu'],
-                }
-                return dict
-            }
-
-            function setElementFromClick(element) {
-                /* Find an action, otherwise just prompt for a new embed */
-                var action = setElementFromPrompt
-                if (lastKey in getActions()) {
-                    action = getActions()[lastKey][1]
-                }
-
-                /* Save the last element clicked to use with the action */
-                lastElement = lastElementClicked
-
-                /* Set the last element clicked now in case the action needs to change it */
-                lastElementClicked = element
-
-                /* Do something with the elements, extra arguments will be discarded naturally */
-                if (action(element, lastElement)) {
-                    /* Action succeeded when true, reset interactions */
-                    resetInteractions()
-                }
-
-                /* Don't reset everything after a click, just the element from a key press */
-                firstElementKey = null
-            }
-
-            function setElementFromKey(element, key) {
-                /* Find an action, otherwise do nothing */
-                if (key in getActions()) {
-                    /* Do something with the elements, extra arguments will be discarded naturally */
-                    if (getActions()[key][1](element, firstElementKey)) {
-                        /* Action succeeded when true, reset interactions */
-                        resetInteractions()
-                    }
-                }
-            }
-
-            function setElementFromDrop(element, event) {
-                /* Prevent the default action that reloads the page with the dropped link */
-                event.preventDefault()
-
-                /* Extract the text from the drop event */
-                setElementFromString(element, event.dataTransfer.getData('text/plain'))
-            }
-
-            function setOverlayAutoRemoveTimer() {
-                /* Reset any ongoing timeout before starting a new one*/
-                if (typeof overlayTimeout != 'undefined') {
-                    clearTimeout(overlayTimeout)
-                }
-
-                if (overlayTimeoutSeconds > 0) {
-                    overlayTimeout = setTimeout(hideOverlays, overlayTimeoutSeconds * 1000)
-                }
-                return true
-            }
-
-            function setElementFromPrompt(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    setElementFromString(element, prompt('Enter streamer/channel/video =') ?? '')
-                }
-                return true
-            }
-
-            function setElementFromString(element, str) {
-                if (element && element.classList.contains('grid-element')) {
-                    var [type, value, extras] = checkReferers(str)
-                    setElement(element, type, value, extras)
-                }
-            }
-
-            function removeElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    grid.replaceChild(makeBlankElement(), element)
-
-                    /* Element was modified, update the URL */
-                    updateURL()
-                }
-
-                return true
-            }
-
-            function reloadElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    /* Reuse the existing data from the element */
-                    setElement(element, element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
-                    return true
-                }
-            }
-
-            function moveElement(currentElement, lastElement) {
-                if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
-                    if (currentElement != lastElement) {
-                        /* Save the last element */
-                        var lastType   = lastElement.getAttribute('data-type')
-                        var lastValue  = lastElement.getAttribute('data-value')
-                        var lastExtras = lastElement.getAttribute('data-extras')
-
-                        /* Set last element from the current */
-                        setElement(lastElement, currentElement.getAttribute('data-type'), currentElement.getAttribute('data-value'), currentElement.getAttribute('data-extras'))
-
-                        /* Set the current element from the last */
-                        setElement(currentElement, lastType, lastValue, lastExtras)
-                    }
-                    return true
-                }
-                return false
-            }
-
-            function openElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    /* Used with keyboard/mouse events */
-                    openRefererData(element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
-                }
-                return true
-            }
-
-            function openFromString(str) {
-                /* Used with the overlay list */
-                var [type, value, extras] = checkReferers(str)
-                openRefererData(type, value, extras)
-            }
-
-            function copyElement(currentElement, lastElement) {
-                if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
-                    if (currentElement != lastElement) {
-                        /* Set the element using the data from the last element */
-                        setElement(currentElement, lastElement.getAttribute('data-type'), lastElement.getAttribute('data-value'), lastElement.getAttribute('data-extras'))
-                    }
-                    return true
-                }
-                return false
-            }
-
-            function myKeyDown(event) {
-                var key = event.key.toLowerCase()
-
-                /* Disallow any modifiers that aren't shift */
-                if (event.ctrlKey || event.altKey || event.metaKey) {
-                    return
-                }
-
-                /* Special case for escape to close the overlay */
-                if (key == 'escape') {
-                    hideOverlays()
-                    resetInteractions()
-                    return
-                }
-
-                /* Only track the first key press and ignore keys that don't have actions */
-                if (lastKey == null && key in getActions()) {
-                    /* Save the pressed key */
-                    lastKey = key
-
-                    /* Grab whatever is underneath when an action is started */
-                    firstElementKey = document.querySelector('.grid-element:hover')
-
-                    /* Disable interactions via css to allow for click events to reach the parent div */
-                    disableInteractions()
-
-                    /* Add the overlay text for the active action */
-                    document.querySelectorAll('.grid-element :first-child').forEach(function(overlay) {
-                        overlay.textContent = getActions()[lastKey][0] ?? ''
-                    })
-                }
-            }
-
-            function myKeyUp(event) {
-                var key = event.key.toLowerCase()
-
-                /* Ignore release events that weren't the first key pressed */
-                if (key == lastKey) {
-                    /* Complete the action with whatever is under the mouse */
-                    setElementFromKey(document.querySelector('.grid-element:hover'), lastKey)
-
-                    lastKey = null
-                }
-            }
-
-            function findAdjacentReferDictEntry(dict, searchType, searchValue, offset) {
-                var arr = Object.entries(dict)
-                var elementIndex = 0
-                for ([dictKey, [dataType, dataValue]] of arr) {
-                    if (dataType == searchType && dataValue == searchValue) {
-                        /* Add the array length to help with negative offsets */
-                        return arr[(elementIndex + arr.length + offset) % arr.length][0]
-                    }
-                    ++elementIndex
-                }
-                return null
-            }
-
-            function setChannelNameTimer(element, name) {
-                /* Set the name */
-                element.children[1].textContent = name.charAt(0).toUpperCase() + name.slice(1)
-
-                /* Clear any existing timers */
-                if (element.channelNameTimeout != null) {
-                    clearTimeout(element.channelNameTimeout)
-                }
-
-                /* Create a new one remove the text */
-                element.channelNameTimeout = setTimeout(
-                    function() {
-                        element.children[1].textContent = ''
-                    }, 1000
-                )
-            }
-
-            function nextElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    /* Search each dict */
-                    for ([dictName, referDict] of Object.entries(getReferDicts())) {
-                        var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
-                        if (name) {
-                            setElementFromString(element, name)
-                            setChannelNameTimer(element, name)
-                            break
-                        }
-                    }
-                }
-                return true
-            }
-
-            function previousElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    /* Search each dict */
-                    for ([dictName, referDict] of Object.entries(getReferDicts())) {
-                        var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
-                        if (name) {
-                            setElementFromString(element, name)
-                            setChannelNameTimer(element, name)
-                            break
-                        }
-                    }
-                }
-                return true
-            }
-
-            function nextGlobalElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    var dicts = getReferDicts()
-
-                    /* Flatten the dictionaries */
-                    var flatDict = {}
-                    for ([dictName, referDict] of Object.entries(getReferDicts())) {
-                        for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
-                            flatDict[referName] = [dataType, dataValue]
-                        }
-                    }
-
-                    var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
-                    if (name) {
-                        setElementFromString(element, name)
-                        setChannelNameTimer(element, name)
-                    }
-                }
-                return true
-            }
-
-            function previousGlobalElement(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    var dicts = getReferDicts()
-
-                    /* Flatten the dictionaries */
-                    var flatDict = {}
-                    for ([dictName, referDict] of Object.entries(getReferDicts())) {
-                        for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
-                            flatDict[referName] = [dataType, dataValue]
-                        }
-                    }
-
-                    var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
-                    if (name) {
-                        setElementFromString(element, name)
-                        setChannelNameTimer(element, name)
-                    }
-                }
-                return true
-            }
-
-            function toggleFullscreen(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    /* Only fullscreen iframes */
-                    if (document.fullscreenElement == null) {
-                        if (element.lastChild.tagName.toLowerCase() == 'iframe') {
-                            element.lastChild.requestFullscreen()
-                        }
-                    }
-                    else {
-                        document.exitFullscreen()
-                    }
-                }
-                return true
-            }
-
-            function adjustLayout() {
-                /* Recreate the grid and prompt for new row/column inputs */
-                createGrid(true)
-
-                /* Ensure the overlays are hidden to clear out lingering references to elements */
-                hideOverlays()
-                
-                return true
-            }
-
-            function toggleOverlays(overlay) {
-                /* Toggle the element passed in, if it exists */
-                if (overlay) {
-                    if (overlay.style.display == 'none') {
-                        /* Reposition the window when it gets shown */
-                        overlay.style.display = 'inline-block'
-                        overlay.style.top = '2%'
-                        overlay.style.left = '2%'
-
-                        /* Refresh automatic removal */
-                        setOverlayAutoRemoveTimer()
-                    } else {
-                        overlay.style.display = 'none'
-                    }
-                }
-
-                /* Disable everything else */
-                for (var element of document.querySelectorAll('.overlay')) {
-                    if (element != overlay) {
-                        element.style.display = 'none'
-                    }
-                }
-            }
-
-            function toggleOverlayHelp() {
-                toggleOverlays(overlayHelp)
-                return true
-            }
-
-            function toggleOverlayList(element) {
-                if (element && element.classList.contains('grid-element')) {
-                    if (overlayList.style.display == 'none') {
-                        /* Save the current element for use with the overlay click handlers */
-                        listElement = element
-                        toggleOverlays(overlayList)
-                    } else {
-                        /* If the same element was chosen, close the list */
-                        /* Otherwise, just update the active element */
-                        if (listElement == element) {
-                            listElement = null
-                            overlayList.style.display = 'none'
-                        } else {
-                            listElement = element
-                        }
-                    }
-                }
-                return true
-            }
-
-            function toggleOverlaySettings(element) {
-                toggleOverlays(overlaySettings)
-                return true
-            }
-
-            function hideOverlays() {
-                /* Reset the overlay elements */
-                listElement = null
-                toggleOverlays(null)
-                return true
-            }
-
-            function toggleTab() {
-                if (tab.style.display == 'none') {
-                    /* Reposition the window when it gets shown */
-                    tab.style.display = 'inline-block'
-                    tab.style.top = (100 / grid.getAttribute('data-rows')) + '%'
-                    tab.style.left = (100 / grid.getAttribute('data-columns')) + '%'
-                } else {
-                    tab.style.display = 'none'
-                }
-
-                return true
-            }
-
-            function toggleChat() {
-                chatInput.checked = !chatInput.checked
-                
-                resizeGrid()
-
-                return true
-            }
-
-            function requestBackendData(sock) {
-                if (sock.readyState != WebSocket.CLOSED) {
-                    sock.send(JSON.stringify(getReferDicts()))
-                    setTimeout(() => {
-                        requestBackendData(sock)
-                    }, 1 * 60 * 1000)
-                }
-            }
-
-            function connectBackend() {
-                if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
-                    backendSocket = new WebSocket('ws://localhost')
-                    backendSocket.onopen = function() { requestBackendData(backendSocket) }
-                    backendSocket.onmessage = processBackendUpdate
-
-                    /* Setup backend error message on second connection attempt */
-                    /* This prevents spurious errors if the backend failed on initial page load */
-                    if (typeof firstAttempt == 'undefined') {
-                        firstAttempt = true
-                    } else {
-                        firstAttempt = false
-                    }
-
-                    /* Update the settings menu checkbox */
-                    backendInput.checked = true
-                    backendSocket.onclose = function() { backendInput.checked = false }
-                    backendSocket.onerror = function() { 
-                        if (firstAttempt == false) {
-                            alert("Backend encountered a problem!")
-                        }
-                    }
-                } else {
-                    backendSocket.close()
-                    
-                    /* Update the settings menu checkbox */
-                    backendInput.checked = false
-                }
-                return true
-            }
-
-            function processBackendUpdate(response) {
-                update = JSON.parse(response.data)
-
-                for (element of document.querySelectorAll('.overlayListElement')) {
-                    name = element.textContent
-                    if (name.toLowerCase().startsWith(update.name)) {
-                        titleDiv = element.children[1]
-                        for (video of update.videos) {
-                            if (video.viewText.includes('watching')) {
-                                element.setAttribute('type', 'live')
-                                element.textContent = update.name + ' ' + video.title
-                                element.dataType = 'yt-video'
-                                element.dataValue = video.id
-
-                                crossReference.set(video.id, element.textContent)
-                                updateChat()
-                                return
-                            }
-                        }
-                        for (video of update.videos) {
-                            if (video.viewText.includes('waiting')) {
-                                var now = new Date().getTime() / 1000
-                                var then = video.startTime ?? 0
-
-                                /* Treat as offline if longer than 4 hours til start time */
-                                if ((then - now) > (4 * 60 * 60)) {
-                                    element.setAttribute('type', 'offline')
-                                    return
-                                }
-                                else {
-                                    element.setAttribute('type', 'waiting')
-                                    element.textContent = update.name + ' ' + video.title
-                                    element.dataType = 'yt-video'
-                                    element.dataValue = video.id
-                                    
-                                    crossReference.set(video.id, element.textContent)
-                                    updateChat()
-                                    return
-                                }
-                            }
-                        }
-                        element.setAttribute('type', 'offline')
-                        return
-                    }
-                }
-            }
-
-            function makeDraggable(element) {
-                element.onmousedown = function(event) {
-                    dragMouseDown(element, event)
-                }
-            }
-
-            function dragMouseDown(element, event) {
-                /* Left mouse only */
-                if (event.which == 1) {
-                    /* Disable interactions via css to allow for keep dragging smooth */
-                    disableInteractions()
-
-                    dragStartX = event.clientX
-                    dragStartY = event.clientY
-
-                    window.onmouseup = function(event) {
-                        dragMouseUp(element, event)
-                    }
-                    window.onmousemove = function(event) {
-                        dragMouseMove(element, event)
-                    }
-                }
-
-                /* If an overlay is manipulated, refresh automatic removal */
-                if (element.classList.contains('overlay')) {
-                    setOverlayAutoRemoveTimer()
-                }
-            }
-
-            function dragMouseUp(element, event) {
-                /* Left mouse only */
-                if (event.which == 1) {
-                    /* Allow interactions again */
-                    resetInteractions()
-
-                    window.onmouseup = null
-                    window.onmousemove = null
-                }
-
-                /* If an overlay is manipulated, refresh automatic removal */
-                if (element.classList.contains('overlay')) {
-                    setOverlayAutoRemoveTimer()
-                }
-            }
-
-            function dragMouseMove(element, event) {
-                var dragX = event.clientX - dragStartX
-                var dragY = event.clientY - dragStartY
-
-                var box = element.getBoundingClientRect()
-
-                /* Terrible looking clamp code*/
-                /* Ensures the element stays entirely within the window */
-                dragX = Math.min(Math.max(dragX, -box.left), window.innerWidth - box.right)
-                dragY = Math.min(Math.max(dragY, -box.top), window.innerHeight - box.bottom)
-
-                element.style.left = (100 * (element.offsetLeft + dragX) / window.innerWidth)+ '%'
-                element.style.top  = (100 * (element.offsetTop  + dragY) / window.innerHeight)+ '%'
-
-                dragStartX = event.clientX
-                dragStartY = event.clientY
-
-                /* If an overlay is manipulated, refresh automatic removal */
-                if (element.classList.contains('overlay')) {
-                    setOverlayAutoRemoveTimer()
-                }
-
-                /* Prevent text selection while dragging */
-                event.preventDefault()
-            }
-
-            /* Key events only work if an iframe doesn't have focus */
-            window.onresize = resizeGrid
-            window.onkeydown = myKeyDown
-            window.onkeyup = myKeyUp
-            window.onfocus = resetInteractions
-
-            /* Temporary workaround, set globals here */
-            chatEnabled = true
-            overlayTimeoutSeconds = 0
-            crossReference = new Map()
-
-            makeDraggable(tab)
-            makeDraggable(overlayHelp)
-            makeDraggable(overlayList)
-            makeDraggable(overlaySettings)
-
-            createGrid()
-            populateOverlayHelp()
-            populateOverlayList()
-            populateOverlaySettings()
-            resetInteractions()
-
-            connectBackend()
-        </script>
-    </body>
+            /* Refresh automatic removal */
+            setOverlayAutoRemoveTimer()
+          }
+          
+          parentDiv.onmousedown = function(e) { 
+            /* Needed to allow dragging from list elements without moving the list */
+            e.stopPropagation()
+            /* Treat this as an interaction to prevent the overlay from timing out */
+            setOverlayAutoRemoveTimer()
+            /* Disable interactions to allow dropping onto iframes */
+            disableInteractions()
+          }
+          parentDiv.onmouseup = resetInteractions
+          
+          /* Allow the div to be dragged */
+          parentDiv.setAttribute('draggable', true)
+          parentDiv.ondragstart = function(event) {
+            /* Use the stream data as the drop data */
+            event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
+          }
+          parentDiv.ondragend = resetInteractions
+          
+          parentDiv.textContent = data.name
+          
+          details.appendChild(parentDiv)
+        }
+        
+        overlayList.append(details)
+      }
+    }
+    
+    function setOverlayListItem(name, type, value) {
+      var data = streamers[name]
+      
+      for (var details of document.querySelectorAll('.overlayList > details')) {
+        var group = details.firstChild.textContent
+      }
+    }
+    
+    function populateOverlaySettings() {
+      /* Disable key presses while the forms have focus */
+      overlaySettings.addEventListener('focusin', function() { setKeyEvents(false) })
+      overlaySettings.addEventListener('focusout', function() { setKeyEvents(true) })
+      
+      var div = overlaySettings.appendChild(document.createElement('div'))
+      overlaySettings.lastChild.textContent = 'Esc to close'
+      
+      var form = overlaySettings.appendChild(document.createElement('form'))
+      form.onsubmit = function(e) { e.preventDefault() }
+      
+      backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
+      
+      chatInput = addOverlaySetting('Chat (WIP)', 'checkbox', toggleChat)
+      
+      overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
+      overlayTimeoutInput.value = overlayTimeoutSeconds = 0
+    }
+    
+    function addOverlaySetting(name, type, fun) {
+      var form = overlaySettings.lastChild
+      
+      var label = form.appendChild(document.createElement('label'))
+      label.textContent = name
+      
+      var input = form.appendChild(document.createElement('input'))
+      input.type = type
+      input.onchange = fun
+      
+      /* Leave checkboxes at default width */
+      if (input.type != 'checkbox') {
+        input.style.width = '50px'
+      }
+      
+      /* Line break after each input option */
+      form.appendChild(document.createElement('br'))
+      
+      return input
+    }
+    
+    function setKeyEvents(enabled) {
+      if (enabled) {
+        window.onkeydown = myKeyDown
+        window.onkeyup = myKeyUp
+      } else {
+        window.onkeydown = null
+        window.onkeyup = null
+      }
+    }
+    
+    function disableInteractions() {
+      document.querySelectorAll('.grid-element').forEach(function(frame) {
+        frame.classList.add('disabled')
+      })
+    }
+    
+    function resetInteractions() {
+      /* Reset the global state used for tracking keys/clicks */
+      lastKey = null
+      lastElementClicked = null
+      firstElementKey = null
+      
+      /* Allow interactions again */
+      document.querySelectorAll('.grid-element').forEach(function(frame) {
+        frame.classList.remove('disabled')
+      })
+      
+      /* Clear the text */
+      document.querySelectorAll('.grid-element :first-child').forEach(function(text) {
+        text.textContent = ''
+      })
+    }
+    
+    function getActions() {
+      /* Functions here must return true/false */
+      /* Returning true will clear the interactions currently being tracked */
+      /* Returning false should only be used if further selections are needed */
+      /* e.g. Move/Copy require multiple inputs */
+      var dict = {
+        'h' : ['help',          toggleOverlayHelp,     'Toggles the help overlay'],
+        'l' : ['list',          toggleOverlayList,     'Toggles the stream list overlay'],
+        't' : ['floatie tab',   toggleTab,             'Toggles a floating tab for resetting stream focus'],
+        's' : ['switch',        setElementFromPrompt,  'Prompts to select a new stream'],
+        'n' : ['next',          nextElement,           'Skips to the next stream within the current group'],
+        'p' : ['previous',      previousElement,       'Skips to the previous stream within the current group'],
+        'j' : ['next+',         nextGlobalElement,     'Skips to the next stream, regardless of current group'],
+        'k' : ['previous+',     previousGlobalElement, 'Skips to the previous stream, regardless of current group'],
+        'd' : ['delete',        removeElement,         'Removes the stream'],
+        'm' : ['move',          moveElement,           'Moves the stream between locations'],
+        'c' : ['chat',          toggleChat,            'Toggles the chat panel'],
+        'r' : ['reload',        reloadElement,         'Reloads the stream'],
+        'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
+        'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
+        'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
+        'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
+        '`' : ['settings',      toggleOverlaySettings, 'Toggles the settings menu'],
+      }
+      return dict
+    }
+    
+    function setElementFromClick(element) {
+      /* Find an action, otherwise just prompt for a new embed */
+      var action = setElementFromPrompt
+      if (lastKey in getActions()) {
+        action = getActions()[lastKey][1]
+      }
+      
+      /* Save the last element clicked to use with the action */
+      lastElement = lastElementClicked
+      
+      /* Set the last element clicked now in case the action needs to change it */
+      lastElementClicked = element
+      
+      /* Do something with the elements, extra arguments will be discarded naturally */
+      if (action(element, lastElement)) {
+        /* Action succeeded when true, reset interactions */
+        resetInteractions()
+      }
+      
+      /* Don't reset everything after a click, just the element from a key press */
+      firstElementKey = null
+    }
+    
+    function setElementFromKey(element, key) {
+      /* Find an action, otherwise do nothing */
+      if (key in getActions()) {
+        /* Do something with the elements, extra arguments will be discarded naturally */
+        if (getActions()[key][1](element, firstElementKey)) {
+          /* Action succeeded when true, reset interactions */
+          resetInteractions()
+        }
+      }
+    }
+    
+    function setElementFromDrop(element, event) {
+      /* Prevent the default action that reloads the page with the dropped link */
+      event.preventDefault()
+      
+      /* Extract the text from the drop event */
+      setElementFromString(element, event.dataTransfer.getData('text/plain'))
+    }
+    
+    function setOverlayAutoRemoveTimer() {
+      /* Reset any ongoing timeout before starting a new one*/
+      if (typeof overlayTimeout != 'undefined') {
+        clearTimeout(overlayTimeout)
+      }
+      
+      if (overlayTimeoutSeconds > 0) {
+        overlayTimeout = setTimeout(hideOverlays, overlayTimeoutSeconds * 1000)
+      }
+      return true
+    }
+    
+    function setElementFromPrompt(element) {
+      if (element && element.classList.contains('grid-element')) {
+        setElementFromString(element, prompt('Enter streamer/channel/video =') ?? '')
+      }
+      return true
+    }
+    
+    function setElementFromString(element, str) {
+      if (element && element.classList.contains('grid-element')) {
+        var [type, value, extras] = checkReferers(str)
+        setElement(element, type, value, extras)
+      }
+    }
+    
+    function removeElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        grid.replaceChild(makeBlankElement(), element)
+        
+        /* Element was modified, update the URL */
+        updateURL()
+      }
+      
+      return true
+    }
+    
+    function reloadElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Reuse the existing data from the element */
+        setElement(element, element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
+        return true
+      }
+    }
+    
+    function moveElement(currentElement, lastElement) {
+      if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
+        if (currentElement != lastElement) {
+          /* Save the last element */
+          var lastType   = lastElement.getAttribute('data-type')
+          var lastValue  = lastElement.getAttribute('data-value')
+          var lastExtras = lastElement.getAttribute('data-extras')
+          
+          /* Set last element from the current */
+          setElement(lastElement, currentElement.getAttribute('data-type'), currentElement.getAttribute('data-value'), currentElement.getAttribute('data-extras'))
+          
+          /* Set the current element from the last */
+          setElement(currentElement, lastType, lastValue, lastExtras)
+        }
+        return true
+      }
+      return false
+    }
+    
+    function openElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Used with keyboard/mouse events */
+        openRefererData(element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
+      }
+      return true
+    }
+    
+    function openFromString(str) {
+      /* Used with the overlay list */
+      var [type, value, extras] = checkReferers(str)
+      openRefererData(type, value, extras)
+    }
+    
+    function copyElement(currentElement, lastElement) {
+      if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
+        if (currentElement != lastElement) {
+          /* Set the element using the data from the last element */
+          setElement(currentElement, lastElement.getAttribute('data-type'), lastElement.getAttribute('data-value'), lastElement.getAttribute('data-extras'))
+        }
+        return true
+      }
+      return false
+    }
+    
+    function myKeyDown(event) {
+      var key = event.key.toLowerCase()
+      
+      /* Disallow any modifiers that aren't shift */
+      if (event.ctrlKey || event.altKey || event.metaKey) {
+        return
+      }
+      
+      /* Special case for escape to close the overlay */
+      if (key == 'escape') {
+        hideOverlays()
+        resetInteractions()
+        return
+      }
+      
+      /* Only track the first key press and ignore keys that don't have actions */
+      if (lastKey == null && key in getActions()) {
+        /* Save the pressed key */
+        lastKey = key
+        
+        /* Grab whatever is underneath when an action is started */
+        firstElementKey = document.querySelector('.grid-element:hover')
+        
+        /* Disable interactions via css to allow for click events to reach the parent div */
+        disableInteractions()
+        
+        /* Add the overlay text for the active action */
+        document.querySelectorAll('.grid-element :first-child').forEach(function(overlay) {
+          overlay.textContent = getActions()[lastKey][0] ?? ''
+        })
+      }
+    }
+    
+    function myKeyUp(event) {
+      var key = event.key.toLowerCase()
+      
+      /* Ignore release events that weren't the first key pressed */
+      if (key == lastKey) {
+        /* Complete the action with whatever is under the mouse */
+        setElementFromKey(document.querySelector('.grid-element:hover'), lastKey)
+        
+        lastKey = null
+      }
+    }
+    
+    function findAdjacentReferDictEntry(dict, searchType, searchValue, offset) {
+      var arr = Object.entries(dict)
+      var elementIndex = 0
+      for ([dictKey, [dataType, dataValue]] of arr) {
+        if (dataType == searchType && dataValue == searchValue) {
+          /* Add the array length to help with negative offsets */
+          return arr[(elementIndex + arr.length + offset) % arr.length][0]
+        }
+        ++elementIndex
+      }
+      return null
+    }
+    
+    function setChannelNameTimer(element, name) {
+      /* Set the name */
+      element.children[1].textContent = name.charAt(0).toUpperCase() + name.slice(1)
+      
+      /* Clear any existing timers */
+      if (element.channelNameTimeout != null) {
+        clearTimeout(element.channelNameTimeout)
+      }
+      
+      /* Create a new one remove the text */
+      element.channelNameTimeout = setTimeout(
+      function() {
+        element.children[1].textContent = ''
+      }, 1000
+      )
+    }
+    
+    function nextElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Search each dict */
+        for ([dictName, referDict] of Object.entries(groups)) {
+          var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+          if (name) {
+            setElementFromString(element, name)
+            setChannelNameTimer(element, name)
+            break
+          }
+        }
+      }
+      return true
+    }
+    
+    function previousElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Search each dict */
+        for ([dictName, referDict] of Object.entries(groups)) {
+          var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+          if (name) {
+            setElementFromString(element, name)
+            setChannelNameTimer(element, name)
+            break
+          }
+        }
+      }
+      return true
+    }
+    
+    function nextGlobalElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Flatten the dictionaries */
+        var flatDict = {}
+        for ([dictName, referDict] of Object.entries(groups)) {
+          for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
+            flatDict[referName] = [dataType, dataValue]
+          }
+        }
+        
+        var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+        if (name) {
+          setElementFromString(element, name)
+          setChannelNameTimer(element, name)
+        }
+      }
+      return true
+    }
+    
+    function previousGlobalElement(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Flatten the dictionaries */
+        var flatDict = {}
+        for ([dictName, referDict] of Object.entries(groups)) {
+          for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
+            flatDict[referName] = [dataType, dataValue]
+          }
+        }
+        
+        var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+        if (name) {
+          setElementFromString(element, name)
+          setChannelNameTimer(element, name)
+        }
+      }
+      return true
+    }
+    
+    function toggleFullscreen(element) {
+      if (element && element.classList.contains('grid-element')) {
+        /* Only fullscreen iframes */
+        if (document.fullscreenElement == null) {
+          if (element.lastChild.tagName.toLowerCase() == 'iframe') {
+            element.lastChild.requestFullscreen()
+          }
+        }
+        else {
+          document.exitFullscreen()
+        }
+      }
+      return true
+    }
+    
+    function adjustLayout() {
+      /* Recreate the grid and prompt for new row/column inputs */
+      createGrid(true)
+      
+      /* Ensure the overlays are hidden to clear out lingering references to elements */
+      hideOverlays()
+      
+      return true
+    }
+    
+    function toggleOverlays(overlay) {
+      /* Toggle the element passed in, if it exists */
+      if (overlay) {
+        if (overlay.style.display == 'none') {
+          /* Reposition the window when it gets shown */
+          overlay.style.display = 'inline-block'
+          overlay.style.top = '2%'
+          overlay.style.left = '2%'
+          
+          /* Refresh automatic removal */
+          setOverlayAutoRemoveTimer()
+        } else {
+          overlay.style.display = 'none'
+        }
+      }
+      
+      /* Disable everything else */
+      for (var element of document.querySelectorAll('.overlay')) {
+        if (element != overlay) {
+          element.style.display = 'none'
+        }
+      }
+    }
+    
+    function toggleOverlayHelp() {
+      toggleOverlays(overlayHelp)
+      return true
+    }
+    
+    function toggleOverlayList(element) {
+      if (element && element.classList.contains('grid-element')) {
+        if (overlayList.style.display == 'none') {
+          /* Save the current element for use with the overlay click handlers */
+          listElement = element
+          toggleOverlays(overlayList)
+        } else {
+          /* If the same element was chosen, close the list */
+          /* Otherwise, just update the active element */
+          if (listElement == element) {
+            listElement = null
+            overlayList.style.display = 'none'
+          } else {
+            listElement = element
+          }
+        }
+      }
+      return true
+    }
+    
+    function toggleOverlaySettings(element) {
+      toggleOverlays(overlaySettings)
+      return true
+    }
+    
+    function hideOverlays() {
+      /* Reset the overlay elements */
+      listElement = null
+      toggleOverlays(null)
+      return true
+    }
+    
+    function toggleTab() {
+      if (tab.style.display == 'none') {
+        /* Reposition the window when it gets shown */
+        tab.style.display = 'inline-block'
+
+        /* Chat takes an extra 15% of width when enabled */
+        tab.style.top = (100 / grid.getAttribute('data-rows')) + '%'
+        tab.style.left = ((chatInput.checked ? 85 : 100) / grid.getAttribute('data-columns')) + '%'
+      } else {
+        tab.style.display = 'none'
+      }
+      
+      return true
+    }
+    
+    function toggleChat(e) {
+      /* Argument looks like an event */
+      /* This means that it came from a click and will be inverted there */
+      /* Key presses need the checkbox to be manually inverted */
+      if (!e.target) {
+        chatInput.checked = !chatInput.checked
+      }
+
+      resizeGrid()
+
+      return true
+    }
+    
+    function requestBackendData(sock) {
+      if (sock.readyState != WebSocket.CLOSED) {
+        streamers.version = supportedBackendVersion
+        sock.send(JSON.stringify(streamers))
+        setTimeout(() => {
+          requestBackendData(sock)
+        }, 1 * 60 * 1000)
+      }
+    }
+    
+    function connectBackend() {
+      if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
+        backendSocket = new WebSocket('ws://localhost')
+        backendSocket.onopen = function() { requestBackendData(backendSocket) }
+        backendSocket.onmessage = processBackendUpdate
+        
+        /* Setup backend error message on second connection attempt */
+        /* This prevents spurious errors if the backend failed on initial page load */
+        if (typeof firstAttempt == 'undefined') {
+          firstAttempt = true
+        } else {
+          firstAttempt = false
+        }
+        
+        /* Update the settings menu checkbox */
+        backendInput.checked = true
+        backendSocket.onclose = function() { backendInput.checked = false }
+        backendSocket.onerror = function() { 
+          if (firstAttempt == false) {
+            alert("Backend encountered a problem!")
+          }
+        }
+      } else {
+        backendSocket.close()
+        
+        /* Update the settings menu checkbox */
+        backendInput.checked = false
+      }
+      return true
+    }
+    
+    function processBackendUpdate(response) {
+      var update = JSON.parse(response.data)
+      var version = 'version' in update ? update['version'] : [0, 0, 0]
+
+      var differenceQuantifier = 3
+      var differenceQualifiers = ['very ', '', 'slightly ']
+      for (var i = 0; i < 3; ++i) {
+        if (version[i] != supportedBackendVersion[i]) {
+          differenceQuantifier = i;
+          break
+        }
+      }
+
+      /* Do nothing if the version is different */
+      if (differenceQuantifier != 3) {
+        /* Issue a warning if this is the first time */
+        if (!alreadyWarnedVersion) {
+          alreadyWarnedVersion = true
+
+          alert(
+            'You are ' + differenceQualifiers[differenceQuantifier] + 'out of date with the backend.\r\n' +
+            'You have: v' + supportedBackendVersion.join('.') + '\r\n' +
+            'Backend has: v' + version.join('.')
+          )
+
+          /* Check if the user wants to update */
+          var confirmUpdate = confirm(
+            'Do you want to update the backend?'
+          )
+
+          /* If so, ask for an auto-update (if possible) */
+          var manualUpdate = false
+          if (confirmUpdate) {
+            /* Only backends with real versions will have auto-update support */
+            var confirmAutoUpdate = false
+            if ('version' in update) {
+              confirmAutoUpdate = confirm(
+                'Do you want to auto-update?\r\n' + 
+                'Warning: This will install code from the internet.'
+              )
+            }
+
+            /* Make sure the user is really sure */
+            /* If the backend is ever comprimised, it could contain malware */
+            /* There is no way to specify how the backend should perform its update */
+            /* This is nice because it means that no one can spoof a connection and choose the script that it updates to */
+            /* This is not nice because it relies entirely on how much you trust the content that the backend retrieves */
+            /* Thankfully, if you host your own backend, you can check the source code to look at the file it fetches */
+            if (confirmAutoUpdate) {
+              confirmAutoUpdate = confirm(
+                'Are you sure?\r\n' + 
+                'The current backend will choose its own update file.\r\n' + 
+                'Only choose this option if you trust the backend author.\r\n' + 
+                'If unsure, inspect the current/future backend script yourself.'
+              )
+
+              /* Send a simple update message, close the socket, and re-open it in a little */
+              if (confirmAutoUpdate) {
+                var updateRequest = Object()
+                updateRequest.autoUpdate = true
+                backendSocket.send(JSON.stringify(updateRequest))
+                // backendSocket.close()
+                settimeout(connectBackend, 10 * 1000) /* 10 Seconds */
+                return /* Skip the remaining processing */
+              } else {
+                manualUpdate = true
+              }
+            } else {
+                manualUpdate = true
+            }
+          }
+
+          /* Manual update, provide a link to the repo */
+          if (manualUpdate) {
+            alert('Please update your backend from: ' + backendLocation)
+          }
+        }
+      }
+
+      for (element of document.querySelectorAll('.overlayListElement')) {
+        if (element.textContent.startsWith(update.name)) {
+          titleDiv = element.children[1]
+          for (video of update.videos) {
+            if (video.status == 'live') {
+              element.setAttribute('type', 'live')
+              element.textContent = update.name + ' ' + video.title
+              element.dataType = video.dataType
+              element.dataValue = video.dataValue
+              
+              crossReference.set(video.dataValue, element.textContent)
+              updateChat()
+              return
+            }
+            else if (video.status == 'upcoming') {
+              var now = new Date().getTime() / 1000
+              var then = video.startTime ?? 0
+              
+              /* Treat as offline if longer than 4 hours til start time */
+              var status = ((then - now) > (4 * 60 * 60)) ? 'offline' : 'upcoming'
+              element.setAttribute('type', status)
+              element.textContent = update.name + ' ' + video.title
+              element.dataType = video.dataType
+              element.dataValue = video.dataValue
+              
+              crossReference.set(video.dataValue, element.textContent)
+              updateChat()
+              return
+            }
+          }
+
+          element.setAttribute('type', 'offline')
+          return
+        }
+      }
+    }
+    
+    function makeDraggable(element) {
+      element.onmousedown = function(event) {
+        dragMouseDown(element, event)
+      }
+    }
+    
+    function dragMouseDown(element, event) {
+      /* Left mouse only */
+      if (event.which == 1) {
+        /* Disable interactions via css to allow for keep dragging smooth */
+        disableInteractions()
+        
+        dragStartX = event.clientX
+        dragStartY = event.clientY
+        
+        window.onmouseup = function(event) {
+          dragMouseUp(element, event)
+        }
+        window.onmousemove = function(event) {
+          dragMouseMove(element, event)
+        }
+      }
+      
+      /* If an overlay is manipulated, refresh automatic removal */
+      if (element.classList.contains('overlay')) {
+        setOverlayAutoRemoveTimer()
+      }
+    }
+    
+    function dragMouseUp(element, event) {
+      /* Left mouse only */
+      if (event.which == 1) {
+        /* Allow interactions again */
+        resetInteractions()
+        
+        window.onmouseup = null
+        window.onmousemove = null
+      }
+      
+      /* If an overlay is manipulated, refresh automatic removal */
+      if (element.classList.contains('overlay')) {
+        setOverlayAutoRemoveTimer()
+      }
+    }
+    
+    function dragMouseMove(element, event) {
+      var dragX = event.clientX - dragStartX
+      var dragY = event.clientY - dragStartY
+      
+      var box = element.getBoundingClientRect()
+      
+      /* Terrible looking clamp code*/
+      /* Ensures the element stays entirely within the window */
+      dragX = Math.min(Math.max(dragX, -box.left), window.innerWidth - box.right)
+      dragY = Math.min(Math.max(dragY, -box.top), window.innerHeight - box.bottom)
+      
+      element.style.left = (100 * (element.offsetLeft + dragX) / window.innerWidth)+ '%'
+      element.style.top  = (100 * (element.offsetTop  + dragY) / window.innerHeight)+ '%'
+      
+      dragStartX = event.clientX
+      dragStartY = event.clientY
+      
+      /* If an overlay is manipulated, refresh automatic removal */
+      if (element.classList.contains('overlay')) {
+        setOverlayAutoRemoveTimer()
+      }
+      
+      /* Prevent text selection while dragging */
+      event.preventDefault()
+    }
+    
+    function buildStreamers() {
+      streamers = JSON.parse(streamerData.innerHTML)
+      aliases = new Map()
+      groups = new Map()
+      
+      for (var data of streamers) {
+        /* Populate list of streamers by name */
+        for (var alias of data.aliases) {
+          aliases[alias] = data
+        }
+        
+        for (var group of data.groups) {
+          /* Create nested maps */
+          var map = groups
+          for (var subgroup of group) {
+            map = subgroup in map ? map[subgroup] : map[subgroup] = new Map()
+          }
+          
+          map[data.name] = data
+        }
+      }
+    }
+    
+    function setup() {
+      /* Key events only work if an iframe doesn't have focus */
+      window.onresize = resizeGrid
+      window.onkeydown = myKeyDown
+      window.onkeyup = myKeyUp
+      window.onfocus = resetInteractions
+      
+      /* Temporary workaround, set globals here */
+      overlayTimeoutSeconds = 0
+      crossReference = new Map()
+      alreadyWarnedVersion = false
+      buildStreamers()
+      
+      makeDraggable(tab)
+      makeDraggable(overlayHelp)
+      makeDraggable(overlayList)
+      makeDraggable(overlaySettings)
+      
+      
+      createGrid()
+      populateOverlayHelp()
+      populateOverlayList()
+      populateOverlaySettings()
+      resetInteractions()
+      
+      connectBackend()
+    }
+  </script>
+  <script id="streamerData" type="application/json">
+    [
+    {
+      "name" : "Calliope Mori",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCL_qhgtOy0dy1Agp8vkySQg" }
+      ],
+      "aliases" : ["calliope", "calli", "mori"]
+    },
+    {
+      "name" : "Takanashi Kiara",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCHsx4Hqa-1ORjQTh9TYDhww" }
+      ],
+      "aliases" : ["kiara"]
+    },
+    {
+      "name" : "Ninomae Ina'nis",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCMwGHR0BTZuLsmjY_NT5Pwg" }
+      ],
+      "aliases" : ["ina'nis", "ina"]
+    },
+    {
+      "name" : "Gawr Gura",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCoSrY_IQQVpmIRZ9Xf-y93g" }
+      ],
+      "aliases" : ["gura"]
+    },
+    {
+      "name" : "Watson Amelia",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCyl1z3jo3XHR1riLFKG5UAg" }
+      ],
+      "aliases" : ["amelia", "ame"]
+    },
+    {
+      "name" : "Irys",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC8rcEBzJSleTkf_-agPM20g" }
+      ],
+      "aliases" : ["irys", "yabairys"]
+    },
+    {
+      "name" : "Tsukumo Sana",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCsUj0dszADCGbF3gNrQEuSQ" }
+      ],
+      "aliases" : ["sana"]
+    },
+    {
+      "name" : "Ceres Fauna",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCO_aKKYxn4tvrqPjcTzZ6EQ" }
+      ],
+      "aliases" : ["fauna"]
+    },
+    {
+      "name" : "Ouro Kronii",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCmbs8T6MWqUHP1tIQvSgKrg" }
+      ],
+      "aliases" : ["kronii"]
+    },
+    {
+      "name" : "Nanashi Mumei",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC3n5uGu18FoCy23ggWWp8tA" }
+      ],
+      "aliases" : ["mumei"]
+    },
+    {
+      "name" : "Hakos Baelz",
+      "groups": [["HoloEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCgmPnx-EEeOrZSg5Tiw7ZRQ" }
+      ],
+      "aliases" : ["baelz", "bae"]
+    },
+    {
+      "name" : "Tokino Sora",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCp6993wxpyDPHUpavwDFqgg" }
+      ],
+      "aliases" : ["sora"]
+    },
+    {
+      "name" : "Roboco-san",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCDqI2jOz0weumE8s7paEk6g" }
+      ],
+      "aliases" : ["roboco"]
+    },
+    {
+      "name" : "Sakura Miko",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC-hM6YJuNYVAmUWxeIr9FeA" }
+      ],
+      "aliases" : ["miko", "mikocchi"]
+    },
+    {
+      "name" : "Hoshimachi Suisei",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC5CwaMl1eIgY8h02uZw7u8A" }
+      ],
+      "aliases" : ["suisei"]
+    },
+    {
+      "name" : "AZKI",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC0TXe_LYZ4scaW2XMyi5_kw" }
+      ],
+      "aliases" : ["azki"]
+    },
+    {
+      "name" : "Yozora Mel",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCD8HOxPs4Xvsm8H0ZxXGiBw" }
+      ],
+      "aliases" : ["mel"]
+    },
+    {
+      "name" : "Shirakami Fubuki",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCdn5BQ06XqgXoAxIhbqw5Rg" }
+      ],
+      "aliases" : ["fubuki", "fbk"]
+    },
+    {
+      "name" : "Natsuiro Matsuri",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCQ0UDLQCjY0rmuxCDE38FGg" }
+      ],
+      "aliases" : ["matsuri"]
+    },
+    {
+      "name" : "Aki Rosenthal",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCFTLzh12_nrtzqBPsTCqenA" }
+      ],
+      "aliases" : ["aki", "akirose"]
+    },
+    {
+      "name" : "Akai Haato",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1CfXB_kRs3C-zaeTG3oGyg" }
+      ],
+      "aliases" : ["haato", "haachama"]
+    },
+    {
+      "name" : "Minato Aqua",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1opHUrw8rvnsadT-iGp7Cg" }
+      ],
+      "aliases" : ["aqua"]
+    },
+    {
+      "name" : "Murasaki Shion",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCXTpFs_3PqI41qX2d9tL2Rw" }
+      ],
+      "aliases" : ["shion"]
+    },
+    {
+      "name" : "Nakiri Ayame",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC7fk0CB07ly8oSl0aqKkqFg" }
+      ],
+      "aliases" : ["ayame"]
+    },
+    {
+      "name" : "Yuzuki Choco",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1suqwovbL1kzsoaZgFZLKg" }
+      ],
+      "aliases" : ["choco"]
+    },
+    {
+      "name" : "Oozora Subaru",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCvzGlP9oQwU--Y0r9id_jnA" }
+      ],
+      "aliases" : ["subaru"]
+    },
+    {
+      "name" : "Ookami Mio",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCp-5t9SrOQwXMU7iIjQfARg" }
+      ],
+      "aliases" : ["mio"]
+    },
+    {
+      "name" : "Nekomata Okayu",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCvaTdHTWBGv3MKj3KVqJVCw" }
+      ],
+      "aliases" : ["okayu"]
+    },
+    {
+      "name" : "Inugami Korone",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UChAnqc_AY5_I3Px5dig3X1Q" }
+      ],
+      "aliases" : ["korone"]
+    },
+    {
+      "name" : "Usada Pekora",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1DCedRgGHBdm81E1llLhOQ" }
+      ],
+      "aliases" : ["pekora"]
+    },
+    {
+      "name" : "Uruha Rushia",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCl_gCybOJRIgOXw6Qb4qJzQ" }
+      ],
+      "aliases" : ["rushia"]
+    },
+    {
+      "name" : "Shiranui Flare",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCvInZx9h3jC2JzsIzoOebWg" }
+      ],
+      "aliases" : ["flare"]
+    },
+    {
+      "name" : "Shirogane Noel",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCdyqAaZDKHXg4Ahi7VENThQ" }
+      ],
+      "aliases" : ["noel", "danchou"]
+    },
+    {
+      "name" : "Houshou Marine",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCCzUftO8KOVkV4wQG1vkUvg" }
+      ],
+      "aliases" : ["marine", "senchou"]
+    },
+    {
+      "name" : "Amane Kanata",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCZlDXzGoo7d44bwdNObFacg" }
+      ],
+      "aliases" : ["kanata", "ppt"]
+    },
+    {
+      "name" : "Tsunomaki Watame",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCqm3BQLlJfvkTsX_hvm0UmA" }
+      ],
+      "aliases" : ["watame"]
+    },
+    {
+      "name" : "Tokoyami Towa",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1uv2Oq6kNxgATlCiez59hw" }
+      ],
+      "aliases" : ["towa", "tmt"]
+    },
+    {
+      "name" : "Himemori Luna",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCa9Y57gfeY0Zro_noHRVrnw" }
+      ],
+      "aliases" : ["luna"]
+    },
+    {
+      "name" : "Kiryu Coco",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCS9uQI-jC3DE0L4IpXyvr6w" }
+      ],
+      "aliases" : ["coco", "kaichou"]
+    },
+    {
+      "name" : "Yukihana Lamy",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCFKOVgVbGmX65RxO3EtH3iw" }
+      ],
+      "aliases" : ["lamy"]
+    },
+    {
+      "name" : "Momosuzu Nene",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCAWSyEs_Io8MtpY3m-zqILA" }
+      ],
+      "aliases" : ["nene", "nenechi"]
+    },
+    {
+      "name" : "Shishiro Botan",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCUKD-uaobj9jiqB-VXt71mA" }
+      ],
+      "aliases" : ["botan", "shishiron"]
+    },
+    {
+      "name" : "Omaru Polka",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCK9V2B22uJYu3N7eR_BT9QA" }
+      ],
+      "aliases" : ["polka"]
+    },
+    {
+      "name" : "La+ Darknesss",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCENwRMx5Yh42zWpzURebzTw" }
+      ],
+      "aliases" : ["la+", "laplus"]
+    },
+    {
+      "name" : "Takane Lui",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCs9_O1tRPMQTHQ-N_L6FU2g" }
+      ],
+      "aliases" : ["lui"]
+    },
+    {
+      "name" : "Hakui Koyori",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC6eWCld0KwmyHFbAqK3V-Rw" }
+      ],
+      "aliases" : ["koyori"]
+    },
+    {
+      "name" : "Sakamata Chloe",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCIBY1ollUsauvVi4hW4cumw" }
+      ],
+      "aliases" : ["chloe"]
+    },
+    {
+      "name" : "Kazama Iroha",
+      "groups": [["HoloJP"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC_vMYWcDjmfdpH6r4TTn1MQ" }
+      ],
+      "aliases" : ["iroha"]
+    },
+    {
+      "name" : "Ayunda Risu",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCOyYb1c43VlX9rc_lT6NKQw" }
+      ],
+      "aliases" : ["risu"]
+    },
+    {
+      "name" : "Moona Hoshinova",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCP0BspO_AMEe3aQqqpo89Dg" }
+      ],
+      "aliases" : ["moona"]
+    },
+    {
+      "name" : "Airani Iofifteen",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCAoy6rzhSf4ydcYjJw3WoVg" }
+      ],
+      "aliases" : ["io15", "iofi"]
+    },
+    {
+      "name" : "Kureiji Ollie",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCYz_5n-uDuChHtLo7My1HnQ" }
+      ],
+      "aliases" : ["ollie"]
+    },
+    {
+      "name" : "Anya Melfissa",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC727SQYUvx5pDDGQpTICNWg" }
+      ],
+      "aliases" : ["anya"]
+    },
+    {
+      "name" : "Pavolia Reine",
+      "groups": [["HoloID"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
+      ],
+      "aliases" : ["reine"]
+    },
+    {
+      "name" : "Elira Pendora",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCIeSUTOTkF9Hs7q3SGcO-Ow" }
+      ],
+      "aliases" : ["elira"]
+    },
+    {
+      "name" : "Pomu Rainpuff",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCP4nMSTdwU1KqYWu3UH5DHQ" }
+      ],
+      "aliases" : ["pomu"]
+    },
+    {
+      "name" : "Finana Ryugu",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCu-J8uIXuLZh16gG-cT1naw" }
+      ],
+      "aliases" : ["finana"]
+    },
+    {
+      "name" : "Selen Tatsuki",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCV1xUwfM2v2oBtT3JNvic3w" }
+      ],
+      "aliases" : ["selen"]
+    },
+    {
+      "name" : "Rosemi Lovelock",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC4WvIIAo89_AzGUh1AZ6Dkg" }
+      ],
+      "aliases" : ["rosemi"]
+    },
+    {
+      "name" : "Petra Gurin",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCgA2jKRkqpY_8eysPUs8sjw" }
+      ],
+      "aliases" : ["petra"]
+    },
+    {
+      "name" : "Reimu Endou",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCBURM8S4LH7cRZ0Clea9RDA" }
+      ],
+      "aliases" : ["reimu"]
+    },
+    {
+      "name" : "Nina Kosaka",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCkieJGn3pgJikVW8gmMXE2w" }
+      ],
+      "aliases" : ["nina"]
+    },
+    {
+      "name" : "Millie Parfait",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC47rNmkDcNgbOcM-2BwzJTQ" }
+      ],
+      "aliases" : ["millie"]
+    },
+    {
+      "name" : "Enna Alouette",
+      "groups": [["NijiEN"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCR6qhsLpn62WVxCBK1dkLow" }
+      ],
+      "aliases" : ["enna"]
+    },
+    {
+      "name" : "Amano Pikamee",
+      "groups": [["VOMS"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCajhBT4nMrg3DLS-bLL2RCg" }
+      ],
+      "aliases" : ["pikamee"]
+    },
+    {
+      "name" : "Hikasa Tomoshika",
+      "groups": [["VOMS"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC3vzVK_N_SUVKqbX69L_X4g" }
+      ],
+      "aliases" : ["tomoshika"]
+    },
+    {
+      "name" : "Haneuzu Miuneru",
+      "groups": [["VOMS"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCE5VgVGRPfNCjXPeTe1QJHA" }
+      ],
+      "aliases" : ["miuneru"]
+    },
+    {
+      "name" : "Rinkou Ashelia",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCg7sW-h1PUowdiR5K4HlBew" }
+      ],
+      "aliases" : ["ashelia"]
+    },
+    {
+      "name" : "Utatane Nasa",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCB7sSUNwh_dXE7ZL3DsGDpw" }
+      ],
+      "aliases" : ["nasa"]
+    },
+    {
+      "name" : "Pipkin Pippa",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCJ46YTYBQVXsfsp8-HryoUA" }
+      ],
+      "aliases" : ["pipkin", "pippa"]
+    },
+    {
+      "name" : "Tenma Maemi",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC3K7pmiHsNSx1y0tdx2bbCw" }
+      ],
+      "aliases" : ["tenma"]
+    },
+    {
+      "name" : "Hakushika Iori",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCN5bD1YYapThOeadG7YkBOA" }
+      ],
+      "aliases" : ["iori"]
+    },
+    {
+      "name" : "Fujikura Uruka",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCjXJYPsKxoJyc-1RPB6dSyw" }
+      ],
+      "aliases" : ["uruka"]
+    },
+    {
+      "name" : "Shisui Michiru",
+      "groups": [["PhaseConnect"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC1cExET9xoWSO9iSnRsW_1Q" }
+      ],
+      "aliases" : ["michiru"]
+    },
+    {
+      "name" : "Nyanners",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "nyanners" }
+      ],
+      "aliases" : ["nyanners"]
+    },
+    {
+      "name" : "Projekt Melody",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "projektmelody" }
+      ],
+      "aliases" : ["melody"]
+    },
+    {
+      "name" : "Froot",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "apricot" }
+      ],
+      "aliases" : ["apricot"]
+    },
+    {
+      "name" : "Zentreya",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "zentreya" }
+      ],
+      "aliases" : ["zentreya"]
+    },
+    {
+      "name" : "Silvervale",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "silvervale" }
+      ],
+      "aliases" : ["silvervale"]
+    },
+    {
+      "name" : "Ironmouse",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "ironmouse" }
+      ],
+      "aliases" : ["ironmouse"]
+    },
+    {
+      "name" : "Hime Hajime",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "hajime" }
+      ],
+      "aliases" : ["hajime"]
+    },
+    {
+      "name" : "Veibae",
+      "groups": [["VShojo"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "veibae" }
+      ],
+      "aliases" : ["veibae"]
+    },
+    {
+      "name" : "Hotaru Iora",
+      "groups": [["VReverie"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC0g_U1QjfhMR-kx8XLmWTCA" }
+      ],
+      "aliases" : ["iora"]
+    },
+    {
+      "name" : "Nova Aokami",
+      "groups": [["VReverie"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCA4bOB1Jnw5-lbuoSCfxc-w" }
+      ],
+      "aliases" : ["nova"]
+    },
+    {
+      "name" : "Lilrya Prisvielle",
+      "groups": [["VReverie"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCt7vm-7hlwPcYsRacX7QJYw" }
+      ],
+      "aliases" : ["lilrya"]
+    },
+    {
+      "name" : "Ophelia Midnight",
+      "groups": [["VReverie"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UCZyNPQCjju3KIv9X84diljw" }
+      ],
+      "aliases" : ["ophelia"]
+    },
+    {
+      "name" : "kson ONAIR",
+      "groups": [["Indie"]],
+      "streams" : [
+      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
+      ],
+      "aliases" : ["kson"]
+    },
+    {
+      "name" : "Snuffy",
+      "groups": [["Indie"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "snuffy" }
+      ],
+      "aliases" : ["snuffy"]
+    },
+    {
+      "name" : "Artemis of the Blue",
+      "groups": [["Indie"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "artemisoftheblue" }
+      ],
+      "aliases" : ["artemis"]
+    },
+    {
+      "name" : "girl_dm_",
+      "groups": [["Indie"]],
+      "streams" : [
+      { "type" : "ttv-channel", "value" : "girl_dm_" }
+      ],
+      "aliases" : ["girl_dm_", "girldm"]
+    }
+    ]
+  </script>
+  <script>
+    setup()
+  </script>
+</body>
 </html>
