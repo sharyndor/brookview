@@ -206,7 +206,7 @@
     var hostDomain = 'sharyndor.github.io'
 
     var backendLocation = 'https://github.com/sharyndor/brookview-backend'
-    var supportedBackendVersion = [0, 2, 0] /* v0.1.0 */
+    var supportedBackendVersion = [0, 2, 2] /* vMajor.Minor.Patch */
     
     function getReserved(str) {
       /* These words are reserved for internal use */
@@ -1177,8 +1177,12 @@
     
     function requestBackendData(sock) {
       if (sock.readyState != WebSocket.CLOSED) {
-        streamers.version = supportedBackendVersion
-        sock.send(JSON.stringify(streamers))
+        var message = {
+          requests : streamers,
+          version : supportedBackendVersion,
+        }
+
+        sock.send(JSON.stringify(message))
         setTimeout(() => {
           requestBackendData(sock)
         }, 1 * 60 * 1000)
@@ -1277,7 +1281,6 @@
                 var updateRequest = Object()
                 updateRequest.autoUpdate = true
                 backendSocket.send(JSON.stringify(updateRequest))
-                // backendSocket.close()
                 settimeout(connectBackend, 10 * 1000) /* 10 Seconds */
                 return /* Skip the remaining processing */
               } else {
