@@ -977,7 +977,7 @@
       for ([dictKey, [dataType, dataValue]] of arr) {
         if (dataType == searchType && dataValue == searchValue) {
           /* Add the array length to help with negative offsets */
-          return arr[(elementIndex + arr.length + offset) % arr.length][0]
+          return arr[(elementIndex + arr.length + offset) % arr.length]
         }
         ++elementIndex
       }
@@ -1003,13 +1003,19 @@
     
     function nextElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Search each dict */
+        /* Flatten the dictionaries */
         for ([dictName, referDict] of Object.entries(groups)) {
-          var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+          var flatDict = {}
+          for ([referName, referData] of Object.entries(referDict)) {
+            streamData = referData.streams[0]
+            flatDict[referName] = [streamData.type, streamData.value]
+          }
+        
+          var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
           if (name) {
-            setElementFromString(element, name)
+            setElement(element, type, value)
             setChannelNameTimer(element, name)
-            break
+            return true
           }
         }
       }
@@ -1018,13 +1024,19 @@
     
     function previousElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Search each dict */
+        /* Flatten the dictionaries */
         for ([dictName, referDict] of Object.entries(groups)) {
-          var name = findAdjacentReferDictEntry(referDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+          var flatDict = {}
+          for ([referName, referData] of Object.entries(referDict)) {
+            streamData = referData.streams[0]
+            flatDict[referName] = [streamData.type, streamData.value]
+          }
+        
+          var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
           if (name) {
-            setElementFromString(element, name)
+            setElement(element, type, value)
             setChannelNameTimer(element, name)
-            break
+            return true
           }
         }
       }
@@ -1036,14 +1048,15 @@
         /* Flatten the dictionaries */
         var flatDict = {}
         for ([dictName, referDict] of Object.entries(groups)) {
-          for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
-            flatDict[referName] = [dataType, dataValue]
+          for ([referName, referData] of Object.entries(referDict)) {
+            streamData = referData.streams[0]
+            flatDict[referName] = [streamData.type, streamData.value]
           }
         }
         
-        var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+        var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
         if (name) {
-          setElementFromString(element, name)
+          setElement(element, type, value)
           setChannelNameTimer(element, name)
         }
       }
@@ -1055,14 +1068,15 @@
         /* Flatten the dictionaries */
         var flatDict = {}
         for ([dictName, referDict] of Object.entries(groups)) {
-          for ([referName, [dataType, dataValue]] of Object.entries(referDict)) {
-            flatDict[referName] = [dataType, dataValue]
+          for ([referName, referData] of Object.entries(referDict)) {
+            streamData = referData.streams[0]
+            flatDict[referName] = [streamData.type, streamData.value]
           }
         }
         
-        var name = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+        var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
         if (name) {
-          setElementFromString(element, name)
+          setElement(element, type, value)
           setChannelNameTimer(element, name)
         }
       }
