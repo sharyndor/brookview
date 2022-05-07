@@ -63,15 +63,15 @@
       display: inline-block
     }
     
-    .overlayListElement[type="live"] {
+    .overlayListElement[status="live"] {
       color: green;
     }
     
-    .overlayListElement[type="upcoming"] {
+    .overlayListElement[status="upcoming"] {
       color: yellow;
     }
     
-    .overlayListElement[type="offline"] {
+    .overlayListElement[status="offline"] {
       display: none;
       color: red;
     }
@@ -112,6 +112,11 @@
     
     /* Indent the channel names */
     details > div {
+      padding-left: 20px;
+    }
+
+    /* Indent each depth of details */
+    details > details {
       padding-left: 20px;
     }
     
@@ -324,8 +329,8 @@
       }
       
       /* Try each method for something that isn't null */
-      if (str.toLowerCase() in aliases) {
-        var streamData = aliases[str.toLowerCase()].streams[0]
+      if (str.toLowerCase() in global.aliases) {
+        var streamData = global.aliases[str.toLowerCase()].streams[0]
         return [streamData.type, streamData.value, []]
       }
       
@@ -560,7 +565,7 @@
           var id = element.getAttribute('data-value')
           option.setAttribute('data-type', type)
           option.setAttribute('data-value', id)
-          option.textContent = crossReference.has(id) ? crossReference.get(id) : id
+          option.textContent = crossReference[[type, id]] ?? id
           
           if (currentSelection == option.textContent) {
             foundSelection = true
@@ -638,58 +643,142 @@
       var escapeDiv = document.createElement('div')
       escapeDiv.textContent = ('Esc to close')
       overlayList.append(escapeDiv)
-      
-      /* Print each grouping under its own collapsible heading */
-      for (var [groupName, group] of Object.entries(groups)) {
-        var details = document.createElement('details')
-        var summary = details.appendChild(document.createElement('summary'))
-        summary.textContent = groupName
-        
-        for (var [streamerName, data] of Object.entries(group)) {
-          var parentDiv = document.createElement('div')
-          parentDiv.classList.add('overlayListElement')
-          parentDiv.dataType = data.streams[0].type
-          parentDiv.dataValue = data.streams[0].value
-          parentDiv.onclick = function(event){ 
-            setElement(listElement, event.target.dataType, event.target.dataValue, [])
-            
-            /* Refresh automatic removal */
-            setOverlayAutoRemoveTimer()
+    }
+
+    function updateOverlayListElements() {
+      updateOverlayListGroup(overlayList, global.groups)
+    }
+
+    function updateOverlayListGroup(element, group) {
+      /* Ensure each subgroup is represented */
+      for (var [name, subgroup] of Object.entries(group.groups)) {
+        /* Search for an existing details child with a same-named summary */
+        var updatedDetails = null
+        for (var subgroupDetails of element.children) {
+          if (subgroupDetails.tagName == 'DETAILS' && subgroupDetails.name == name) {
+            updatedDetails = subgroupDetails
+            break
           }
-          
-          parentDiv.onmousedown = function(e) { 
-            /* Needed to allow dragging from list elements without moving the list */
-            e.stopPropagation()
-            /* Treat this as an interaction to prevent the overlay from timing out */
-            setOverlayAutoRemoveTimer()
-            /* Disable interactions to allow dropping onto iframes */
-            disableInteractions()
-          }
-          parentDiv.onmouseup = resetInteractions
-          
-          /* Allow the div to be dragged */
-          parentDiv.setAttribute('draggable', true)
-          parentDiv.ondragstart = function(event) {
-            /* Use the stream data as the drop data */
-            event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
-          }
-          parentDiv.ondragend = resetInteractions
-          
-          parentDiv.textContent = data.name
-          
-          details.appendChild(parentDiv)
+        }
+
+        /* If one wasn't found, add one */
+        if (updatedDetails == null) {
+          updatedDetails = addOverlayListSubgroup(element, name)
         }
         
-        overlayList.append(details)
+        /* Recurse over the group */
+        updateOverlayListGroup(updatedDetails, subgroup)
+      }
+
+      for (var [name, streamer] of Object.entries(group.streamers)) {
+        /* Search for an existing same-named div */
+        var updatedStreamer = null
+        for (var streamerElement of element.children) {
+          if (streamerElement.tagName == 'DIV' && streamerElement.name == name) {
+            updatedStreamer = streamerElement
+            break
+          }
+        }
+
+        if (updatedStreamer == null) {
+          updatedStreamer = addOverlayListStreamer(element, streamer)
+        }
+
+        updateOverlayListStreamer(updatedStreamer, name)
       }
     }
-    
-    function setOverlayListItem(name, type, value) {
-      var data = streamers[name]
-      
-      for (var details of document.querySelectorAll('.overlayList > details')) {
-        var group = details.firstChild.textContent
+
+    function updateOverlayListStreamer(listElement, name) {
+      var streamer = global.streamers[name]
+
+      var status = streamer.status ?? null
+      if (status) {
+        var now = new Date().getTime() / 1000
+        var then = status.startTime ?? 0
+        var dTime = then - now
+        var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
+
+        var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
+
+        if (statusType == 'live') {
+          listElement.setAttribute('status', 'live')
+          listElement.textContent = streamer.name + ' ' + status.title
+          listElement.dataType = status.dataType
+          listElement.dataValue = status.dataValue
+
+          crossReference[[status.dataType, status.dataValue]] = listElement.textContent
+          updateChat()
+          return
+        }
+
+        if (statusType == 'upcoming') {
+          listElement.setAttribute('status', 'upcoming')
+          listElement.textContent = streamer.name + ' ' + status.title
+          listElement.dataType = status.dataType
+          listElement.dataValue = status.dataValue
+
+          crossReference[[status.dataType, status.dataValue]] = listElement.textContent
+          updateChat()
+          return
+        }
+
+        if (statusType == 'offline') {
+          listElement.setAttribute('status', 'offline')
+          listElement.textContent = streamer.name + ' offline'
+          listElement.dataType = null
+          listElement.dataValue = null
+          crossReference[[status.dataType, status.dataValue]] = ""
+          updateChat()
+        }
       }
+    }
+
+    function addOverlayListSubgroup(element, name) {
+      var details = document.createElement('details')
+      details.name = name
+
+      var summary = details.appendChild(document.createElement('summary'))
+      summary.textContent = name
+      element.append(details)
+
+      return details
+    }
+
+    function addOverlayListStreamer(details, streamer) {
+      var div = document.createElement('div')
+      div.classList.add('overlayListElement')
+      div.name = streamer.name
+      div.dataType = streamer.streams[0].type
+      div.dataValue = streamer.streams[0].value
+      div.textContent = streamer.name
+
+      div.onclick = function(event){ 
+        setElement(listElement, event.target.dataType, event.target.dataValue, [])
+        
+        /* Refresh automatic removal */
+        setOverlayAutoRemoveTimer()
+      }
+      
+      div.onmousedown = function(e) { 
+        /* Needed to allow dragging from list elements without moving the list */
+        e.stopPropagation()
+        /* Treat this as an interaction to prevent the overlay from timing out */
+        setOverlayAutoRemoveTimer()
+        /* Disable interactions to allow dropping onto iframes */
+        disableInteractions()
+      }
+      div.onmouseup = resetInteractions
+      
+      /* Allow the div to be dragged */
+      div.setAttribute('draggable', true)
+      div.ondragstart = function(event) {
+        /* Use the stream data as the drop data */
+        event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
+      }
+      div.ondragend = resetInteractions
+      
+      
+      details.appendChild(div)
     }
     
     function populateOverlaySettings() {
@@ -971,13 +1060,13 @@
       }
     }
     
-    function findAdjacentReferDictEntry(dict, searchType, searchValue, offset) {
-      var arr = Object.entries(dict)
+    function findAdjacentEntry(list, searchType, searchValue, offset) {
       var elementIndex = 0
-      for ([dictKey, [dataType, dataValue]] of arr) {
-        if (dataType == searchType && dataValue == searchValue) {
+      for (element of list) {
+        if (element.tagName == 'DIV' && element.dataType == searchType && element.dataValue == searchValue) {
           /* Add the array length to help with negative offsets */
-          return arr[(elementIndex + arr.length + offset) % arr.length]
+          var adjacentElement = list[(elementIndex + list.length + offset) % list.length]
+          return [adjacentElement.name, adjacentElement.dataType, adjacentElement.dataValue]
         }
         ++elementIndex
       }
@@ -1003,19 +1092,21 @@
     
     function nextElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Flatten the dictionaries */
-        for ([dictName, referDict] of Object.entries(groups)) {
-          var flatDict = {}
-          for ([referName, referData] of Object.entries(referDict)) {
-            streamData = referData.streams[0]
-            flatDict[referName] = [streamData.type, streamData.value]
+        var dataType = element.getAttribute('data-type')
+        var dataValue = element.getAttribute('data-value')
+
+        var parentElement = null
+        for (var listElement of document.querySelectorAll('.overlayListElement')) {
+          if (listElement.dataType == dataType && listElement.dataValue == dataValue) {
+            parentElement = listElement.parentElement
           }
-        
-          var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+        }
+
+        if (parentElement) {
+          var [name, type, value] = findAdjacentEntry(parentElement.children, dataType, dataValue, 1)
           if (name) {
             setElement(element, type, value)
             setChannelNameTimer(element, name)
-            return true
           }
         }
       }
@@ -1024,19 +1115,21 @@
     
     function previousElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Flatten the dictionaries */
-        for ([dictName, referDict] of Object.entries(groups)) {
-          var flatDict = {}
-          for ([referName, referData] of Object.entries(referDict)) {
-            streamData = referData.streams[0]
-            flatDict[referName] = [streamData.type, streamData.value]
+        var dataType = element.getAttribute('data-type')
+        var dataValue = element.getAttribute('data-value')
+
+        var parentElement = null
+        for (var listElement of document.querySelectorAll('.overlayListElement')) {
+          if (listElement.dataType == dataType && listElement.dataValue == dataValue) {
+            parentElement = listElement.parentElement
           }
-        
-          var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+        }
+
+        if (parentElement) {
+          var [name, type, value] = findAdjacentEntry(parentElement.children, dataType, dataValue, -1)
           if (name) {
             setElement(element, type, value)
             setChannelNameTimer(element, name)
-            return true
           }
         }
       }
@@ -1045,16 +1138,10 @@
     
     function nextGlobalElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Flatten the dictionaries */
-        var flatDict = {}
-        for ([dictName, referDict] of Object.entries(groups)) {
-          for ([referName, referData] of Object.entries(referDict)) {
-            streamData = referData.streams[0]
-            flatDict[referName] = [streamData.type, streamData.value]
-          }
-        }
-        
-        var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), 1)
+        var dataType = element.getAttribute('data-type')
+        var dataValue = element.getAttribute('data-value')
+
+        var [name, type, value] = findAdjacentEntry(overlayList.querySelectorAll('.overlayListElement'), dataType, dataValue, 1)
         if (name) {
           setElement(element, type, value)
           setChannelNameTimer(element, name)
@@ -1065,16 +1152,10 @@
     
     function previousGlobalElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        /* Flatten the dictionaries */
-        var flatDict = {}
-        for ([dictName, referDict] of Object.entries(groups)) {
-          for ([referName, referData] of Object.entries(referDict)) {
-            streamData = referData.streams[0]
-            flatDict[referName] = [streamData.type, streamData.value]
-          }
-        }
-        
-        var [name, [type, value]] = findAdjacentReferDictEntry(flatDict, element.getAttribute('data-type'), element.getAttribute('data-value'), -1)
+        var dataType = element.getAttribute('data-type')
+        var dataValue = element.getAttribute('data-value')
+
+        var [name, type, value] = findAdjacentEntry(overlayList.querySelectorAll('.overlayListElement'), dataType, dataValue, -1)
         if (name) {
           setElement(element, type, value)
           setChannelNameTimer(element, name)
@@ -1204,12 +1285,14 @@
     
     function requestBackendData(sock) {
       if (sock.readyState != WebSocket.CLOSED) {
-        var message = {
-          requests : streamers,
+        /* Just send version info, allow the backend to reply */
+        /* Remaining processing to be handled in processBackendResponse */
+        sock.send(JSON.stringify({
+          messageType : 'version',
           version : supportedBackendVersion,
-        }
+        }))
 
-        sock.send(JSON.stringify(message))
+        /* Repeate this call every minute */
         setTimeout(() => {
           requestBackendData(sock)
         }, 1 * 60 * 1000)
@@ -1220,9 +1303,9 @@
       if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
         backendSocket = new WebSocket('ws://' + backendLocation)
         backendSocket.onopen = function() { requestBackendData(backendSocket) }
-        backendSocket.onmessage = processBackendUpdate
+        backendSocket.onmessage = processBackendResponse
         
-        /* Setup backend error message on second connection attempt */
+        /* Set up the backend error message on second connection attempt */
         /* This prevents spurious errors if the backend failed on initial page load */
         if (typeof firstAttempt == 'undefined') {
           firstAttempt = true
@@ -1246,119 +1329,85 @@
       }
       return true
     }
-    
-    function processBackendUpdate(response) {
-      var update = JSON.parse(response.data)
-      var version = 'version' in update ? update['version'] : [0, 0, 0]
 
-      var differenceQuantifier = 3
-      var differenceQualifiers = ['very ', '', 'slightly ']
+    function requestBackendAutoUpdate() {
+      backendSocket.send(JSON.stringify({
+        messageType : 'autoUpdate',
+        version : supportedBackendVersion,
+        autoUpdate : true
+      }))
+    }
+    
+    function processBackendResponse(response) {
+      var message = JSON.parse(response.data)
+
+      if (message.messageType == 'version') {
+        processVersionMessage(message)
+      } else if (message.messageType == 'update') {
+        processUpdateMessage(message)
+      }
+    }
+
+    function processVersionMessage(message) {
+      var version = message.version
+
+      var sameVersion = true
       for (var i = 0; i < 3; ++i) {
         if (version[i] != supportedBackendVersion[i]) {
-          differenceQuantifier = i;
+          sameVersion = false
+        }
+      }
+
+      /* Only update if the versions match, otherwise notify the user */
+      /* TODO: Proper backwards compatibility */ 
+      if (sameVersion) {
+        backendSocket.send(JSON.stringify({
+          messageType : 'streamers',
+          version : supportedBackendVersion,
+          requests : global.streamers,
+        }))
+      } else {
+        alert('Your backend is out of date. Please update from the settings menu.')
+      }
+    }
+
+    function processUpdateMessage(update) {
+      /* Search for the updated streamer */
+      var updatedStreamer = null
+      for (var streamer of global.streamers) {
+        if (streamer.name == update.name) {
+          updatedStreamer = streamer
           break
         }
       }
 
-      /* Do nothing if the version is different */
-      if (differenceQuantifier != 3) {
-        /* Issue a warning if this is the first time */
-        if (!alreadyWarnedVersion) {
-          alreadyWarnedVersion = true
+      /* Add a new streamer if none was found */
+      if (updatedStreamer == null) {
+        updatedStreamer = {
+          name : update.name,
+          groups : [],
+          videos : [],
+        }
+        global.streamers[update.name] = updatedStreamer
+      }
 
-          alert(
-            'You are ' + differenceQualifiers[differenceQuantifier] + 'out of date with the backend.\r\n' +
-            'You have: v' + supportedBackendVersion.join('.') + '\r\n' +
-            'Backend has: v' + version.join('.')
-          )
-
-          /* Check if the user wants to update */
-          var confirmUpdate = confirm(
-            'Do you want to update the backend?'
-          )
-
-          /* If so, ask for an auto-update (if possible) */
-          var manualUpdate = false
-          if (confirmUpdate) {
-            /* Only backends with real versions will have auto-update support */
-            var confirmAutoUpdate = false
-            if ('version' in update) {
-              confirmAutoUpdate = confirm(
-                'Do you want to auto-update?\r\n' + 
-                'Warning: This will install code from the internet.'
-              )
-            }
-
-            /* Make sure the user is really sure */
-            /* If the backend is ever comprimised, it could contain malware */
-            /* There is no way to specify how the backend should perform its update */
-            /* This is nice because it means that no one can spoof a connection and choose the script that it updates to */
-            /* This is not nice because it relies entirely on how much you trust the content that the backend retrieves */
-            /* Thankfully, if you host your own backend, you can check the source code to look at the file it fetches */
-            if (confirmAutoUpdate) {
-              confirmAutoUpdate = confirm(
-                'Are you sure?\r\n' + 
-                'The current backend will choose its own update file.\r\n' + 
-                'Only choose this option if you trust the backend author.\r\n' + 
-                'If unsure, inspect the current/future backend script yourself.'
-              )
-
-              /* Send a simple update message, close the socket, and re-open it in a little */
-              if (confirmAutoUpdate) {
-                var updateRequest = Object()
-                updateRequest.autoUpdate = true
-                backendSocket.send(JSON.stringify(updateRequest))
-                settimeout(connectBackend, 10 * 1000) /* 10 Seconds */
-                return /* Skip the remaining processing */
-              } else {
-                manualUpdate = true
-              }
-            } else {
-                manualUpdate = true
-            }
-          }
-
-          /* Manual update, provide a link to the repo */
-          if (manualUpdate) {
-            alert('Please update your backend from: ' + backendRepo)
-          }
+      /* Update each video in the message */
+      for (var video of update.videos) {
+        if (video.status == 'live') {
+          updatedStreamer.status = video
+          return
         }
       }
 
-      for (element of document.querySelectorAll('.overlayListElement')) {
-        if (element.textContent.startsWith(update.name)) {
-          titleDiv = element.children[1]
-          for (video of update.videos) {
-            if (video.status == 'live') {
-              element.setAttribute('type', 'live')
-              element.textContent = update.name + ' ' + video.title
-              element.dataType = video.dataType
-              element.dataValue = video.dataValue
-              
-              crossReference.set(video.dataValue, element.textContent)
-              updateChat()
-              return
-            }
-            else if (video.status == 'upcoming') {
-              var now = new Date().getTime() / 1000
-              var then = video.startTime ?? 0
-              
-              /* Treat as offline if longer than 4 hours til start time */
-              var status = ((then - now) > (4 * 60 * 60)) ? 'offline' : 'upcoming'
-              element.setAttribute('type', status)
-              element.textContent = update.name + ' ' + video.title
-              element.dataType = video.dataType
-              element.dataValue = video.dataValue
-              
-              crossReference.set(video.dataValue, element.textContent)
-              updateChat()
-              return
-            }
-          }
-
-          element.setAttribute('type', 'offline')
+      for (var video of update.videos) {
+        if (video.status == 'upcoming') {
+          updatedStreamer.status = video
           return
         }
+      }
+
+      updatedStreamer.status = {
+        status : 'offline'
       }
     }
     
@@ -1433,25 +1482,24 @@
       event.preventDefault()
     }
     
-    function buildStreamers() {
-      streamers = JSON.parse(streamerData.innerHTML)
-      aliases = new Map()
-      groups = new Map()
-      
-      for (var data of streamers) {
+    function updateStreamers(streamerList) {
+      for (var streamer of streamerList) {
+        global.streamers[streamer.name] = global.streamers[streamer.name] ?? streamer
+
         /* Populate list of streamers by name */
-        for (var alias of data.aliases) {
-          aliases[alias] = data
+        for (var alias of streamer.aliases) {
+          global.aliases[alias] = global.aliases[alias] ?? streamer
         }
         
-        for (var group of data.groups) {
-          /* Create nested maps */
-          var map = groups
-          for (var subgroup of group) {
-            map = subgroup in map ? map[subgroup] : map[subgroup] = new Map()
+        for (var groupSet of streamer.groups) {
+          /* Create nested groups */
+          var group = global.groups
+          for (var subgroup of groupSet) {
+            group = group.groups[subgroup] = group.groups[subgroup] ?? { groups : new Map(), streamers : new Map() }
           }
           
-          map[data.name] = data
+          /* Add streamer if it doesn't exist */
+          group.streamers[streamer.name] = group.streamers[streamer.name] ?? streamer
         }
       }
     }
@@ -1464,17 +1512,23 @@
       window.onfocus = resetInteractions
       
       /* Temporary workaround, set globals here */
+      global = {}
+
+      global.streamers = new Map()
+      global.aliases = new Map()
+      global.groups = { groups : {}, streamers : new Map() }
+
       overlayTimeoutSeconds = 0
       backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost'
       crossReference = new Map()
       alreadyWarnedVersion = false
-      buildStreamers()
+
+      updateStreamers(JSON.parse(streamerData.innerHTML))
       
       makeDraggable(tab)
       makeDraggable(overlayHelp)
       makeDraggable(overlayList)
       makeDraggable(overlaySettings)
-      
       
       createGrid()
       populateOverlayHelp()
@@ -1482,735 +1536,738 @@
       populateOverlaySettings()
       resetInteractions()
       
+      updateOverlayListElements()
+      
+      setInterval(updateOverlayListElements, 1000)
+      
       connectBackend()
     }
+
+    window.addEventListener('load', setup)
   </script>
   <script id="streamerData" type="application/json">
     [
-    {
-      "name" : "Calliope Mori",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCL_qhgtOy0dy1Agp8vkySQg" }
-      ],
-      "aliases" : ["calliope", "calli", "mori"]
-    },
-    {
-      "name" : "Takanashi Kiara",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCHsx4Hqa-1ORjQTh9TYDhww" }
-      ],
-      "aliases" : ["kiara"]
-    },
-    {
-      "name" : "Ninomae Ina'nis",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCMwGHR0BTZuLsmjY_NT5Pwg" }
-      ],
-      "aliases" : ["ina'nis", "ina"]
-    },
-    {
-      "name" : "Gawr Gura",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCoSrY_IQQVpmIRZ9Xf-y93g" }
-      ],
-      "aliases" : ["gura"]
-    },
-    {
-      "name" : "Watson Amelia",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCyl1z3jo3XHR1riLFKG5UAg" }
-      ],
-      "aliases" : ["amelia", "ame"]
-    },
-    {
-      "name" : "Irys",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC8rcEBzJSleTkf_-agPM20g" }
-      ],
-      "aliases" : ["irys", "yabairys"]
-    },
-    {
-      "name" : "Tsukumo Sana",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCsUj0dszADCGbF3gNrQEuSQ" }
-      ],
-      "aliases" : ["sana"]
-    },
-    {
-      "name" : "Ceres Fauna",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCO_aKKYxn4tvrqPjcTzZ6EQ" }
-      ],
-      "aliases" : ["fauna"]
-    },
-    {
-      "name" : "Ouro Kronii",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCmbs8T6MWqUHP1tIQvSgKrg" }
-      ],
-      "aliases" : ["kronii"]
-    },
-    {
-      "name" : "Nanashi Mumei",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC3n5uGu18FoCy23ggWWp8tA" }
-      ],
-      "aliases" : ["mumei"]
-    },
-    {
-      "name" : "Hakos Baelz",
-      "groups": [["HoloEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCgmPnx-EEeOrZSg5Tiw7ZRQ" }
-      ],
-      "aliases" : ["baelz", "bae"]
-    },
-    {
-      "name" : "Tokino Sora",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCp6993wxpyDPHUpavwDFqgg" }
-      ],
-      "aliases" : ["sora"]
-    },
-    {
-      "name" : "Roboco-san",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCDqI2jOz0weumE8s7paEk6g" }
-      ],
-      "aliases" : ["roboco"]
-    },
-    {
-      "name" : "Sakura Miko",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC-hM6YJuNYVAmUWxeIr9FeA" }
-      ],
-      "aliases" : ["miko", "mikocchi"]
-    },
-    {
-      "name" : "Hoshimachi Suisei",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC5CwaMl1eIgY8h02uZw7u8A" }
-      ],
-      "aliases" : ["suisei"]
-    },
-    {
-      "name" : "AZKI",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC0TXe_LYZ4scaW2XMyi5_kw" }
-      ],
-      "aliases" : ["azki"]
-    },
-    {
-      "name" : "Yozora Mel",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCD8HOxPs4Xvsm8H0ZxXGiBw" }
-      ],
-      "aliases" : ["mel"]
-    },
-    {
-      "name" : "Shirakami Fubuki",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCdn5BQ06XqgXoAxIhbqw5Rg" }
-      ],
-      "aliases" : ["fubuki", "fbk"]
-    },
-    {
-      "name" : "Natsuiro Matsuri",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCQ0UDLQCjY0rmuxCDE38FGg" }
-      ],
-      "aliases" : ["matsuri"]
-    },
-    {
-      "name" : "Aki Rosenthal",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCFTLzh12_nrtzqBPsTCqenA" }
-      ],
-      "aliases" : ["aki", "akirose"]
-    },
-    {
-      "name" : "Akai Haato",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1CfXB_kRs3C-zaeTG3oGyg" }
-      ],
-      "aliases" : ["haato", "haachama"]
-    },
-    {
-      "name" : "Minato Aqua",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1opHUrw8rvnsadT-iGp7Cg" }
-      ],
-      "aliases" : ["aqua"]
-    },
-    {
-      "name" : "Murasaki Shion",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCXTpFs_3PqI41qX2d9tL2Rw" }
-      ],
-      "aliases" : ["shion"]
-    },
-    {
-      "name" : "Nakiri Ayame",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC7fk0CB07ly8oSl0aqKkqFg" }
-      ],
-      "aliases" : ["ayame"]
-    },
-    {
-      "name" : "Yuzuki Choco",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1suqwovbL1kzsoaZgFZLKg" }
-      ],
-      "aliases" : ["choco"]
-    },
-    {
-      "name" : "Oozora Subaru",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCvzGlP9oQwU--Y0r9id_jnA" }
-      ],
-      "aliases" : ["subaru"]
-    },
-    {
-      "name" : "Ookami Mio",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCp-5t9SrOQwXMU7iIjQfARg" }
-      ],
-      "aliases" : ["mio"]
-    },
-    {
-      "name" : "Nekomata Okayu",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCvaTdHTWBGv3MKj3KVqJVCw" }
-      ],
-      "aliases" : ["okayu"]
-    },
-    {
-      "name" : "Inugami Korone",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UChAnqc_AY5_I3Px5dig3X1Q" }
-      ],
-      "aliases" : ["korone"]
-    },
-    {
-      "name" : "Usada Pekora",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1DCedRgGHBdm81E1llLhOQ" }
-      ],
-      "aliases" : ["pekora"]
-    },
-    {
-      "name" : "Uruha Rushia",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCl_gCybOJRIgOXw6Qb4qJzQ" }
-      ],
-      "aliases" : ["rushia"]
-    },
-    {
-      "name" : "Shiranui Flare",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCvInZx9h3jC2JzsIzoOebWg" }
-      ],
-      "aliases" : ["flare"]
-    },
-    {
-      "name" : "Shirogane Noel",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCdyqAaZDKHXg4Ahi7VENThQ" }
-      ],
-      "aliases" : ["noel", "danchou"]
-    },
-    {
-      "name" : "Houshou Marine",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCCzUftO8KOVkV4wQG1vkUvg" }
-      ],
-      "aliases" : ["marine", "senchou"]
-    },
-    {
-      "name" : "Amane Kanata",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCZlDXzGoo7d44bwdNObFacg" }
-      ],
-      "aliases" : ["kanata", "ppt"]
-    },
-    {
-      "name" : "Tsunomaki Watame",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCqm3BQLlJfvkTsX_hvm0UmA" }
-      ],
-      "aliases" : ["watame"]
-    },
-    {
-      "name" : "Tokoyami Towa",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1uv2Oq6kNxgATlCiez59hw" }
-      ],
-      "aliases" : ["towa", "tmt"]
-    },
-    {
-      "name" : "Himemori Luna",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCa9Y57gfeY0Zro_noHRVrnw" }
-      ],
-      "aliases" : ["luna"]
-    },
-    {
-      "name" : "Kiryu Coco",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCS9uQI-jC3DE0L4IpXyvr6w" }
-      ],
-      "aliases" : ["coco", "kaichou"]
-    },
-    {
-      "name" : "Yukihana Lamy",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCFKOVgVbGmX65RxO3EtH3iw" }
-      ],
-      "aliases" : ["lamy"]
-    },
-    {
-      "name" : "Momosuzu Nene",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCAWSyEs_Io8MtpY3m-zqILA" }
-      ],
-      "aliases" : ["nene", "nenechi"]
-    },
-    {
-      "name" : "Shishiro Botan",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCUKD-uaobj9jiqB-VXt71mA" }
-      ],
-      "aliases" : ["botan", "shishiron"]
-    },
-    {
-      "name" : "Omaru Polka",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCK9V2B22uJYu3N7eR_BT9QA" }
-      ],
-      "aliases" : ["polka"]
-    },
-    {
-      "name" : "La+ Darknesss",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCENwRMx5Yh42zWpzURebzTw" }
-      ],
-      "aliases" : ["la+", "laplus"]
-    },
-    {
-      "name" : "Takane Lui",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCs9_O1tRPMQTHQ-N_L6FU2g" }
-      ],
-      "aliases" : ["lui"]
-    },
-    {
-      "name" : "Hakui Koyori",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC6eWCld0KwmyHFbAqK3V-Rw" }
-      ],
-      "aliases" : ["koyori"]
-    },
-    {
-      "name" : "Sakamata Chloe",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCIBY1ollUsauvVi4hW4cumw" }
-      ],
-      "aliases" : ["chloe"]
-    },
-    {
-      "name" : "Kazama Iroha",
-      "groups": [["HoloJP"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC_vMYWcDjmfdpH6r4TTn1MQ" }
-      ],
-      "aliases" : ["iroha"]
-    },
-    {
-      "name" : "Ayunda Risu",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCOyYb1c43VlX9rc_lT6NKQw" }
-      ],
-      "aliases" : ["risu"]
-    },
-    {
-      "name" : "Moona Hoshinova",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCP0BspO_AMEe3aQqqpo89Dg" }
-      ],
-      "aliases" : ["moona"]
-    },
-    {
-      "name" : "Airani Iofifteen",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCAoy6rzhSf4ydcYjJw3WoVg" }
-      ],
-      "aliases" : ["io15", "iofi"]
-    },
-    {
-      "name" : "Kureiji Ollie",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCYz_5n-uDuChHtLo7My1HnQ" }
-      ],
-      "aliases" : ["ollie"]
-    },
-    {
-      "name" : "Anya Melfissa",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC727SQYUvx5pDDGQpTICNWg" }
-      ],
-      "aliases" : ["anya"]
-    },
-    {
-      "name" : "Pavolia Reine",
-      "groups": [["HoloID"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
-      ],
-      "aliases" : ["reine"]
-    },
-    {
-      "name" : "Elira Pendora",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCIeSUTOTkF9Hs7q3SGcO-Ow" }
-      ],
-      "aliases" : ["elira"]
-    },
-    {
-      "name" : "Pomu Rainpuff",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCP4nMSTdwU1KqYWu3UH5DHQ" }
-      ],
-      "aliases" : ["pomu"]
-    },
-    {
-      "name" : "Finana Ryugu",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCu-J8uIXuLZh16gG-cT1naw" }
-      ],
-      "aliases" : ["finana"]
-    },
-    {
-      "name" : "Selen Tatsuki",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCV1xUwfM2v2oBtT3JNvic3w" }
-      ],
-      "aliases" : ["selen"]
-    },
-    {
-      "name" : "Rosemi Lovelock",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC4WvIIAo89_AzGUh1AZ6Dkg" }
-      ],
-      "aliases" : ["rosemi"]
-    },
-    {
-      "name" : "Petra Gurin",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCgA2jKRkqpY_8eysPUs8sjw" }
-      ],
-      "aliases" : ["petra"]
-    },
-    {
-      "name" : "Reimu Endou",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCBURM8S4LH7cRZ0Clea9RDA" }
-      ],
-      "aliases" : ["reimu"]
-    },
-    {
-      "name" : "Nina Kosaka",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCkieJGn3pgJikVW8gmMXE2w" }
-      ],
-      "aliases" : ["nina"]
-    },
-    {
-      "name" : "Millie Parfait",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC47rNmkDcNgbOcM-2BwzJTQ" }
-      ],
-      "aliases" : ["millie"]
-    },
-    {
-      "name" : "Enna Alouette",
-      "groups": [["NijiEN"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCR6qhsLpn62WVxCBK1dkLow" }
-      ],
-      "aliases" : ["enna"]
-    },
-    {
-      "name" : "Amano Pikamee",
-      "groups": [["VOMS"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCajhBT4nMrg3DLS-bLL2RCg" }
-      ],
-      "aliases" : ["pikamee"]
-    },
-    {
-      "name" : "Hikasa Tomoshika",
-      "groups": [["VOMS"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC3vzVK_N_SUVKqbX69L_X4g" }
-      ],
-      "aliases" : ["tomoshika"]
-    },
-    {
-      "name" : "Haneuzu Miuneru",
-      "groups": [["VOMS"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCE5VgVGRPfNCjXPeTe1QJHA" }
-      ],
-      "aliases" : ["miuneru"]
-    },
-    {
-      "name" : "Rinkou Ashelia",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCg7sW-h1PUowdiR5K4HlBew" }
-      ],
-      "aliases" : ["ashelia"]
-    },
-    {
-      "name" : "Utatane Nasa",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCB7sSUNwh_dXE7ZL3DsGDpw" }
-      ],
-      "aliases" : ["nasa"]
-    },
-    {
-      "name" : "Pipkin Pippa",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCJ46YTYBQVXsfsp8-HryoUA" }
-      ],
-      "aliases" : ["pipkin", "pippa"]
-    },
-    {
-      "name" : "Tenma Maemi",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC3K7pmiHsNSx1y0tdx2bbCw" }
-      ],
-      "aliases" : ["tenma"]
-    },
-    {
-      "name" : "Hakushika Iori",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCN5bD1YYapThOeadG7YkBOA" }
-      ],
-      "aliases" : ["iori"]
-    },
-    {
-      "name" : "Fujikura Uruka",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCjXJYPsKxoJyc-1RPB6dSyw" }
-      ],
-      "aliases" : ["uruka"]
-    },
-    {
-      "name" : "Shisui Michiru",
-      "groups": [["PhaseConnect"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC1cExET9xoWSO9iSnRsW_1Q" }
-      ],
-      "aliases" : ["michiru"]
-    },
-    {
-      "name" : "Nyanners",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "nyanners" }
-      ],
-      "aliases" : ["nyanners"]
-    },
-    {
-      "name" : "Projekt Melody",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "projektmelody" }
-      ],
-      "aliases" : ["melody"]
-    },
-    {
-      "name" : "Froot",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "apricot" }
-      ],
-      "aliases" : ["apricot"]
-    },
-    {
-      "name" : "Zentreya",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "zentreya" }
-      ],
-      "aliases" : ["zentreya"]
-    },
-    {
-      "name" : "Silvervale",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "silvervale" }
-      ],
-      "aliases" : ["silvervale"]
-    },
-    {
-      "name" : "Ironmouse",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "ironmouse" }
-      ],
-      "aliases" : ["ironmouse"]
-    },
-    {
-      "name" : "Hime Hajime",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "hajime" }
-      ],
-      "aliases" : ["hajime"]
-    },
-    {
-      "name" : "Veibae",
-      "groups": [["VShojo"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "veibae" }
-      ],
-      "aliases" : ["veibae"]
-    },
-    {
-      "name" : "Hotaru Iora",
-      "groups": [["VReverie"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC0g_U1QjfhMR-kx8XLmWTCA" }
-      ],
-      "aliases" : ["iora"]
-    },
-    {
-      "name" : "Nova Aokami",
-      "groups": [["VReverie"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCA4bOB1Jnw5-lbuoSCfxc-w" }
-      ],
-      "aliases" : ["nova"]
-    },
-    {
-      "name" : "Lilrya Prisvielle",
-      "groups": [["VReverie"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCt7vm-7hlwPcYsRacX7QJYw" }
-      ],
-      "aliases" : ["lilrya"]
-    },
-    {
-      "name" : "Ophelia Midnight",
-      "groups": [["VReverie"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UCZyNPQCjju3KIv9X84diljw" }
-      ],
-      "aliases" : ["ophelia"]
-    },
-    {
-      "name" : "kson ONAIR",
-      "groups": [["Indie"]],
-      "streams" : [
-      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
-      ],
-      "aliases" : ["kson"]
-    },
-    {
-      "name" : "Snuffy",
-      "groups": [["Indie"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "snuffy" }
-      ],
-      "aliases" : ["snuffy"]
-    },
-    {
-      "name" : "Artemis of the Blue",
-      "groups": [["Indie"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "artemisoftheblue" }
-      ],
-      "aliases" : ["artemis"]
-    },
-    {
-      "name" : "girl_dm_",
-      "groups": [["Indie"]],
-      "streams" : [
-      { "type" : "ttv-channel", "value" : "girl_dm_" }
-      ],
-      "aliases" : ["girl_dm_", "girldm"]
-    }
+      {
+        "name" : "Calliope Mori",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCL_qhgtOy0dy1Agp8vkySQg" }
+        ],
+        "aliases" : ["calliope", "calli", "mori"]
+      },
+      {
+        "name" : "Takanashi Kiara",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCHsx4Hqa-1ORjQTh9TYDhww" }
+        ],
+        "aliases" : ["kiara"]
+      },
+      {
+        "name" : "Ninomae Ina'nis",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCMwGHR0BTZuLsmjY_NT5Pwg" }
+        ],
+        "aliases" : ["ina'nis", "ina"]
+      },
+      {
+        "name" : "Gawr Gura",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCoSrY_IQQVpmIRZ9Xf-y93g" }
+        ],
+        "aliases" : ["gura"]
+      },
+      {
+        "name" : "Watson Amelia",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCyl1z3jo3XHR1riLFKG5UAg" }
+        ],
+        "aliases" : ["amelia", "ame"]
+      },
+      {
+        "name" : "Irys",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC8rcEBzJSleTkf_-agPM20g" }
+        ],
+        "aliases" : ["irys", "yabairys"]
+      },
+      {
+        "name" : "Tsukumo Sana",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCsUj0dszADCGbF3gNrQEuSQ" }
+        ],
+        "aliases" : ["sana"]
+      },
+      {
+        "name" : "Ceres Fauna",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCO_aKKYxn4tvrqPjcTzZ6EQ" }
+        ],
+        "aliases" : ["fauna"]
+      },
+      {
+        "name" : "Ouro Kronii",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCmbs8T6MWqUHP1tIQvSgKrg" }
+        ],
+        "aliases" : ["kronii"]
+      },
+      {
+        "name" : "Nanashi Mumei",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC3n5uGu18FoCy23ggWWp8tA" }
+        ],
+        "aliases" : ["mumei"]
+      },
+      {
+        "name" : "Hakos Baelz",
+        "groups": [["HoloEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCgmPnx-EEeOrZSg5Tiw7ZRQ" }
+        ],
+        "aliases" : ["baelz", "bae"]
+      },
+      {
+        "name" : "Tokino Sora",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCp6993wxpyDPHUpavwDFqgg" }
+        ],
+        "aliases" : ["sora"]
+      },
+      {
+        "name" : "Roboco-san",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCDqI2jOz0weumE8s7paEk6g" }
+        ],
+        "aliases" : ["roboco"]
+      },
+      {
+        "name" : "Sakura Miko",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC-hM6YJuNYVAmUWxeIr9FeA" }
+        ],
+        "aliases" : ["miko", "mikocchi"]
+      },
+      {
+        "name" : "Hoshimachi Suisei",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC5CwaMl1eIgY8h02uZw7u8A" }
+        ],
+        "aliases" : ["suisei"]
+      },
+      {
+        "name" : "AZKI",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC0TXe_LYZ4scaW2XMyi5_kw" }
+        ],
+        "aliases" : ["azki"]
+      },
+      {
+        "name" : "Yozora Mel",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCD8HOxPs4Xvsm8H0ZxXGiBw" }
+        ],
+        "aliases" : ["mel"]
+      },
+      {
+        "name" : "Shirakami Fubuki",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCdn5BQ06XqgXoAxIhbqw5Rg" }
+        ],
+        "aliases" : ["fubuki", "fbk"]
+      },
+      {
+        "name" : "Natsuiro Matsuri",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCQ0UDLQCjY0rmuxCDE38FGg" }
+        ],
+        "aliases" : ["matsuri"]
+      },
+      {
+        "name" : "Aki Rosenthal",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCFTLzh12_nrtzqBPsTCqenA" }
+        ],
+        "aliases" : ["aki", "akirose"]
+      },
+      {
+        "name" : "Akai Haato",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1CfXB_kRs3C-zaeTG3oGyg" }
+        ],
+        "aliases" : ["haato", "haachama"]
+      },
+      {
+        "name" : "Minato Aqua",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1opHUrw8rvnsadT-iGp7Cg" }
+        ],
+        "aliases" : ["aqua"]
+      },
+      {
+        "name" : "Murasaki Shion",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCXTpFs_3PqI41qX2d9tL2Rw" }
+        ],
+        "aliases" : ["shion"]
+      },
+      {
+        "name" : "Nakiri Ayame",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC7fk0CB07ly8oSl0aqKkqFg" }
+        ],
+        "aliases" : ["ayame"]
+      },
+      {
+        "name" : "Yuzuki Choco",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1suqwovbL1kzsoaZgFZLKg" }
+        ],
+        "aliases" : ["choco"]
+      },
+      {
+        "name" : "Oozora Subaru",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCvzGlP9oQwU--Y0r9id_jnA" }
+        ],
+        "aliases" : ["subaru"]
+      },
+      {
+        "name" : "Ookami Mio",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCp-5t9SrOQwXMU7iIjQfARg" }
+        ],
+        "aliases" : ["mio"]
+      },
+      {
+        "name" : "Nekomata Okayu",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCvaTdHTWBGv3MKj3KVqJVCw" }
+        ],
+        "aliases" : ["okayu"]
+      },
+      {
+        "name" : "Inugami Korone",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UChAnqc_AY5_I3Px5dig3X1Q" }
+        ],
+        "aliases" : ["korone"]
+      },
+      {
+        "name" : "Usada Pekora",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1DCedRgGHBdm81E1llLhOQ" }
+        ],
+        "aliases" : ["pekora"]
+      },
+      {
+        "name" : "Uruha Rushia",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCl_gCybOJRIgOXw6Qb4qJzQ" }
+        ],
+        "aliases" : ["rushia"]
+      },
+      {
+        "name" : "Shiranui Flare",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCvInZx9h3jC2JzsIzoOebWg" }
+        ],
+        "aliases" : ["flare"]
+      },
+      {
+        "name" : "Shirogane Noel",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCdyqAaZDKHXg4Ahi7VENThQ" }
+        ],
+        "aliases" : ["noel", "danchou"]
+      },
+      {
+        "name" : "Houshou Marine",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCCzUftO8KOVkV4wQG1vkUvg" }
+        ],
+        "aliases" : ["marine", "senchou"]
+      },
+      {
+        "name" : "Amane Kanata",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCZlDXzGoo7d44bwdNObFacg" }
+        ],
+        "aliases" : ["kanata", "ppt"]
+      },
+      {
+        "name" : "Tsunomaki Watame",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCqm3BQLlJfvkTsX_hvm0UmA" }
+        ],
+        "aliases" : ["watame"]
+      },
+      {
+        "name" : "Tokoyami Towa",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1uv2Oq6kNxgATlCiez59hw" }
+        ],
+        "aliases" : ["towa", "tmt"]
+      },
+      {
+        "name" : "Himemori Luna",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCa9Y57gfeY0Zro_noHRVrnw" }
+        ],
+        "aliases" : ["luna"]
+      },
+      {
+        "name" : "Kiryu Coco",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCS9uQI-jC3DE0L4IpXyvr6w" }
+        ],
+        "aliases" : ["coco", "kaichou"]
+      },
+      {
+        "name" : "Yukihana Lamy",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCFKOVgVbGmX65RxO3EtH3iw" }
+        ],
+        "aliases" : ["lamy"]
+      },
+      {
+        "name" : "Momosuzu Nene",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCAWSyEs_Io8MtpY3m-zqILA" }
+        ],
+        "aliases" : ["nene", "nenechi"]
+      },
+      {
+        "name" : "Shishiro Botan",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCUKD-uaobj9jiqB-VXt71mA" }
+        ],
+        "aliases" : ["botan", "shishiron"]
+      },
+      {
+        "name" : "Omaru Polka",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCK9V2B22uJYu3N7eR_BT9QA" }
+        ],
+        "aliases" : ["polka"]
+      },
+      {
+        "name" : "La+ Darknesss",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCENwRMx5Yh42zWpzURebzTw" }
+        ],
+        "aliases" : ["la+", "laplus"]
+      },
+      {
+        "name" : "Takane Lui",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCs9_O1tRPMQTHQ-N_L6FU2g" }
+        ],
+        "aliases" : ["lui"]
+      },
+      {
+        "name" : "Hakui Koyori",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC6eWCld0KwmyHFbAqK3V-Rw" }
+        ],
+        "aliases" : ["koyori"]
+      },
+      {
+        "name" : "Sakamata Chloe",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCIBY1ollUsauvVi4hW4cumw" }
+        ],
+        "aliases" : ["chloe"]
+      },
+      {
+        "name" : "Kazama Iroha",
+        "groups": [["HoloJP"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC_vMYWcDjmfdpH6r4TTn1MQ" }
+        ],
+        "aliases" : ["iroha"]
+      },
+      {
+        "name" : "Ayunda Risu",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCOyYb1c43VlX9rc_lT6NKQw" }
+        ],
+        "aliases" : ["risu"]
+      },
+      {
+        "name" : "Moona Hoshinova",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCP0BspO_AMEe3aQqqpo89Dg" }
+        ],
+        "aliases" : ["moona"]
+      },
+      {
+        "name" : "Airani Iofifteen",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCAoy6rzhSf4ydcYjJw3WoVg" }
+        ],
+        "aliases" : ["io15", "iofi"]
+      },
+      {
+        "name" : "Kureiji Ollie",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCYz_5n-uDuChHtLo7My1HnQ" }
+        ],
+        "aliases" : ["ollie"]
+      },
+      {
+        "name" : "Anya Melfissa",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC727SQYUvx5pDDGQpTICNWg" }
+        ],
+        "aliases" : ["anya"]
+      },
+      {
+        "name" : "Pavolia Reine",
+        "groups": [["HoloID"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
+        ],
+        "aliases" : ["reine"]
+      },
+      {
+        "name" : "Elira Pendora",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCIeSUTOTkF9Hs7q3SGcO-Ow" }
+        ],
+        "aliases" : ["elira"]
+      },
+      {
+        "name" : "Pomu Rainpuff",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCP4nMSTdwU1KqYWu3UH5DHQ" }
+        ],
+        "aliases" : ["pomu"]
+      },
+      {
+        "name" : "Finana Ryugu",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCu-J8uIXuLZh16gG-cT1naw" }
+        ],
+        "aliases" : ["finana"]
+      },
+      {
+        "name" : "Selen Tatsuki",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCV1xUwfM2v2oBtT3JNvic3w" }
+        ],
+        "aliases" : ["selen"]
+      },
+      {
+        "name" : "Rosemi Lovelock",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC4WvIIAo89_AzGUh1AZ6Dkg" }
+        ],
+        "aliases" : ["rosemi"]
+      },
+      {
+        "name" : "Petra Gurin",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCgA2jKRkqpY_8eysPUs8sjw" }
+        ],
+        "aliases" : ["petra"]
+      },
+      {
+        "name" : "Reimu Endou",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCBURM8S4LH7cRZ0Clea9RDA" }
+        ],
+        "aliases" : ["reimu"]
+      },
+      {
+        "name" : "Nina Kosaka",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCkieJGn3pgJikVW8gmMXE2w" }
+        ],
+        "aliases" : ["nina"]
+      },
+      {
+        "name" : "Millie Parfait",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC47rNmkDcNgbOcM-2BwzJTQ" }
+        ],
+        "aliases" : ["millie"]
+      },
+      {
+        "name" : "Enna Alouette",
+        "groups": [["NijiEN"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCR6qhsLpn62WVxCBK1dkLow" }
+        ],
+        "aliases" : ["enna"]
+      },
+      {
+        "name" : "Amano Pikamee",
+        "groups": [["VOMS"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCajhBT4nMrg3DLS-bLL2RCg" }
+        ],
+        "aliases" : ["pikamee"]
+      },
+      {
+        "name" : "Hikasa Tomoshika",
+        "groups": [["VOMS"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC3vzVK_N_SUVKqbX69L_X4g" }
+        ],
+        "aliases" : ["tomoshika"]
+      },
+      {
+        "name" : "Haneuzu Miuneru",
+        "groups": [["VOMS"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCE5VgVGRPfNCjXPeTe1QJHA" }
+        ],
+        "aliases" : ["miuneru"]
+      },
+      {
+        "name" : "Rinkou Ashelia",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCg7sW-h1PUowdiR5K4HlBew" }
+        ],
+        "aliases" : ["ashelia"]
+      },
+      {
+        "name" : "Utatane Nasa",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCB7sSUNwh_dXE7ZL3DsGDpw" }
+        ],
+        "aliases" : ["nasa"]
+      },
+      {
+        "name" : "Pipkin Pippa",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCJ46YTYBQVXsfsp8-HryoUA" }
+        ],
+        "aliases" : ["pipkin", "pippa"]
+      },
+      {
+        "name" : "Tenma Maemi",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC3K7pmiHsNSx1y0tdx2bbCw" }
+        ],
+        "aliases" : ["tenma"]
+      },
+      {
+        "name" : "Hakushika Iori",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCN5bD1YYapThOeadG7YkBOA" }
+        ],
+        "aliases" : ["iori"]
+      },
+      {
+        "name" : "Fujikura Uruka",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCjXJYPsKxoJyc-1RPB6dSyw" }
+        ],
+        "aliases" : ["uruka"]
+      },
+      {
+        "name" : "Shisui Michiru",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1cExET9xoWSO9iSnRsW_1Q" }
+        ],
+        "aliases" : ["michiru"]
+      },
+      {
+        "name" : "Nyanners",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "nyanners" }
+        ],
+        "aliases" : ["nyanners"]
+      },
+      {
+        "name" : "Projekt Melody",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "projektmelody" }
+        ],
+        "aliases" : ["melody"]
+      },
+      {
+        "name" : "Froot",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "apricot" }
+        ],
+        "aliases" : ["apricot"]
+      },
+      {
+        "name" : "Zentreya",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "zentreya" }
+        ],
+        "aliases" : ["zentreya"]
+      },
+      {
+        "name" : "Silvervale",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "silvervale" }
+        ],
+        "aliases" : ["silvervale"]
+      },
+      {
+        "name" : "Ironmouse",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "ironmouse" }
+        ],
+        "aliases" : ["ironmouse"]
+      },
+      {
+        "name" : "Hime Hajime",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "hajime" }
+        ],
+        "aliases" : ["hajime"]
+      },
+      {
+        "name" : "Veibae",
+        "groups": [["VShojo"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "veibae" }
+        ],
+        "aliases" : ["veibae"]
+      },
+      {
+        "name" : "Hotaru Iora",
+        "groups": [["VReverie"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC0g_U1QjfhMR-kx8XLmWTCA" }
+        ],
+        "aliases" : ["iora"]
+      },
+      {
+        "name" : "Nova Aokami",
+        "groups": [["VReverie"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCA4bOB1Jnw5-lbuoSCfxc-w" }
+        ],
+        "aliases" : ["nova"]
+      },
+      {
+        "name" : "Lilrya Prisvielle",
+        "groups": [["VReverie"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCt7vm-7hlwPcYsRacX7QJYw" }
+        ],
+        "aliases" : ["lilrya"]
+      },
+      {
+        "name" : "Ophelia Midnight",
+        "groups": [["VReverie"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCZyNPQCjju3KIv9X84diljw" }
+        ],
+        "aliases" : ["ophelia"]
+      },
+      {
+        "name" : "kson ONAIR",
+        "groups": [["Indie"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
+        ],
+        "aliases" : ["kson"]
+      },
+      {
+        "name" : "Snuffy",
+        "groups": [["Indie"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "snuffy" }
+        ],
+        "aliases" : ["snuffy"]
+      },
+      {
+        "name" : "Artemis of the Blue",
+        "groups": [["Indie"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "artemisoftheblue" }
+        ],
+        "aliases" : ["artemis"]
+      },
+      {
+        "name" : "girl_dm_",
+        "groups": [["Indie"]],
+        "streams" : [
+          { "type" : "ttv-channel", "value" : "girl_dm_" }
+        ],
+        "aliases" : ["girl_dm_", "girldm"]
+      }
     ]
-  </script>
-  <script>
-    setup()
   </script>
 </body>
 </html>
