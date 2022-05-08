@@ -220,21 +220,30 @@
     
     function getReferFunctions() {
       return [
-      referYoutube,
-      referTwitch,
+        referAlias,
+        referYoutube,
+        referTwitch,
       ]
     }
     function getEmbeds() {
       return { 
         'blank'       : null,
+        'alias'       : embedAlias,
         'yt-video'    : embedYoutubeVideo,
         'yt-channel'  : embedYoutubeChannel,
         'ttv-video'   : embedTwitchVideo,
         'ttv-channel' : embedTwitchChannel,
       }
     }
+
+    function referAlias(alias) {
+      alias = alias.toLowerCase()
+      if (alias in global.aliases) {
+        return ['alias', alias, []]
+      }
+      return null
+    }
     
-    /* TODO: Add Youtube chat embedding if I ever figure out how to 1) obtain permanent chat links, 2) avoid the need to set the embed-domain parameter, 3) do this entirely in-browser */
     function referYoutube(str) {
       /* Try to treat the string as a URL */
       try {
@@ -307,31 +316,37 @@
     function embedTwitchVideo(value, extras) {
       return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true&height=100%&width=100%' + extras
     }
-    
-    function openRefererData(type, value, extras) {
-      if (type == 'yt-channel') {
-        window.open('https://www.youtube.com/channel/' + value, '_blank')
-      } else if (type == 'yt-video') {
-        window.open('https://www.youtube.com/watch?v=' + value + extras, '_blank')
-      } else if (type == 'ttv-channel') {
-        window.open('https://www.twitch.tv/' + value, '_blank')
-      } else if (type == 'ttv-video') {
-        window.open('https://www.twitch.tv/videos/' + value, '_blank')
+
+    function embedAlias(value, extras) {
+      var streamer = global.aliases[value]
+      if (streamer.status) {
+        return checkEmbeds(streamer.status.type, streamer.status.value, [])
       }
+      else {
+        return checkEmbeds(streamer.streams[0].type, streamer.streams[0].value, [])
+      }
+    }
+
+    function resolveEmbedData(type, value, extras) {
+      if (type == 'alias') {
+        var streamer = global.aliases[value]
+        if (streamer.status) {
+          type = streamer.status.type
+          value = streamer.status.value
+        }
+        else {
+          type = streamer.streams[0].type
+          value = streamer.streams[0].value
+        }
+      }
+      return [type, value, extras]
     }
     
     function checkReferers(str) {
       /* Check if data is embedded in the string */
-      for (embed of Object.keys(getEmbeds())) {
-        if (str.startsWith(embed + '=')) {
-          return [embed, str.split(embed + '=')[1], []]
-        }
-      }
-      
-      /* Try each method for something that isn't null */
-      if (str.toLowerCase() in global.aliases) {
-        var streamData = global.aliases[str.toLowerCase()].streams[0]
-        return [streamData.type, streamData.value, []]
+      var [type, value] = str.split('=')
+      if (type in getEmbeds()) {
+        return [type, value, []]
       }
       
       /* Try each method for something that isn't null */
@@ -390,8 +405,8 @@
       grid.style.gridTemplateColumns = 'repeat(' + columns + ', minmax(0, 1fr))'
       
       /* Add bookkeeping */
-      grid.setAttribute('data-rows',    rows)
-      grid.setAttribute('data-columns', columns)
+      grid.rows = rows
+      grid.columns = columns
       
       /* If children don't exist yet, this is a fresh page load */
       var freshGrid = grid.children.length == 0
@@ -433,11 +448,11 @@
         /* If an element is about to be cut off, move it to the first available blank spot */
         for (var afterIndex = totalElements; afterIndex < grid.children.length; ++afterIndex) {
           /* Swap non-blank trailing elements... */
-          if (grid.children[afterIndex].getAttribute('data-type') != 'blank') {
+          if (grid.children[afterIndex].type != 'blank') {
             /* With... */
             for (var currentIndex = 0; currentIndex < totalElements; ++currentIndex) {
               /* Any blank leading elements */
-              if (grid.children[currentIndex].getAttribute('data-type') == 'blank') {
+              if (grid.children[currentIndex].type == 'blank') {
                 moveElement(grid.children[afterIndex], grid.children[currentIndex])
               }
             }
@@ -467,7 +482,8 @@
       
       /* Add bookkeeping */
       div.classList.add('grid-element')
-      div.setAttribute('data-type', 'blank')
+      div.type = 'blank'
+      div.setAttribute('type', 'blank')
       
       /* First child is the text displayed on hover */
       div.appendChild(document.createElement('div'))
@@ -489,21 +505,27 @@
           removeElement(element)
         } else {
           /* Add bookkeeping */
-          element.setAttribute('data-type', type)
+          element.type = type
           
           /* Ignore value if blank */
           if (value) {
-            element.setAttribute('data-value', value)
+            element.value = value
           } else {
-            element.removeAttribute('data-value')
+            element.value = null
           }
           
           /* Ignore extras if blank */
           if (extras) {
-            element.setAttribute('data-extras', extras)
+            element.extras = extras
           } else {
-            element.removeAttribute('data-extras')
+            element.extras = null
           }
+
+          var [realType, realValue, realExtras] = resolveEmbedData(type, value, extras)
+          realType ? element.setAttribute('type', realType) : element.removeAttribute('type')
+          realValue ? element.setAttribute('value', realValue) : element.removeAttribute('value')
+          realExtras ? element.setAttribute('extras', realExtras) : element.removeAttribute('extras')
+
           
           /* Create and set up the iframe */
           var frame = document.createElement('iframe')
@@ -524,23 +546,23 @@
       var baseURL = window.location.href.split('?')[0]
       
       /* Add parameters for rows/columns */
-      baseURL += '?rows='    + grid.getAttribute('data-rows')
-      baseURL += '&columns=' + grid.getAttribute('data-columns')
+      baseURL += '?rows='    + grid.rows
+      baseURL += '&columns=' + grid.columns
 
       /* Save backend location in URL if it isn't the default value */
-      if (backendLocation.toLowerCase() != 'localhost') {
+      if (backendLocation.toLowerCase() != 'localhost:8080') {
         baseURL += '&backend=' + backendLocation
       }
       
       /* Add parameters for the types/value of each piece of the grid */
-      document.querySelectorAll('div[data-type]').forEach(function(element) {
-        var extras = element.getAttribute('data-extras') ?? ''
+      document.querySelectorAll('.grid-element').forEach(function(element) {
+        var extras = element.extras ?? ''
         baseURL += extras ? extras : ''
         
-        var type  = element.getAttribute('data-type')
+        var type  = element.type
         baseURL += '&' + type
         
-        var value = element.getAttribute('data-value')
+        var value = element.value
         baseURL += value ? '=' + value : ''
       })
       
@@ -558,13 +580,13 @@
       }
       
       var foundSelection = false
-      document.querySelectorAll('div[data-type]').forEach(function(element) {
-        var type  = element.getAttribute('data-type')
+      document.querySelectorAll('div[type]').forEach(function(element) {
+        var type  = element.type
         if (type == 'yt-video' || type == 'ttv-channel') {
           var option = select.appendChild(document.createElement('option'))
-          var id = element.getAttribute('data-value')
-          option.setAttribute('data-type', type)
-          option.setAttribute('data-value', id)
+          var id = element.value
+          option.type = type
+          option.value = id
           option.textContent = crossReference[[type, id]] ?? id
           
           if (currentSelection == option.textContent) {
@@ -583,8 +605,8 @@
           
           for (var child of event.target.children) {
             if (child.textContent == event.target.value) {
-              var type = child.getAttribute('data-type')
-              var value = child.getAttribute('data-value')
+              var type = child.type
+              var value = child.value
               if (type == 'yt-video') {
                 chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
               }
@@ -703,32 +725,29 @@
         if (statusType == 'live') {
           listElement.setAttribute('status', 'live')
           listElement.textContent = streamer.name + ' ' + status.title
-          listElement.dataType = status.dataType
-          listElement.dataValue = status.dataValue
+          listElement.type = status.type
+          listElement.value = status.value
 
-          crossReference[[status.dataType, status.dataValue]] = listElement.textContent
-          updateChat()
+          crossReference[[status.type, status.value]] = listElement.textContent
           return
         }
 
         if (statusType == 'upcoming') {
           listElement.setAttribute('status', 'upcoming')
           listElement.textContent = streamer.name + ' ' + status.title
-          listElement.dataType = status.dataType
-          listElement.dataValue = status.dataValue
+          listElement.type = status.type
+          listElement.value = status.value
 
-          crossReference[[status.dataType, status.dataValue]] = listElement.textContent
-          updateChat()
+          crossReference[[status.type, status.value]] = listElement.textContent
           return
         }
 
         if (statusType == 'offline') {
           listElement.setAttribute('status', 'offline')
           listElement.textContent = streamer.name + ' offline'
-          listElement.dataType = null
-          listElement.dataValue = null
-          crossReference[[status.dataType, status.dataValue]] = ""
-          updateChat()
+          listElement.type = null
+          listElement.value = null
+          crossReference[[status.type, status.value]] = ""
         }
       }
     }
@@ -748,12 +767,12 @@
       var div = document.createElement('div')
       div.classList.add('overlayListElement')
       div.name = streamer.name
-      div.dataType = streamer.streams[0].type
-      div.dataValue = streamer.streams[0].value
+      div.type = streamer.streams[0].type
+      div.value = streamer.streams[0].value
       div.textContent = streamer.name
 
       div.onclick = function(event){ 
-        setElement(listElement, event.target.dataType, event.target.dataValue, [])
+        setElement(listElement, event.target.type, event.target.value, [])
         
         /* Refresh automatic removal */
         setOverlayAutoRemoveTimer()
@@ -773,7 +792,7 @@
       div.setAttribute('draggable', true)
       div.ondragstart = function(event) {
         /* Use the stream data as the drop data */
-        event.dataTransfer.setData('text/plain', event.target.dataType + '=' + event.target.dataValue)
+        event.dataTransfer.setData('text/plain', event.target.type + '=' + event.target.value)
       }
       div.ondragend = resetInteractions
       
@@ -875,7 +894,6 @@
         'm' : ['move',          moveElement,           'Moves the stream between locations'],
         'c' : ['chat',          toggleChat,            'Toggles the chat panel'],
         'r' : ['reload',        reloadElement,         'Reloads the stream'],
-        'o' : ['open in tab',   openElement,           'Opens the stream/channel in a new tab'],
         'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
         'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
         'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
@@ -966,7 +984,7 @@
     function reloadElement(element) {
       if (element && element.classList.contains('grid-element')) {
         /* Reuse the existing data from the element */
-        setElement(element, element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
+        setElement(element, element.type, element.value, element.extras)
         return true
       }
     }
@@ -975,12 +993,12 @@
       if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
         if (currentElement != lastElement) {
           /* Save the last element */
-          var lastType   = lastElement.getAttribute('data-type')
-          var lastValue  = lastElement.getAttribute('data-value')
-          var lastExtras = lastElement.getAttribute('data-extras')
+          var lastType   = lastElement.type
+          var lastValue  = lastElement.value
+          var lastExtras = lastElement.extras
           
           /* Set last element from the current */
-          setElement(lastElement, currentElement.getAttribute('data-type'), currentElement.getAttribute('data-value'), currentElement.getAttribute('data-extras'))
+          setElement(lastElement, currentElement.type, currentElement.value, currentElement.extras)
           
           /* Set the current element from the last */
           setElement(currentElement, lastType, lastValue, lastExtras)
@@ -990,25 +1008,11 @@
       return false
     }
     
-    function openElement(element) {
-      if (element && element.classList.contains('grid-element')) {
-        /* Used with keyboard/mouse events */
-        openRefererData(element.getAttribute('data-type'), element.getAttribute('data-value'), element.getAttribute('data-extras'))
-      }
-      return true
-    }
-    
-    function openFromString(str) {
-      /* Used with the overlay list */
-      var [type, value, extras] = checkReferers(str)
-      openRefererData(type, value, extras)
-    }
-    
     function copyElement(currentElement, lastElement) {
       if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
         if (currentElement != lastElement) {
           /* Set the element using the data from the last element */
-          setElement(currentElement, lastElement.getAttribute('data-type'), lastElement.getAttribute('data-value'), lastElement.getAttribute('data-extras'))
+          setElement(currentElement, lastElement.type, lastElement.value, lastElement.extras)
         }
         return true
       }
@@ -1060,13 +1064,34 @@
       }
     }
     
-    function findAdjacentEntry(list, searchType, searchValue, offset) {
+    function findAdjacentEntry(list, entry, offset) {
+      var divList = []
+      for (var element of list) {
+        if (element.tagName == 'DIV') {
+          /* Add the current entry */
+          if (element == entry) {
+            divList.push(element)
+            continue
+          }
+
+          /* Add any entries that aren't offline */
+          if (element.getAttribute('status') != 'offline') {
+            divList.push(element)
+            continue
+          }
+
+          if (element.getAttribute('status') == null) {
+            divList.push(element)
+            continue
+          }
+        }
+      }
+
       var elementIndex = 0
-      for (element of list) {
-        if (element.tagName == 'DIV' && element.dataType == searchType && element.dataValue == searchValue) {
+      for (var element of divList) {
+        if (element == entry) {
           /* Add the array length to help with negative offsets */
-          var adjacentElement = list[(elementIndex + list.length + offset) % list.length]
-          return [adjacentElement.name, adjacentElement.dataType, adjacentElement.dataValue]
+          return divList[(elementIndex + divList.length + offset) % divList.length].name
         }
         ++elementIndex
       }
@@ -1089,77 +1114,107 @@
       }, 1000
       )
     }
+
+    function findStreamer(type, value) {
+      if (type == 'alias') {
+        return global.aliases[value]
+      }
+
+      for (var streamer of Object.values(global.streamers)) {
+        if (streamer.status && streamer.status.type == type && streamer.status.value == value) {
+          return streamer
+        }
+
+        for (var stream of streamer.streams) {
+          if (stream.type == type && stream.value == value) {
+            return streamer
+          }
+        }
+      }
+
+      return null
+    }
+
+    function findListElementFromGridElement(element) {
+      var streamer = null
+      streamer = streamer ?? findStreamer(element.type, element.value)
+      streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
+
+      for (var listElement of document.querySelectorAll('.overlayListElement')) {
+        if (streamer.name == listElement.name) {
+          return listElement
+        }
+      }
+
+      return null
+    }
     
     function nextElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        var dataType = element.getAttribute('data-type')
-        var dataValue = element.getAttribute('data-value')
+        var listElement = findListElementFromGridElement(element)
 
-        var parentElement = null
-        for (var listElement of document.querySelectorAll('.overlayListElement')) {
-          if (listElement.dataType == dataType && listElement.dataValue == dataValue) {
-            parentElement = listElement.parentElement
-          }
+        var name = null
+        if (listElement) {
+          name = findAdjacentEntry(listElement.parentElement.children, listElement, 1)
         }
 
-        if (parentElement) {
-          var [name, type, value] = findAdjacentEntry(parentElement.children, dataType, dataValue, 1)
-          if (name) {
-            setElement(element, type, value)
-            setChannelNameTimer(element, name)
-          }
-        }
+        /* Default to the first streamer if nothing can be found */
+        name = name ?? Object.values(global.streamers)[0].name
+
+        setElementFromString(element, global.streamers[name].aliases[0])
+        setChannelNameTimer(element, name)
       }
       return true
     }
     
     function previousElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        var dataType = element.getAttribute('data-type')
-        var dataValue = element.getAttribute('data-value')
+        var listElement = findListElementFromGridElement(element)
 
-        var parentElement = null
-        for (var listElement of document.querySelectorAll('.overlayListElement')) {
-          if (listElement.dataType == dataType && listElement.dataValue == dataValue) {
-            parentElement = listElement.parentElement
-          }
-        }
-
+        var name = null
         if (parentElement) {
-          var [name, type, value] = findAdjacentEntry(parentElement.children, dataType, dataValue, -1)
-          if (name) {
-            setElement(element, type, value)
-            setChannelNameTimer(element, name)
-          }
+          name = findAdjacentEntry(listElement.parentElement.children, listElement, -1)
         }
+
+        /* Default to the first streamer if nothing can be found */
+        name = name ?? Object.values(global.streamers)[0].name
+
+        setElementFromString(element, global.streamers[name].aliases[0])
+        setChannelNameTimer(element, name)
       }
       return true
     }
     
     function nextGlobalElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        var dataType = element.getAttribute('data-type')
-        var dataValue = element.getAttribute('data-value')
+        var listElement = findListElementFromGridElement(element)
 
-        var [name, type, value] = findAdjacentEntry(overlayList.querySelectorAll('.overlayListElement'), dataType, dataValue, 1)
-        if (name) {
-          setElement(element, type, value)
-          setChannelNameTimer(element, name)
-        }
+        var name = findAdjacentEntry(
+          overlayList.querySelectorAll('.overlayListElement'), listElement, 1
+        )
+
+        /* Default to the first streamer if nothing can be found */
+        name = name ?? Object.values(global.streamers)[0].name
+
+        setElementFromString(element, global.streamers[name].aliases[0])
+        setChannelNameTimer(element, name)
       }
       return true
     }
     
     function previousGlobalElement(element) {
       if (element && element.classList.contains('grid-element')) {
-        var dataType = element.getAttribute('data-type')
-        var dataValue = element.getAttribute('data-value')
+        var listElement = findListElementFromGridElement(element)
 
-        var [name, type, value] = findAdjacentEntry(overlayList.querySelectorAll('.overlayListElement'), dataType, dataValue, -1)
-        if (name) {
-          setElement(element, type, value)
-          setChannelNameTimer(element, name)
-        }
+        var name = findAdjacentEntry(
+          overlayList.querySelectorAll('.overlayListElement'), listElement, -1
+        )
+
+        /* Default to the first streamer if nothing can be found */
+        name = name ?? Object.values(global.streamers)[0].name
+
+        setElementFromString(element, global.streamers[name].aliases[0])
+        setChannelNameTimer(element, name)
       }
       return true
     }
@@ -1256,8 +1311,8 @@
         tab.style.display = 'inline-block'
 
         /* Chat takes an extra 15% of width when enabled */
-        tab.style.top = (100 / grid.getAttribute('data-rows')) + '%'
-        tab.style.left = ((chatInput.checked ? 85 : 100) / grid.getAttribute('data-columns')) + '%'
+        tab.style.top = (100 / grid.rows) + '%'
+        tab.style.left = ((chatInput.checked ? 85 : 100) / grid.columns) + '%'
       } else {
         tab.style.display = 'none'
       }
@@ -1374,7 +1429,7 @@
     function processUpdateMessage(update) {
       /* Search for the updated streamer */
       var updatedStreamer = null
-      for (var streamer of global.streamers) {
+      for (var streamer of Object.values(global.streamers)) {
         if (streamer.name == update.name) {
           updatedStreamer = streamer
           break
@@ -1393,6 +1448,22 @@
 
       /* Update each video in the message */
       for (var video of update.videos) {
+        var foundVideo = false
+        for (var stream of updatedStreamer.streams) {
+          if (video.type == stream.type && video.value == stream.value) {
+            break
+          }
+        }
+
+        if (!foundVideo) {
+          updatedStreamer.streams.push({
+            type : video.type,
+            value : video.value,
+          })
+        }
+      }
+
+      for (var video of update.videos) {
         if (video.status == 'live') {
           updatedStreamer.status = video
           return
@@ -1409,6 +1480,37 @@
       updatedStreamer.status = {
         status : 'offline'
       }
+    }
+
+    function maintainGridElement(element) {
+      var type = element.type
+      var value = element.value
+
+      for (var streamer of Object.values(global.streamers)) {
+        for (var stream of streamer.streams) {
+          if (stream.type != type || stream.value != value) {
+            continue
+          }
+
+          if ('status' in streamer && streamer.status.status == 'offline') {
+            removeElement(element)
+          } else if ('status' in streamer && streamer.status.status != 'offline') {
+            element.type = streamer.status.type
+            element.value = streamer.status.value
+          }
+          
+          return
+        }
+      }
+    }
+
+    function maintainVideoElements() {
+      for (var element of document.querySelectorAll('.grid-element')) {
+        maintainGridElement(element)
+      }
+
+      updateURL()
+      updateChat()
     }
     
     function makeDraggable(element) {
@@ -1519,7 +1621,7 @@
       global.groups = { groups : {}, streamers : new Map() }
 
       overlayTimeoutSeconds = 0
-      backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost'
+      backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
       crossReference = new Map()
       alreadyWarnedVersion = false
 
@@ -1539,6 +1641,7 @@
       updateOverlayListElements()
       
       setInterval(updateOverlayListElements, 1000)
+      setInterval(maintainVideoElements, 1000)
       
       connectBackend()
     }
