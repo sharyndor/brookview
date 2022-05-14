@@ -71,18 +71,6 @@
       display: none;
       color: red;
     }
-
-    #chat > select > option[type="blank"] {
-      display: none;
-    }
-
-    #chat > select > option[type="yt-channel"] {
-      display: none;
-    }
-
-    #chat > select > option[type="ttv-video"] {
-      display: none;
-    }
     
     form {
       overflow: hidden;
@@ -196,7 +184,21 @@
     
     #chat {
       float: right;
-      background-color: white;
+      
+      color: #BEBEBE;
+      background-color: #202020;
+    }
+
+    #chat > select > option[type="blank"] {
+      display: none;
+    }
+
+    #chat > select > option[type="yt-channel"] {
+      display: none;
+    }
+
+    #chat > select > option[type="ttv-video"] {
+      display: none;
     }
   </style>
 </head>
@@ -637,7 +639,7 @@
       var realWidth  = Math.floor(window.innerWidth  / columns) * columns
       
       if (global.chatEnabled) {
-        chatWidth = Math.floor(window.innerWidth * 0.15)
+        chatWidth = Math.floor(window.innerWidth * 0.20)
         realWidth -= chatWidth;
         
         chat.style.width = chatWidth + 'px'
@@ -1415,9 +1417,9 @@
         /* Reposition the window when it gets shown */
         tab.style.display = 'inline-block'
 
-        /* Chat takes an extra 15% of width when enabled */
+        /* Chat takes an extra 20% of width when enabled */
         tab.style.top = (100 / grid.rows) + '%'
-        tab.style.left = ((global.chatEnabled ? 85 : 100) / grid.columns) + '%'
+        tab.style.left = ((global.chatEnabled ? 80 : 100) / grid.columns) + '%'
       } else {
         tab.style.display = 'none'
       }
@@ -1574,6 +1576,7 @@
         var foundVideo = false
         for (var stream of updatedStreamer.streams) {
           if (video.type == stream.type && video.value == stream.value) {
+            foundVideo = true
             break
           }
         }
