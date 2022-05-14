@@ -59,10 +59,6 @@
       color: #BEBEBE;
     }
     
-    .overlayListElement > div {
-      display: inline-block
-    }
-    
     .overlayListElement[status="live"] {
       color: green;
     }
@@ -74,6 +70,18 @@
     .overlayListElement[status="offline"] {
       display: none;
       color: red;
+    }
+
+    #chat > select > option[type="blank"] {
+      display: none;
+    }
+
+    #chat > select > option[type="yt-channel"] {
+      display: none;
+    }
+
+    #chat > select > option[type="ttv-video"] {
+      display: none;
     }
     
     form {
@@ -198,8 +206,9 @@
   <div id=overlayHelp class=overlay style="display: none"></div>
   <div id=overlayList class=overlay style="display: none"></div>
   <div id=overlaySettings class=overlay style="display: none"></div>
+  <div id=overlayMod class=overlay style="display: none"></div>
   <div id=grid></div>
-  <div id=chat>
+  <div id=chat style="display: none">
     <label>Chat:</label>
     <select>
       <option>None</option>
@@ -211,7 +220,7 @@
     var hostDomain = 'sharyndor.github.io'
 
     var backendRepo = 'https://github.com/sharyndor/brookview-backend'
-    var supportedBackendVersion = [0, 3, 2] /* vMajor.Minor.Patch */
+    var supportedBackendVersion = [0, 4, 0] /* vMajor.Minor.Patch */
     
     function getReserved(str) {
       /* These words are reserved for internal use */
@@ -571,52 +580,50 @@
       
       updateChat()
     }
-    
-    function updateChat() {
+
+    function populateChat() {
       var select = chat.children[1]
-      var currentSelection = select.value
-      while (select.children.length > 1) {
-        select.removeChild(select.lastChild)
-      }
-      
-      var foundSelection = false
-      document.querySelectorAll('div[type]').forEach(function(element) {
-        var type  = element.type
-        if (type == 'yt-video' || type == 'ttv-channel') {
-          var option = select.appendChild(document.createElement('option'))
-          var id = element.value
-          option.type = type
-          option.value = id
-          option.textContent = crossReference[[type, id]] ?? id
-          
-          if (currentSelection == option.textContent) {
-            foundSelection = true
-          }
-        }
-      })
-      
-      chat.children[1].value = currentSelection
-      
       select.onchange = function(event) {
         if (event.target.value == 'None') {
           chat.replaceChild(document.createElement('div'), chat.lastChild)
         } else {
           chat.replaceChild(document.createElement('iframe'), chat.lastChild)
           
-          for (var child of event.target.children) {
-            if (child.textContent == event.target.value) {
-              var type = child.type
-              var value = child.value
-              if (type == 'yt-video') {
-                chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
-              }
-              else if (type == 'ttv-channel') {
-                chat.lastChild.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
-              }
-              break
-            }
+          var [type, value] = event.target.value.split('=')
+          if (type == 'yt-video') {
+            chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
+          }
+          else if (type == 'ttv-channel') {
+            chat.lastChild.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
           }
         }
+      }
+    }
+    
+    function updateChat() {
+      var select = chat.children[1]
+
+      var gridElements = Array.from(document.querySelectorAll('.grid-element'))
+
+      while ((select.children.length - 1) < gridElements.length) {
+        select.appendChild(document.createElement('option'))
+      }
+
+      while ((select.children.length - 1) > gridElements.length) {
+        select.removeChild(chat.lastChild)
+      }
+
+      for (var index = 0; index < gridElements.length; ++index) {
+        var element = gridElements[index]
+        var option = select.children[index + 1]
+
+        var type  = element.getAttribute('type')
+        var value = element.getAttribute('value')
+
+        option.setAttribute('type', type)
+
+        option.value = type + '=' + value
+        option.textContent = crossReference[[type, value]] ?? option.value
       }
     }
     
@@ -629,7 +636,7 @@
       var realHeight = Math.floor(window.innerHeight / rows)    * rows
       var realWidth  = Math.floor(window.innerWidth  / columns) * columns
       
-      if (typeof(chatInput) != 'undefined' && chatInput.checked) {
+      if (global.chatEnabled) {
         chatWidth = Math.floor(window.innerWidth * 0.15)
         realWidth -= chatWidth;
         
@@ -715,40 +722,17 @@
 
       var status = streamer.status ?? null
       if (status) {
-        var now = new Date().getTime() / 1000
-        var then = status.startTime ?? 0
-        var dTime = then - now
+        var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
         var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
 
         var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
 
-        if (statusType == 'live') {
-          listElement.setAttribute('status', 'live')
-          listElement.textContent = streamer.name + ' ' + status.title
-          listElement.type = status.type
-          listElement.value = status.value
+        listElement.setAttribute('status', statusType)
+        listElement.lastChild.textContent = streamer.name + ' ' + status.title
+        listElement.lastChild = status.type
+        listElement.lastChild = status.value
 
-          crossReference[[status.type, status.value]] = listElement.textContent
-          return
-        }
-
-        if (statusType == 'upcoming') {
-          listElement.setAttribute('status', 'upcoming')
-          listElement.textContent = streamer.name + ' ' + status.title
-          listElement.type = status.type
-          listElement.value = status.value
-
-          crossReference[[status.type, status.value]] = listElement.textContent
-          return
-        }
-
-        if (statusType == 'offline') {
-          listElement.setAttribute('status', 'offline')
-          listElement.textContent = streamer.name + ' offline'
-          listElement.type = null
-          listElement.value = null
-          crossReference[[status.type, status.value]] = ""
-        }
+        crossReference[[status.type, status.value]] = listElement.textContent
       }
     }
 
@@ -763,41 +747,67 @@
       return details
     }
 
-    function addOverlayListStreamer(details, streamer) {
+    function addOverlayListStreamer(element, streamer) {
       var div = document.createElement('div')
       div.classList.add('overlayListElement')
-      div.name = streamer.name
-      div.type = streamer.streams[0].type
-      div.value = streamer.streams[0].value
-      div.textContent = streamer.name
 
-      div.onclick = function(event){ 
+      var child = null
+      var template = document.createElement('template')
+
+      for (var stream of streamer.streams) {
+        if (stream.type == 'yt-channel') {
+          template.innerHTML = '<span>[YT]</span>'
+        } else if (stream.type == 'ttv-channel') {
+          template.innerHTML = '<span>[TTV]</span>'
+        } else {
+          template.innerHTML = null
+        }
+
+        if (template.innerHTML) {
+          child = div.appendChild(template.content.firstChild)
+          addOverlayStreamerInteraction(child, stream.type, stream.value)
+        }
+      }
+
+      template.innerHTML = '<span>' + streamer.name + '</span>'
+      child = div.appendChild(template.content.firstChild)
+      addOverlayStreamerInteraction(child, 'alias', streamer.aliases[0])
+
+      div.name = streamer.name    
+      
+      return element.appendChild(div)
+    }
+
+    function addOverlayStreamerInteraction(element, type, value) {
+      element.type = type
+      element.value = value
+
+      element.onclick = function(event){ 
         setElement(listElement, event.target.type, event.target.value, [])
         
         /* Refresh automatic removal */
         setOverlayAutoRemoveTimer()
       }
-      
-      div.onmousedown = function(e) { 
+
+      element.onmousedown = function(event) { 
         /* Needed to allow dragging from list elements without moving the list */
-        e.stopPropagation()
+        event.stopPropagation()
         /* Treat this as an interaction to prevent the overlay from timing out */
         setOverlayAutoRemoveTimer()
         /* Disable interactions to allow dropping onto iframes */
         disableInteractions()
       }
-      div.onmouseup = resetInteractions
-      
-      /* Allow the div to be dragged */
-      div.setAttribute('draggable', true)
-      div.ondragstart = function(event) {
+      element.onmouseup = resetInteractions
+
+      /* Allow the element to be dragged */
+      element.setAttribute('draggable', true)
+      element.ondragstart = function(event) {
         /* Use the stream data as the drop data */
         event.dataTransfer.setData('text/plain', event.target.type + '=' + event.target.value)
       }
-      div.ondragend = resetInteractions
-      
-      
-      details.appendChild(div)
+      element.ondragend = resetInteractions
+
+      return element
     }
     
     function populateOverlaySettings() {
@@ -811,55 +821,125 @@
       var form = overlaySettings.appendChild(document.createElement('form'))
       form.onsubmit = function(e) { e.preventDefault() }
       
-      backendInput = addOverlaySetting('Backend', 'checkbox', connectBackend)
+      backendInput = addOverlaySetting(form, 'Backend', 'checkbox', connectBackend)
 
-      backendLocationSetting = addOverlaySetting('Backend Location', 'string', updateBackendLocation)
+      backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'string', updateBackendLocation)
       backendLocationSetting.value = backendLocation
 
-      backendRestartSetting = addOverlaySetting('Restart Backend', 'button', null)
+      backendRestartSetting = addOverlaySetting(form, 'Restart Backend', 'button', null)
       backendRestartSetting.addEventListener('click', requestBackendRestart)
 
-      backendUpdateSetting = addOverlaySetting('Update Backend', 'button', null)
+      backendUpdateSetting = addOverlaySetting(form, 'Update Backend', 'button', null)
       backendUpdateSetting.addEventListener('click', requestBackendAutoUpdate)
       
-      chatInput = addOverlaySetting('Chat', 'checkbox', toggleChat)
-      
-      overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
+      overlayTimeoutInput = addOverlaySetting(form, 'Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
       overlayTimeoutInput.value = overlayTimeoutSeconds = 0
-
-      newStreamerButton = addOverlaySetting('Add Streamer', 'button', null)
-      newStreamerButton.onclick = promptAddStreamer
     }
 
-    function promptAddStreamer() {
-      name = prompt('Name')
+    function populateOverlayMod() {
+      /* Disable key presses while the forms have focus */
+      overlayMod.addEventListener('focusin', function() { setKeyEvents(false) })
+      overlayMod.addEventListener('focusout', function() { setKeyEvents(true) })
+      
+      var div = overlayMod.appendChild(document.createElement('div'))
+      overlayMod.lastChild.textContent = 'Esc to close'
+      
+      var form = overlayMod.appendChild(document.createElement('form'))
+      form.onsubmit = function(e) { e.preventDefault() }
 
-      if (name in global.streamers) {
-        alert(name + ' already exists!')
+      global.mod = {}
+      global.mod.name = addOverlaySetting(form, 'Name', 'string', null)
+      global.mod.group = addOverlaySetting(form, 'Group', 'string', null)
+      global.mod.stream1 = addOverlaySetting(form, 'Stream', 'string', null)
+      global.mod.stream2 = addOverlaySetting(form, 'Stream', 'string', null)
+      global.mod.aliases = addOverlaySetting(form, 'Aliases', 'string', null)
+
+      var accept = global.mod.accept = addOverlaySetting(form, null, 'button', null)
+      accept.value = 'Add Streamer'
+      accept.onclick = addStreamer
+
+      var dump = addOverlaySetting(form, null, 'button', null)
+      dump.value = 'Dump JSON'
+      dump.onclick = dumpStreamersToPrompt
+
+      var load = addOverlaySetting(form, null, 'button', null)
+      load.value = 'Load JSON'
+      load.onclick = loadStreamersFromPrompt
+    }
+
+    function dumpStreamersToPrompt() {
+      var values = Object.values(global.streamers)
+      console.log(values)
+      prompt('JSON Dump of Streamers', JSON.stringify(values, null, 4))
+    }
+
+    function loadStreamersFromPrompt() {
+      var load = prompt()
+      if (load) {
+        global.streamers = new Map()
+        global.aliases = new Map()
+        global.groups = { groups : {}, streamers : new Map() }
+
+        updateStreamers(JSON.parse(load))
+
+        if (backendSocket.readyState == WebSocket.OPEN) {
+          backendSocket.close()
+          setTimeout(() => {
+            connectBackend()
+          }, 1000);
+        }
+      }
+    }
+
+    function toggleOverlayMod() {
+      toggleOverlay(overlayMod)
+      return true
+    }
+
+    function addStreamer() {
+      var streamer = {
+        name : '',
+        groups : [],
+        streams : [],
+        aliases : [],
+      }
+
+      streamer.name = global.mod.name.value
+      if (global.streamers[streamer.name]) {
+        alert(streamer.name + ' already exists!')
         return
       }
 
-      group = prompt('Group').split(',').map(e => e.trim()).filter(e => e)
+      streamer.groups = [global.mod.group.value.split(',').map(e => e.trim()).filter(e => e)]
 
-      var [type, value, extras] = checkReferers(prompt('Stream'))
-      stream = {
-        type : type,
-        value : value,
+      var [type, value, extras] = checkReferers(global.mod.stream1.value)
+      if (type && value) {
+        streamer.streams.push({
+          type : type,
+          value : value,
+        })
       }
 
-      aliases = prompt('Aliases').split(',').map(e => e.trim()).filter(e => e)
-
-      global.streamers[name] = {
-        name : name,
-        group : group,
-        streams : stream,
-        aliases : aliases,
+      var [type, value, extras] = checkReferers(global.mod.stream2.value)
+      if (type && value) {
+        streamer.streams.push({
+          type : type,
+          value : value,
+        })
       }
+
+      streamer.aliases =  global.mod.aliases.value.split(',').map(e => e.trim().toLowerCase()).filter(e => e)
+
+      updateStreamers([streamer])
+      
+      backendSocket.send(JSON.stringify({
+        messageType : 'initUpdate',
+        version : supportedBackendVersion,
+        streamer : streamer,
+      }))
     }
     
-    function addOverlaySetting(name, type, fun) {
-      var form = overlaySettings.lastChild
-      
+    function addOverlaySetting(form, name, type, fun) {
       var label = form.appendChild(document.createElement('label'))
       label.textContent = name
       
@@ -933,6 +1013,7 @@
         'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
         'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
         '`' : ['settings',      toggleOverlaySettings, 'Toggles the settings menu'],
+        '\\' : ['modify list',  toggleOverlayMod,      'Toggles the window for modifying the streamer list'],
       }
       return dict
     }
@@ -1278,8 +1359,8 @@
       
       return true
     }
-    
-    function toggleOverlays(overlay) {
+
+    function toggleOverlay(overlay) {
       /* Toggle the element passed in, if it exists */
       if (overlay) {
         if (overlay.style.display == 'none') {
@@ -1294,13 +1375,16 @@
           overlay.style.display = 'none'
         }
       }
-      
-      /* Disable everything else */
+    }
+    
+    function toggleOverlays(overlay) {
+      /* Disable everything */
       for (var element of document.querySelectorAll('.overlay')) {
-        if (element != overlay) {
-          element.style.display = 'none'
-        }
+        element.style.display = 'none'
       }
+      
+      /* Toggle the element passed in */
+      toggleOverlay(overlay)
     }
     
     function toggleOverlayHelp() {
@@ -1309,22 +1393,8 @@
     }
     
     function toggleOverlayList(element) {
-      if (element && element.classList.contains('grid-element')) {
-        if (overlayList.style.display == 'none') {
-          /* Save the current element for use with the overlay click handlers */
-          listElement = element
-          toggleOverlays(overlayList)
-        } else {
-          /* If the same element was chosen, close the list */
-          /* Otherwise, just update the active element */
-          if (listElement == element) {
-            listElement = null
-            overlayList.style.display = 'none'
-          } else {
-            listElement = element
-          }
-        }
-      }
+      toggleOverlays(overlayList)
+      listElement = element
       return true
     }
     
@@ -1347,7 +1417,7 @@
 
         /* Chat takes an extra 15% of width when enabled */
         tab.style.top = (100 / grid.rows) + '%'
-        tab.style.left = ((chatInput.checked ? 85 : 100) / grid.columns) + '%'
+        tab.style.left = ((global.chatEnabled ? 85 : 100) / grid.columns) + '%'
       } else {
         tab.style.display = 'none'
       }
@@ -1356,11 +1426,12 @@
     }
     
     function toggleChat(e) {
-      /* Argument looks like an event */
-      /* This means that it came from a click and will be inverted there */
-      /* Key presses need the checkbox to be manually inverted */
-      if (!e.target) {
-        chatInput.checked = !chatInput.checked
+      global.chatEnabled = !global.chatEnabled
+
+      if (global.chatEnabled) {
+        chat.removeAttribute('style')
+      } else {
+        chat.setAttribute('style', 'display: none')
       }
 
       resizeGrid()
@@ -1375,14 +1446,16 @@
     
     function requestBackendData(sock) {
       if (sock.readyState != WebSocket.CLOSED) {
-        /* Just send version info, allow the backend to reply */
-        /* Remaining processing to be handled in processBackendResponse */
+        var initData = Object.values(global.streamers)
+        initData = initData.length > 0 ? initData : JSON.parse(streamerData.innerHTML)
+
         sock.send(JSON.stringify({
-          messageType : 'version',
+          messageType : 'init',
           version : supportedBackendVersion,
+          initData : initData,
         }))
 
-        /* Repeate this call every minute */
+        /* Repeat this call every minute */
         setTimeout(() => {
           requestBackendData(sock)
         }, 1 * 60 * 1000)
@@ -1407,6 +1480,7 @@
         backendInput.checked = true
         backendSocket.onclose = function() { backendInput.checked = false }
         backendSocket.onerror = function() { 
+          initializePage()
           if (firstAttempt == false) {
             alert('Backend encountered a problem connecting to: ' + backendLocation)
           }
@@ -1417,6 +1491,14 @@
         /* Update the settings menu checkbox */
         backendInput.checked = false
       }
+
+      setTimeout(function() {
+        if (backendSocket.readyState != WebSocket.OPEN) {
+          console.log('Too slow')
+          backendSocket.close()
+        }
+      }, 500)
+
       return true
     }
 
@@ -1439,14 +1521,14 @@
     function processBackendResponse(response) {
       var message = JSON.parse(response.data)
 
-      if (message.messageType == 'version') {
-        processVersionMessage(message)
+      if (message.messageType == 'init') {
+        processInitMessage(message)
       } else if (message.messageType == 'update') {
         processUpdateMessage(message)
       }
     }
 
-    function processVersionMessage(message) {
+    function checkMessageVersion(message) {
       var version = message.version
 
       var sameVersion = true
@@ -1458,26 +1540,24 @@
 
       /* Only update if the versions match, otherwise notify the user */
       /* TODO: Proper backwards compatibility */ 
-      if (sameVersion) {
-        backendSocket.send(JSON.stringify({
-          messageType : 'streamers',
-          version : supportedBackendVersion,
-          requests : global.streamers,
-        }))
-      } else {
+      if (!sameVersion) {
         alert('Your backend is out of date. Please update from the settings menu.')
+      }
+
+      return sameVersion
+    }
+
+    function processInitMessage(init) {
+      if (checkMessageVersion(init)) {
+        initializePage(init.initData)
+      } else {
+        initializePage()
       }
     }
 
     function processUpdateMessage(update) {
       /* Search for the updated streamer */
-      var updatedStreamer = null
-      for (var streamer of Object.values(global.streamers)) {
-        if (streamer.name == update.name) {
-          updatedStreamer = streamer
-          break
-        }
-      }
+      var updatedStreamer = global.streamers[update.name] ?? null
 
       /* Add a new streamer if none was found */
       if (updatedStreamer == null) {
@@ -1662,31 +1742,51 @@
       global.streamers = new Map()
       global.aliases = new Map()
       global.groups = { groups : {}, streamers : new Map() }
+      global.chatEnabled = false
 
       overlayTimeoutSeconds = 0
       backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
       crossReference = new Map()
       alreadyWarnedVersion = false
-
-      updateStreamers(JSON.parse(streamerData.innerHTML))
       
+      populateOverlayHelp()
+      populateOverlayList()
+      populateOverlaySettings()
+      populateOverlayMod()
+      populateChat()
+
       makeDraggable(tab)
       makeDraggable(overlayHelp)
       makeDraggable(overlayList)
       makeDraggable(overlaySettings)
-      
-      createGrid()
-      populateOverlayHelp()
-      populateOverlayList()
-      populateOverlaySettings()
-      resetInteractions()
-      
-      updateOverlayListElements()
-      
-      setInterval(updateOverlayListElements, 1000)
-      setInterval(maintainVideoElements, 1000)
-      
+      makeDraggable(overlayMod)
+
       connectBackend()
+    }
+
+    function initializePage(streamerList) {
+      global.initialized = global.initialized ?? false
+
+      if (!global.initialized) {
+        global.initialized = true
+
+        if (streamerList && streamerList.length > 0) {
+          console.log('Loading from server!')
+          updateStreamers(streamerList)
+        } else {
+          console.log('Loading from defautls!')
+          updateStreamers(JSON.parse(streamerData.innerHTML))
+        }
+
+        createGrid()
+        resetInteractions()
+        
+        updateOverlayListElements()
+        setInterval(updateOverlayListElements, 1000)
+
+        setInterval(maintainVideoElements, 1000)
+      }
+
     }
 
     window.addEventListener('load', setup)
@@ -2038,7 +2138,7 @@
         "aliases" : ["polka"]
       },
       {
-        "name" : "La+ Darknesss",
+        "name" : "La+ Darkness",
         "groups": [["HoloJP"]],
         "streams" : [
           { "type" : "yt-channel", "value" : "UCENwRMx5Yh42zWpzURebzTw" }
