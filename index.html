@@ -815,11 +815,46 @@
 
       backendLocationSetting = addOverlaySetting('Backend Location', 'string', updateBackendLocation)
       backendLocationSetting.value = backendLocation
+
+      backendRestartSetting = addOverlaySetting('Restart Backend', 'button', null)
+      backendRestartSetting.addEventListener('click', requestBackendRestart)
+
+      backendUpdateSetting = addOverlaySetting('Update Backend', 'button', null)
+      backendUpdateSetting.addEventListener('click', requestBackendAutoUpdate)
       
       chatInput = addOverlaySetting('Chat', 'checkbox', toggleChat)
       
       overlayTimeoutInput = addOverlaySetting('Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
       overlayTimeoutInput.value = overlayTimeoutSeconds = 0
+
+      newStreamerButton = addOverlaySetting('Add Streamer', 'button', null)
+      newStreamerButton.onclick = promptAddStreamer
+    }
+
+    function promptAddStreamer() {
+      name = prompt('Name')
+
+      if (name in global.streamers) {
+        alert(name + ' already exists!')
+        return
+      }
+
+      group = prompt('Group').split(',').map(e => e.trim()).filter(e => e)
+
+      var [type, value, extras] = checkReferers(prompt('Stream'))
+      stream = {
+        type : type,
+        value : value,
+      }
+
+      aliases = prompt('Aliases').split(',').map(e => e.trim()).filter(e => e)
+
+      global.streamers[name] = {
+        name : name,
+        group : group,
+        streams : stream,
+        aliases : aliases,
+      }
     }
     
     function addOverlaySetting(name, type, fun) {
@@ -1383,6 +1418,14 @@
         backendInput.checked = false
       }
       return true
+    }
+
+    function requestBackendRestart() {
+      backendSocket.send(JSON.stringify({
+        messageType : 'restart',
+        version : supportedBackendVersion,
+        restart : true
+      }))
     }
 
     function requestBackendAutoUpdate() {
