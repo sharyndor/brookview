@@ -206,22 +206,24 @@
     #overlayInput {
       display: none;
       position: absolute;
-      width:  20%;
       transform: translate(-50%, 0%);
       z-index: 250;
       background-color: #585858;
       border-style: solid;
       border-color: #A0A0A0;
       border-radius: 5px;
+
+      width: 20%;
     }
 
     #inputText {
+      position: relative;
       color: black;
+      width: 100%;
     }
 
     #overlayInput > div {
       color: white;
-      padding-left: 1%;
     }
 
     #inputList {
@@ -229,8 +231,9 @@
       line-height: 2.5ex;
       max-height: 25ex;
       width: 100%;
-    }/* width */
-
+    }
+    
+    /* width */
     ::-webkit-scrollbar {
       width: 10px;
     }
@@ -256,7 +259,7 @@
 <body>
   <div id=tab style="display: none"></div>
   <div id=overlayInput class=overlay>
-    <input id=inputText type=text autocomplete=off><div>Input</div></input>
+    <input id=inputText type=text autocomplete=off placeholder="Enter a streamer name, channel link, or video link"><div></div></input>
     <div id=inputList></div>
   </div>
   <div id=overlayHelp class=overlay style="display: none"></div>
@@ -767,6 +770,7 @@
 
         if (updatedStreamer == null) {
           updatedStreamer = addOverlayListStreamer(element, streamer)
+          updatedStreamer.classList.add('overlayListElement')
         }
 
         updateOverlayListStreamer(updatedStreamer, name)
@@ -805,7 +809,6 @@
 
     function addOverlayListStreamer(element, streamer) {
       var div = document.createElement('div')
-      div.classList.add('overlayListElement')
 
       var child = null
       var template = document.createElement('template')
@@ -1315,9 +1318,11 @@
       streamer = streamer ?? findStreamer(element.type, element.value)
       streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
 
-      for (var listElement of document.querySelectorAll('.overlayListElement')) {
-        if (streamer.name == listElement.name) {
-          return listElement
+      if (streamer) {
+        for (var listElement of document.querySelectorAll('.overlayListElement')) {
+          if (streamer.name == listElement.name) {
+            return listElement
+          }
         }
       }
 
@@ -1820,37 +1825,60 @@
         }
       })
 
+      inputText.addEventListener('focusout', function() {
+        if (inputText.value.trim() == '') {
+          toggleOverlayInput(false)
+        }
+      })
+
       inputText.oninput = function (e) { 
         while (inputList.firstChild) {
           inputList.removeChild(inputList.firstChild)
         }
 
-        var search = e.target.value.trim()
-        if (search) {
+        var searchTerms = e.target.value.split(' ').map(e => e.trim().toLowerCase()).filter(e => e)
+        if (searchTerms) {
           var channelSet = new Set()
           for (var [name, channel] of Object.entries(global.streamers)) {
             /* Start with the name as filter criteria */
-            var checkList = name.split(' ')
+            var infoList = name.split(' ')
 
             /* Add any aliases */
             for (var alias of channel.aliases) {
-              checkList.push(alias)
+              infoList.push(alias)
             }
 
             /* Add any groups */
             for (var group of channel.groups) {
               for (var subgroup of group) {
-                checkList.push(subgroup)
+                infoList.push(subgroup)
               }
             }
 
+            infoList = infoList.map(e => e.trim().toLowerCase())
+
             /* If online status is available, skip offline streamers */
             /* Otherwise, take anything where the beginning matches */
-            if (!channel.status || channel.status != 'offline') {
-              for (var check of checkList) {
-                if (check.toLowerCase().startsWith(search)) {
-                  channelSet.add(channel)
+            var status = channel?.status?.status ?? 'live'
+            if (status == 'live') {
+              var matchesTerms = true
+              for (var term of searchTerms) {
+                var validInfo = false
+                for (var info of infoList) {
+                  if (info.startsWith(term)) {
+                    validInfo = true
+                    break
+                  }
                 }
+                
+                if (!validInfo) {
+                  matchesTerms = false
+                  break
+                }
+              }
+
+              if (matchesTerms) {
+                channelSet.add(channel)
               }
             }
           }
