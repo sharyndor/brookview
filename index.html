@@ -88,10 +88,12 @@
     
     /* Hide by default, float it in the middle */
     #tab {
-      position:absolute;
+      position: absolute;
       width:2%;
       height:2%;
       transform: translate(-50%, -50%);
+      top: 50%;
+      left: 50%;
       z-index: 200;
       background-color: #585858;
       border-style: solid;
@@ -200,11 +202,63 @@
     #chat > select > option[type="ttv-video"] {
       display: none;
     }
+
+    #overlayInput {
+      display: none;
+      position: absolute;
+      width:  20%;
+      transform: translate(-50%, 0%);
+      z-index: 250;
+      background-color: #585858;
+      border-style: solid;
+      border-color: #A0A0A0;
+      border-radius: 5px;
+    }
+
+    #inputText {
+      color: black;
+    }
+
+    #overlayInput > div {
+      color: white;
+      padding-left: 1%;
+    }
+
+    #inputList {
+      overflow-y: auto;
+      line-height: 2.5ex;
+      max-height: 25ex;
+      width: 100%;
+    }/* width */
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    /* Track */
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+    }
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
   </style>
 </head>
 
 <body>
   <div id=tab style="display: none"></div>
+  <div id=overlayInput class=overlay>
+    <input id=inputText type=text autocomplete=off><div>Input</div></input>
+    <div id=inputList></div>
+  </div>
   <div id=overlayHelp class=overlay style="display: none"></div>
   <div id=overlayList class=overlay style="display: none"></div>
   <div id=overlaySettings class=overlay style="display: none"></div>
@@ -660,7 +714,7 @@
       overlayHelp.append(escapeDiv)
       
       var helpText = ""
-      for ([key, value] of Object.entries(getActions())) {
+      for (var [key, value] of Object.entries(getActions())) {
         var helpDiv = document.createElement('div')
         helpDiv.textContent = key + ' - ' + value[0] + '\r\n'
         helpDiv.setAttribute('title', value[2])
@@ -786,6 +840,8 @@
 
       element.onclick = function(event){ 
         setElement(listElement, event.target.type, event.target.value, [])
+
+        toggleOverlayInput(false)
         
         /* Refresh automatic removal */
         setOverlayAutoRemoveTimer()
@@ -825,7 +881,7 @@
       
       backendInput = addOverlaySetting(form, 'Backend', 'checkbox', connectBackend)
 
-      backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'string', updateBackendLocation)
+      backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'text', updateBackendLocation)
       backendLocationSetting.value = backendLocation
 
       backendRestartSetting = addOverlaySetting(form, 'Restart Backend', 'button', null)
@@ -850,11 +906,11 @@
       form.onsubmit = function(e) { e.preventDefault() }
 
       global.mod = {}
-      global.mod.name = addOverlaySetting(form, 'Name', 'string', null)
-      global.mod.group = addOverlaySetting(form, 'Group', 'string', null)
-      global.mod.stream1 = addOverlaySetting(form, 'Stream', 'string', null)
-      global.mod.stream2 = addOverlaySetting(form, 'Stream', 'string', null)
-      global.mod.aliases = addOverlaySetting(form, 'Aliases', 'string', null)
+      global.mod.name = addOverlaySetting(form, 'Name', 'text', null)
+      global.mod.group = addOverlaySetting(form, 'Group', 'text', null)
+      global.mod.stream1 = addOverlaySetting(form, 'Stream', 'text', null)
+      global.mod.stream2 = addOverlaySetting(form, 'Stream', 'text', null)
+      global.mod.aliases = addOverlaySetting(form, 'Aliases', 'text', null)
 
       var accept = global.mod.accept = addOverlaySetting(form, null, 'button', null)
       accept.value = 'Add Streamer'
@@ -1076,7 +1132,8 @@
     
     function setElementFromPrompt(element) {
       if (element && element.classList.contains('grid-element')) {
-        setElementFromString(element, prompt('Enter streamer/channel/video =') ?? '')
+        listElement = element
+        toggleOverlayInput(true)
       }
       return true
     }
@@ -1731,6 +1788,80 @@
         }
       }
     }
+
+    function toggleOverlayInput(state) {
+      if (state == true || overlayInput.style.display == 'none') {
+        /* Want to show AND reposition AND clear the input AND focus AND clear the results*/
+        overlayInput.style.display = 'inline-block';
+        overlayInput.style.top = '30%'
+        overlayInput.style.left = '50%'
+        inputText.value = ''
+        inputText.focus()
+
+        while (inputList.firstChild) {
+          inputList.removeChild(inputList.firstChild)
+        }
+
+      } else if (state == false || overlayInput.style.display == 'inline-block') {
+        overlayInput.style.display = 'none';
+        inputText.value = ''
+      }
+    }
+
+    function populateOverlayInput() {
+      overlayInput.addEventListener('focusin', function() { setKeyEvents(false) })
+      overlayInput.addEventListener('focusout', function() { setKeyEvents(true) })
+
+      inputText.addEventListener('keypress', function (e) {
+        if (e.key == "Enter") {
+          e.preventDefault()
+          setElementFromString(listElement, inputText.value)
+          toggleOverlayInput(false)
+        }
+      })
+
+      inputText.oninput = function (e) { 
+        while (inputList.firstChild) {
+          inputList.removeChild(inputList.firstChild)
+        }
+
+        var search = e.target.value.trim()
+        if (search) {
+          var channelSet = new Set()
+          for (var [name, channel] of Object.entries(global.streamers)) {
+            /* Start with the name as filter criteria */
+            var checkList = name.split(' ')
+
+            /* Add any aliases */
+            for (var alias of channel.aliases) {
+              checkList.push(alias)
+            }
+
+            /* Add any groups */
+            for (var group of channel.groups) {
+              for (var subgroup of group) {
+                checkList.push(subgroup)
+              }
+            }
+
+            /* If online status is available, skip offline streamers */
+            /* Otherwise, take anything where the beginning matches */
+            if (!channel.status || channel.status != 'offline') {
+              for (var check of checkList) {
+                if (check.toLowerCase().startsWith(search)) {
+                  channelSet.add(channel)
+                }
+              }
+            }
+          }
+
+          /* Add using the same logic as the list */
+          for (var channel of channelSet) {
+            addOverlayListStreamer(inputList, channel)
+          }
+        }
+      }
+    }
     
     function setup() {
       /* Key events only work if an iframe doesn't have focus */
@@ -1752,6 +1883,7 @@
       crossReference = new Map()
       alreadyWarnedVersion = false
       
+      populateOverlayInput()
       populateOverlayHelp()
       populateOverlayList()
       populateOverlaySettings()
@@ -1763,6 +1895,7 @@
       makeDraggable(overlayList)
       makeDraggable(overlaySettings)
       makeDraggable(overlayMod)
+      makeDraggable(overlayInput)
 
       connectBackend()
     }
@@ -1777,7 +1910,7 @@
           console.log('Loading from server!')
           updateStreamers(streamerList)
         } else {
-          console.log('Loading from defautls!')
+          console.log('Loading from defaults!')
           updateStreamers(JSON.parse(streamerData.innerHTML))
         }
 
