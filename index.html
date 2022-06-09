@@ -50,7 +50,7 @@
       padding-right: 5px;
       width:auto;
       height:auto;
-      z-index: 100;
+      z-index: 325;
       font-family: Verdana, Geneva, Tahoma, sans-serif;
       background-color: #585858;
       border-style: solid;
@@ -94,7 +94,7 @@
       transform: translate(-50%, -50%);
       top: 50%;
       left: 50%;
-      z-index: 200;
+      z-index: 300;
       background-color: #585858;
       border-style: solid;
       border-color: #A0A0A0;
@@ -117,22 +117,41 @@
     details > details {
       padding-left: 20px;
     }
-    
-    /* Size iframes to fill the parent div */
-    iframe {
-      border: none;
+
+    .grid-element {
+      position: relative;
+    }
+
+    .grid-element > * {
+      position: absolute;
       width: 100%;
       height: 100%;
+      border: none;
+
+      z-index: 200;
+    }
+
+    .grid-element :last-child {
+      z-index: 100;
+    }
+
+    .grid-overlay {
+      opacity: 50%;
+      user-select: none;
     }
     
     /* Make it obvious what you have selected */
-    .grid-element:hover {
-      position: relative;
+    .grid-overlay:hover {
       background-color: #585858;
+    }
+
+    .grid-overlay.fade {
+      opacity: 0%;
+      transition: opacity 2s linear 0.5s;
     }
     
     /* Center the hover text */
-    .grid-element :first-child {
+    .grid-overlay :first-child {
       display: none;
       position: absolute;
       left: 50%;
@@ -146,28 +165,27 @@
     }
     
     /* Don't allow the hover text to be selectable */
-    .grid-element:hover :first-child {
+    .grid-overlay:hover :first-child {
       display: inline;
       user-select: none;
+
+      opacity: 50%;
+      background-color: #585858;
     }
     
     /* Block iframe interaction when disabled */
-    .grid-element.disabled :last-child {
+    .grid-overlay.disabled {
       pointer-events: none;
-    }
-    
-    /* Block iframe interaction and add opacity when hovered */
-    .grid-element.disabled:hover :last-child {
-      opacity: 50%;
+      display: none;
     }
     
     /* Simple pop-up text for next/prev */
-    .grid-element :nth-child(2) {
+    .grid-status {
       display: none;
       user-select: none;
       position: absolute;
       left: 50%;
-      top: 70%;
+      top: 30%;
       transform: translate(-50%, -50%);
       pointer-events: none;
       
@@ -207,7 +225,7 @@
       display: none;
       position: absolute;
       transform: translate(-50%, 0%);
-      z-index: 250;
+      z-index: 350;
       background-color: #585858;
       border-style: solid;
       border-color: #A0A0A0;
@@ -539,12 +557,77 @@
       /* Size the grid elements correctly */
       resizeGrid()
     }
+
+    function makeGesturable(element, callback) {
+      element.onmousedown = function(event) {
+        gestureMouseDown(element, event, callback)
+      }
+    }
+    
+    function gestureMouseDown(element, event) {
+      /* Left mouse only */
+      if (event.which == 1) {        
+        gestureStartX = event.clientX
+        gestureStartY = event.clientY
+        
+        handleStreamGesture(element, 0, 0)
+
+        window.onmouseup = function(event) {
+          gestureMouseUp(element, event)
+        }
+        window.onmousemove = function(event) {
+          gestureMouseMove(element, event)
+        }
+      }
+    }
+    
+    function gestureMouseUp(element, event) {
+      /* Left mouse only */
+      if (event.which == 1) {
+        setElementFromClick(element)
+        window.onmouseup = null
+        window.onmousemove = null
+      }
+    }
+    
+    function gestureMouseMove(element, event) {
+      var gestureX = event.clientX - gestureStartX
+      var gestureY = event.clientY - gestureStartY
+
+      var distance = Math.sqrt(gestureX * gestureX + gestureY * gestureY)
+      var angle = 180.0 + Math.atan2(gestureX, gestureY) * 180.0 / Math.PI
+
+      handleStreamGesture(element, distance, angle)
+    }
+
+    function handleStreamGesture(element, distance, angle) {
+      var key = ''
+      if (distance < 100) {       // Neutral
+        if (element.lastChild.tagName == 'DIV') { // Blank element
+          key = 's'
+        }
+      } else if (angle < 45.0) {  // Up
+        key = 'd'
+      } else if (angle < 135.0) { // Left
+        key = 'k'
+      } else if (angle < 225.0) { // Down
+        key = 'r'
+      } else if (angle < 315.0) { // Right
+        key = 'j'
+      } else if (angle < 360.0) { // Up
+        key = 'd'
+      }
+
+      myKeyDown({
+        key: key
+      })
+    }
     
     function makeBlankElement() {
       var div = document.createElement('div')
       
       /* Add event listeners */
-      div.onclick    = function (     ) { setElementFromClick(div) }
+      makeGesturable(div)
       div.ondrop     = function (event) { setElementFromDrop(div, event) }
       div.ondragover = function (event) { event.preventDefault() }
       
@@ -553,10 +636,25 @@
       div.type = 'blank'
       div.setAttribute('type', 'blank')
       
-      /* First child is the text displayed on hover */
-      div.appendChild(document.createElement('div'))
+      /* First child is the box/text displayed on hover */
+      var gridOverlay = div.appendChild(document.createElement('div'))
+      gridOverlay.classList.add('grid-overlay')
+      gridOverlay.appendChild(document.createElement('div'))
+      gridOverlay.addEventListener('mousemove', function(e) {
+        e.target.classList.remove('fade')
+        
+        if (e.interactTimeout) {
+          clearTimeout(e.interactTimeout)
+        }
+        e.target.interactTimeout = setTimeout(function() {
+          e.target.classList.add('fade')
+        }, 2000)
+      })
+
       /* Second child is shown when cycling between next/prev */
-      div.appendChild(document.createElement('div'))
+      var gridStatus = gridOverlay.appendChild(document.createElement('div'))
+      gridStatus.classList.add('grid-status')
+
       /* Last child is the actual content */
       div.appendChild(document.createElement('div'))
       
@@ -856,7 +954,7 @@
         /* Treat this as an interaction to prevent the overlay from timing out */
         setOverlayAutoRemoveTimer()
         /* Disable interactions to allow dropping onto iframes */
-        disableInteractions()
+        disableStreamInteractions()
       }
       element.onmouseup = resetInteractions
 
@@ -1029,9 +1127,24 @@
       }
     }
     
-    function disableInteractions() {
-      document.querySelectorAll('.grid-element').forEach(function(frame) {
+    function allowStreamInteractions() {
+      document.querySelectorAll('.grid-overlay').forEach(function(frame) {
         frame.classList.add('disabled')
+      })
+
+      document.querySelectorAll('iframe').forEach(function(e) {
+        e.blur()
+      })
+
+      if (global.interactTimeout) {
+        clearTimeout(global.interactTimeout)
+      }
+      global.interactTimeout = setTimeout(disableStreamInteractions, 5000);
+    }
+
+    function disableStreamInteractions() {
+      document.querySelectorAll('.grid-overlay').forEach(function(frame) {
+        frame.classList.remove('disabled')
       })
     }
     
@@ -1040,14 +1153,11 @@
       lastKey = null
       lastElementClicked = null
       firstElementKey = null
-      
-      /* Allow interactions again */
-      document.querySelectorAll('.grid-element').forEach(function(frame) {
-        frame.classList.remove('disabled')
-      })
+
+      disableStreamInteractions()
       
       /* Clear the text */
-      document.querySelectorAll('.grid-element :first-child').forEach(function(text) {
+      document.querySelectorAll('.grid-overlay :first-child').forEach(function(text) {
         text.textContent = ''
       })
     }
@@ -1084,6 +1194,8 @@
       var action = setElementFromPrompt
       if (lastKey in getActions()) {
         action = getActions()[lastKey][1]
+      } else {
+        return allowStreamInteractions()
       }
       
       /* Save the last element clicked to use with the action */
@@ -1212,8 +1324,7 @@
         return
       }
       
-      /* Only track the first key press and ignore keys that don't have actions */
-      if (lastKey == null && key in getActions()) {
+      if (lastKey != key) {
         /* Save the pressed key */
         lastKey = key
         
@@ -1221,11 +1332,16 @@
         firstElementKey = document.querySelector('.grid-element:hover')
         
         /* Disable interactions via css to allow for click events to reach the parent div */
-        disableInteractions()
+        disableStreamInteractions()
         
         /* Add the overlay text for the active action */
-        document.querySelectorAll('.grid-element :first-child').forEach(function(overlay) {
-          overlay.textContent = getActions()[lastKey][0] ?? ''
+        var content = ''
+        if (lastKey in getActions()) {
+          content = getActions()[lastKey][0] ?? ''
+        }
+
+        document.querySelectorAll('.grid-overlay :first-child').forEach(function(overlay) {
+          overlay.textContent = content
         })
       }
     }
@@ -1278,7 +1394,7 @@
     
     function setChannelNameTimer(element, name) {
       /* Set the name */
-      element.children[1].textContent = name.charAt(0).toUpperCase() + name.slice(1)
+      element.firstChild.lastChild.textContent = name.charAt(0).toUpperCase() + name.slice(1)
       
       /* Clear any existing timers */
       if (element.channelNameTimeout != null) {
@@ -1288,7 +1404,7 @@
       /* Create a new one remove the text */
       element.channelNameTimeout = setTimeout(
       function() {
-        element.children[1].textContent = ''
+        element.firstChild.lastChild.textContent = ''
       }, 1000
       )
     }
@@ -1351,10 +1467,9 @@
       if (element && element.classList.contains('grid-element')) {
         var listElement = findListElementFromGridElement(element)
 
-        var name = null
-        if (parentElement) {
-          name = findAdjacentEntry(listElement.parentElement.children, listElement, -1)
-        }
+        var name = findAdjacentEntry(
+          overlayList.querySelectorAll('.overlayListElement'), listElement, -1
+        )
 
         /* Default to the first streamer if nothing can be found */
         name = name ?? Object.values(global.streamers)[0].name
@@ -1711,7 +1826,7 @@
       /* Left mouse only */
       if (event.which == 1) {
         /* Disable interactions via css to allow for keep dragging smooth */
-        disableInteractions()
+        disableStreamInteractions()
         
         dragStartX = event.clientX
         dragStartY = event.clientY
@@ -1795,7 +1910,7 @@
     }
 
     function toggleOverlayInput(state) {
-      if (state == true || overlayInput.style.display == 'none') {
+      if (state == true) {
         /* Want to show AND reposition AND clear the input AND focus AND clear the results*/
         overlayInput.style.display = 'inline-block';
         overlayInput.style.top = '30%'
@@ -1807,7 +1922,7 @@
           inputList.removeChild(inputList.firstChild)
         }
 
-      } else if (state == false || overlayInput.style.display == 'inline-block') {
+      } else if (state == false) {
         overlayInput.style.display = 'none';
         inputText.value = ''
       }
