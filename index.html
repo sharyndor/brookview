@@ -560,8 +560,6 @@
 
     function adaptMouseToTouch(fun) {
       return function(e) {
-        e.preventDefault()
-
         if (e.touches[0]) {
           e.touches[0].button = 0
         }
@@ -619,7 +617,7 @@
 
     function handleStreamGesture(element, distance, angle) {
       var key = ''
-      if (distance < 100) {       // Neutral
+      if (distance < 50) {       // Neutral
         if (element.lastChild.tagName == 'DIV') { // Blank element
           key = 's'
         }
