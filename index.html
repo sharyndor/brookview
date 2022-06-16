@@ -558,15 +558,27 @@
       resizeGrid()
     }
 
+    function adaptMouseToTouch(fun) {
+      return function(e) {
+        e.preventDefault()
+
+        if (e.touches[0]) {
+          e.touches[0].button = 0
+        }
+        fun(e.touches[0])
+      }
+    }
+
     function makeGesturable(element, callback) {
       element.onmousedown = function(event) {
         gestureMouseDown(element, event, callback)
       }
+      element.ontouchstart = adaptMouseToTouch(element.onmousedown)
     }
     
     function gestureMouseDown(element, event) {
       /* Left mouse only */
-      if (event.which == 1) {        
+      if (event.button == 0) {     
         gestureStartX = event.clientX
         gestureStartY = event.clientY
         
@@ -575,18 +587,23 @@
         window.onmouseup = function(event) {
           gestureMouseUp(element, event)
         }
+        window.ontouchend = adaptMouseToTouch(window.onmouseup)
+
         window.onmousemove = function(event) {
           gestureMouseMove(element, event)
         }
+        window.ontouchmove = adaptMouseToTouch(window.onmousemove)
       }
     }
     
     function gestureMouseUp(element, event) {
       /* Left mouse only */
-      if (event.which == 1) {
+      if (event == null || event.button == 0) {
         setElementFromClick(element)
         window.onmouseup = null
         window.onmousemove = null
+        window.ontouchend = null
+        window.ontouchmove = null
       }
     }
     
@@ -1824,7 +1841,7 @@
     
     function dragMouseDown(element, event) {
       /* Left mouse only */
-      if (event.which == 1) {
+      if (event.button == 0) {
         /* Disable interactions via css to allow for keep dragging smooth */
         disableStreamInteractions()
         
@@ -1847,7 +1864,7 @@
     
     function dragMouseUp(element, event) {
       /* Left mouse only */
-      if (event.which == 1) {
+      if (event == null || event.button == 0) {
         /* Allow interactions again */
         resetInteractions()
         
