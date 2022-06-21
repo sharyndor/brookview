@@ -86,22 +86,6 @@
       clear: both;
     }
     
-    /* Hide by default, float it in the middle */
-    #tab {
-      position: absolute;
-      width:2%;
-      height:2%;
-      transform: translate(-50%, -50%);
-      top: 50%;
-      left: 50%;
-      z-index: 300;
-      background-color: #585858;
-      border-style: solid;
-      border-color: #A0A0A0;
-      border-radius: 5px;
-      opacity: 50%;
-    }
-    
     /* Show overlay items as clickable */
     summary, details > div {
       cursor: pointer;
@@ -136,13 +120,14 @@
     }
 
     .grid-overlay {
-      opacity: 50%;
+      opacity: 80%;
       user-select: none;
     }
     
     /* Make it obvious what you have selected */
     .grid-overlay:hover {
-      background-color: #585858;
+      box-sizing: border-box;
+      border: #585858 solid 3px;
     }
 
     .grid-overlay.fade {
@@ -162,15 +147,14 @@
       font-family: Arial;
       font-size: 4vw;
       color: #BEBEBE;
+      -webkit-text-stroke-width: 1px;
+      -webkit-text-stroke-color: black;
     }
     
     /* Don't allow the hover text to be selectable */
     .grid-overlay:hover :first-child {
       display: inline;
       user-select: none;
-
-      opacity: 50%;
-      background-color: #585858;
     }
     
     /* Block iframe interaction when disabled */
@@ -190,7 +174,9 @@
       pointer-events: none;
       
       font-family: Arial;
-      font-size: 4vw;
+      font-size: 3vw;
+
+      opacity: 80%;
       
       color:#FFFFFF;
       -webkit-text-stroke-width: 2px;
@@ -275,7 +261,6 @@
 </head>
 
 <body>
-  <div id=tab style="display: none"></div>
   <div id=overlayInput class=overlay>
     <input id=inputText type=text autocomplete=off placeholder="Enter a streamer name, channel link, or video link"><div></div></input>
     <div id=inputList></div>
@@ -1185,7 +1170,6 @@
       var dict = {
         'h' : ['help',          toggleOverlayHelp,     'Toggles the help overlay'],
         'l' : ['list',          toggleOverlayList,     'Toggles the stream list overlay'],
-        't' : ['floatie tab',   toggleTab,             'Toggles a floating tab for resetting stream focus'],
         's' : ['switch',        setElementFromPrompt,  'Prompts to select a new stream'],
         'n' : ['next',          nextElement,           'Skips to the next stream within the current group'],
         'p' : ['previous',      previousElement,       'Skips to the previous stream within the current group'],
@@ -1601,21 +1585,6 @@
       /* Reset the overlay elements */
       listElement = null
       toggleOverlays(null)
-      return true
-    }
-    
-    function toggleTab() {
-      if (tab.style.display == 'none') {
-        /* Reposition the window when it gets shown */
-        tab.style.display = 'inline-block'
-
-        /* Chat takes an extra 20% of width when enabled */
-        tab.style.top = (100 / grid.rows) + '%'
-        tab.style.left = ((global.chatEnabled ? 80 : 100) / grid.columns) + '%'
-      } else {
-        tab.style.display = 'none'
-      }
-      
       return true
     }
     
@@ -2048,7 +2017,6 @@
       populateOverlayMod()
       populateChat()
 
-      makeDraggable(tab)
       makeDraggable(overlayHelp)
       makeDraggable(overlayList)
       makeDraggable(overlaySettings)
