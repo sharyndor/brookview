@@ -561,11 +561,12 @@
     
     function gestureMouseDown(element, event) {
       /* Left mouse only */
-      if (event.button == 0) {     
+      if (event.button == 0) {
+        gestureStartTime = (new Date()).getTime()
         gestureStartX = event.clientX
         gestureStartY = event.clientY
         
-        handleStreamGesture(element, 0, 0)
+        handleStreamGesture(element, event)
 
         window.onmouseup = function(event) {
           gestureMouseUp(element, event)
@@ -575,11 +576,19 @@
         window.onmousemove = function(event) {
           gestureMouseMove(element, event)
         }
+
         window.ontouchmove = adaptMouseToTouch(window.onmousemove)
+
+        /* Ensure a long press is registered and displayed if the mouse doesn't move */
+        gestureTimeout = setTimeout(() => {
+          handleStreamGesture(element, event)
+        }, 800);
       }
     }
     
     function gestureMouseUp(element, event) {
+      handleStreamGesture(element, event)
+
       /* Left mouse only */
       if (event == null || event.button == 0) {
         setElementFromClick(element)
@@ -591,19 +600,27 @@
     }
     
     function gestureMouseMove(element, event) {
+      handleStreamGesture(element, event)
+    }
+
+    function handleStreamGesture(element, event) {
+      /* Clear the long press timer */
+      if (typeof gestureTimeout != 'undefined') {
+        clearTimeout(gestureTimeout)
+      }
+
       var gestureX = event.clientX - gestureStartX
       var gestureY = event.clientY - gestureStartY
+      var gestureDuration = (new Date()).getTime() - gestureStartTime
 
       var distance = Math.sqrt(gestureX * gestureX + gestureY * gestureY)
       var angle = 180.0 + Math.atan2(gestureX, gestureY) * 180.0 / Math.PI
 
-      handleStreamGesture(element, distance, angle)
-    }
-
-    function handleStreamGesture(element, distance, angle) {
       var key = ''
       if (distance < 50) {       // Neutral
         if (element.lastChild.tagName == 'DIV') { // Blank element
+          key = 's'
+        } else if (gestureDuration > 800) { // Stream element with long press
           key = 's'
         }
       } else if (angle < 45.0) {  // Up
@@ -618,9 +635,7 @@
         key = 'd'
       }
 
-      myKeyDown({
-        key: key
-      })
+      myKeyDown({ key: key })
     }
     
     function makeBlankElement() {
