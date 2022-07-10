@@ -1939,11 +1939,13 @@
             e.preventDefault()
             setElementFromString(listElement, inputList.children[0].alias)
             inputText.blur()
+            toggleOverlayInput(false)
           }
           else
           {
             e.preventDefault()
             inputText.blur()
+            toggleOverlayInput(false)
           }
         }
       })
@@ -1952,6 +1954,7 @@
         if (e.key == 'Escape') {
           e.preventDefault()
           inputText.blur()
+          toggleOverlayInput(false)
         }
       })
 
