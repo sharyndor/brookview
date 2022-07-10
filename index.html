@@ -1933,15 +1933,18 @@
       overlayInput.addEventListener('focusout', function() { setKeyEvents(true) })
 
       inputText.addEventListener('keypress', function (e) {
-        if (e.key == 'Enter' && inputList.children.length > 0) {
-          e.preventDefault()
-          setElementFromString(listElement, inputList.children[0].alias)
-          inputText.blur()
-        }
-        else
-        {
-          e.preventDefault()
-          inputText.blur()
+        if (e.key == 'Enter') {
+          if (inputList.children.length > 0)
+          {
+            e.preventDefault()
+            setElementFromString(listElement, inputList.children[0].alias)
+            inputText.blur()
+          }
+          else
+          {
+            e.preventDefault()
+            inputText.blur()
+          }
         }
       })
 
