@@ -941,6 +941,7 @@
         }
       }
 
+      div.alias = streamer.aliases[0]
       template.innerHTML = '<span>' + streamer.name + '</span>'
       child = div.appendChild(template.content.firstChild)
       addOverlayStreamerInteraction(child, 'alias', streamer.aliases[0])
@@ -1932,10 +1933,17 @@
       overlayInput.addEventListener('focusout', function() { setKeyEvents(true) })
 
       inputText.addEventListener('keypress', function (e) {
-        if (e.key == "Enter") {
+        if (e.key == 'Enter' && inputList.children.length > 0) {
           e.preventDefault()
-          setElementFromString(listElement, inputText.value)
-          toggleOverlayInput(false)
+          setElementFromString(listElement, inputList.children[0].alias)
+          inputText.blur()
+        }
+      })
+
+      inputText.addEventListener('keydown', function (e) {
+        if (e.key == 'Escape') {
+          e.preventDefault()
+          inputText.blur()
         }
       })
 
@@ -2612,7 +2620,7 @@
         "streams" : [
           { "type" : "yt-channel", "value" : "UCg7sW-h1PUowdiR5K4HlBew" }
         ],
-        "aliases" : ["ashelia"]
+        "aliases" : ["ashelia", "lia"]
       },
       {
         "name" : "Utatane Nasa",
@@ -2661,6 +2669,94 @@
           { "type" : "yt-channel", "value" : "UC1cExET9xoWSO9iSnRsW_1Q" }
         ],
         "aliases" : ["michiru"]
+      },
+      {
+        "name" : "Remilia Nephys",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC-hMwvRuMsQrfgu0DPKLV2A" }
+        ],
+        "aliases" : ["remilia"]
+      },
+      {
+        "name" : "Amanogawa Shiina",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCnJNNk45O1QYS2oMRYFKSyw" }
+        ],
+        "aliases" : ["shiina"]
+      },
+      {
+        "name" : "Komachi Panko",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCVo_KgPNsDKxHwzib7uarCw" }
+        ],
+        "aliases" : ["panko"]
+      },
+      {
+        "name" : "Erina Makina",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCupmjRr7kPgzXKh-cPxxGbg" }
+        ],
+        "aliases" : ["erina"]
+      },
+      {
+        "name" : "Himemiya Rie",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCJ4O6PWA47f6XbCgrLQNqEQ" }
+        ],
+        "aliases" : ["rie"]
+      },
+      {
+        "name" : "Chisaka Airi",
+        "groups": [["PhaseConnect"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC5qlAhrec6-0J-K3zmhNPPQ" }
+        ],
+        "aliases" : ["airi"]
+      },
+      {
+        "name" : "RoaFen",
+        "groups": [["AkioAIR"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC4zOnqo9ZasN1vIHscCvzMg" }
+        ],
+        "aliases" : ["fen"]
+      },
+      {
+        "name" : "Athena Nightingale",
+        "groups": [["AkioAIR"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCzHjYL0ZSVs4tP-JutQLFrA" }
+        ],
+        "aliases" : ["athena"]
+      },
+      {
+        "name" : "Kion Dojima",
+        "groups": [["AkioAIR"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCycPDRVWCQakmKRKh6Z3Dqw" }
+        ],
+        "aliases" : ["kion"]
+      },
+      {
+        "name" : "Nonoah",
+        "groups": [["AkioAIR"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UCbi3MM5-QP4MY1YkWfv4UJA" }
+        ],
+        "aliases" : ["nonoah"]
+      },
+      {
+        "name" : "MEW Horizon",
+        "groups": [["AkioAIR"]],
+        "streams" : [
+          { "type" : "yt-channel", "value" : "UC1V0A85U1AGi-zQCC8oE55A" }
+        ],
+        "aliases" : ["mew"]
       },
       {
         "name" : "Nyanners",
