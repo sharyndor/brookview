@@ -1938,6 +1938,11 @@
           setElementFromString(listElement, inputList.children[0].alias)
           inputText.blur()
         }
+        else
+        {
+          e.preventDefault()
+          inputText.blur()
+        }
       })
 
       inputText.addEventListener('keydown', function (e) {
