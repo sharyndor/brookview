@@ -236,6 +236,16 @@
       max-height: 25ex;
       width: 100%;
     }
+
+    #overlayBlur {
+      display: none;
+      position: fixed;
+      height: 100vh;
+      width: 100vw;
+      pointer-events: none;
+      opacity: 30%;
+      z-index: 325;
+    }
     
     /* width */
     ::-webkit-scrollbar {
@@ -265,6 +275,7 @@
     <input id=inputText type=text autocomplete=off placeholder="Enter a streamer name, channel link, or video link"><div></div></input>
     <div id=inputList></div>
   </div>
+  <div id=overlayBlur class="overlay"></div>
   <div id=overlayHelp class=overlay style="display: none"></div>
   <div id=overlayList class=overlay style="display: none"></div>
   <div id=overlaySettings class=overlay style="display: none"></div>
@@ -616,19 +627,19 @@
       var distance = Math.sqrt(gestureX * gestureX + gestureY * gestureY)
       var angle = 180.0 + Math.atan2(gestureX, gestureY) * 180.0 / Math.PI
 
-      var key = ''
+      var key = ' '
       if (distance < 50) {       // Neutral
         if (element.lastChild.tagName == 'DIV') { // Blank element
           key = 's'
-        } else if (gestureDuration > 800) { // Stream element with long press
-          key = 's'
+        } else if (gestureDuration > 800) { // Do nothing with long press in center
+          key = ''
         }
       } else if (angle < 45.0) {  // Up
         key = 'd'
       } else if (angle < 135.0) { // Left
         key = 'j'
       } else if (angle < 225.0) { // Down
-        key = 'r'
+        key = 's'
       } else if (angle < 315.0) { // Right
         key = 'k'
       } else if (angle < 360.0) { // Up
@@ -1155,7 +1166,9 @@
       if (global.interactTimeout) {
         clearTimeout(global.interactTimeout)
       }
-      global.interactTimeout = setTimeout(disableStreamInteractions, 5000);
+      global.interactTimeout = setTimeout(disableStreamInteractions, 4000);
+
+      return true
     }
 
     function disableStreamInteractions() {
@@ -1169,8 +1182,6 @@
       lastKey = null
       lastElementClicked = null
       firstElementKey = null
-
-      disableStreamInteractions()
       
       /* Clear the text */
       document.querySelectorAll('.grid-overlay :first-child').forEach(function(text) {
@@ -1184,33 +1195,37 @@
       /* Returning false should only be used if further selections are needed */
       /* e.g. Move/Copy require multiple inputs */
       var dict = {
-        'h' : ['help',          toggleOverlayHelp,     'Toggles the help overlay'],
-        'l' : ['list',          toggleOverlayList,     'Toggles the stream list overlay'],
-        's' : ['switch',        setElementFromPrompt,  'Prompts to select a new stream'],
-        'n' : ['next',          nextElement,           'Skips to the next stream within the current group'],
-        'p' : ['previous',      previousElement,       'Skips to the previous stream within the current group'],
-        'j' : ['next+',         nextGlobalElement,     'Skips to the next stream, regardless of current group'],
-        'k' : ['previous+',     previousGlobalElement, 'Skips to the previous stream, regardless of current group'],
-        'd' : ['delete',        removeElement,         'Removes the stream'],
-        'm' : ['move',          moveElement,           'Moves the stream between locations'],
-        'c' : ['chat',          toggleChat,            'Toggles the chat panel'],
-        'r' : ['reload',        reloadElement,         'Reloads the stream'],
-        'f' : ['fullscreen',    toggleFullscreen,      'Toggles fullscreen'],
-        'a' : ['adjust layout', adjustLayout,          'Prompts to select new row/column inputs'],
-        'b' : ['backend',       connectBackend,        'Connects to a background service for fetching video data'],
-        '`' : ['settings',      toggleOverlaySettings, 'Toggles the settings menu'],
-        '\\' : ['modify list',  toggleOverlayMod,      'Toggles the window for modifying the streamer list'],
+        'h'  : ['help',          toggleOverlayHelp,       'Toggles the help overlay'],
+        'l'  : ['list',          toggleOverlayList,       'Toggles the stream list overlay'],
+        's'  : ['switch',        setElementFromPrompt,    'Prompts to select a new stream'],
+        'n'  : ['next',          nextElement,             'Skips to the next stream within the current group'],
+        'p'  : ['previous',      previousElement,         'Skips to the previous stream within the current group'],
+        'j'  : ['next+',         nextGlobalElement,       'Skips to the next stream, regardless of current group'],
+        'k'  : ['previous+',     previousGlobalElement,   'Skips to the previous stream, regardless of current group'],
+        'd'  : ['delete',        removeElement,           'Removes the stream'],
+        'm'  : ['move',          moveElement,             'Moves the stream between locations'],
+        'c'  : ['chat',          toggleChat,              'Toggles the chat panel'],
+        'r'  : ['reload',        reloadElement,           'Reloads the stream'],
+        'f'  : ['fullscreen',    toggleFullscreen,        'Toggles fullscreen'],
+        'a'  : ['adjust layout', adjustLayout,            'Prompts to select new row/column inputs'],
+        'b'  : ['backend',       connectBackend,          'Connects to a background service for fetching video data'],
+        '`'  : ['settings',      toggleOverlaySettings,   'Toggles the settings menu'],
+        '\\' : ['modify list',   toggleOverlayMod,        'Toggles the window for modifying the streamer list'],
+        ' '  : ['interact',      allowStreamInteractions, 'Disable page interactions and allow access to the stream']
       }
       return dict
     }
     
-    function setElementFromClick(element) {
+    function                   setElementFromClick(element) {
+      /* Do nothing if no click action */
+      if (!lastKey) {
+        return
+      }
+
       /* Find an action, otherwise just prompt for a new embed */
       var action = setElementFromPrompt
       if (lastKey in getActions()) {
         action = getActions()[lastKey][1]
-      } else {
-        return allowStreamInteractions()
       }
       
       /* Save the last element clicked to use with the action */
@@ -1918,12 +1933,16 @@
         inputText.value = ''
         inputText.focus()
 
+        /* Also show a blur over the entire window */
+        overlayBlur.style.display = 'inline-block';
+
         while (inputList.firstChild) {
           inputList.removeChild(inputList.firstChild)
         }
 
       } else if (state == false) {
         overlayInput.style.display = 'none';
+        overlayBlur.style.display = 'none';
         inputText.value = ''
       }
     }
@@ -1944,6 +1963,8 @@
           else
           {
             e.preventDefault()
+            console.log(inputText)
+            setElementFromString(listElement, inputText.value)
             inputText.blur()
             toggleOverlayInput(false)
           }
