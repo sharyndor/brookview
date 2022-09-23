@@ -1,0 +1,50 @@
+[
+  {
+    "name" : "Ayunda Risu",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCOyYb1c43VlX9rc_lT6NKQw" }
+    ],
+    "aliases" : ["risu"]
+  },
+  {
+    "name" : "Moona Hoshinova",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCP0BspO_AMEe3aQqqpo89Dg" }
+    ],
+    "aliases" : ["moona"]
+  },
+  {
+    "name" : "Airani Iofifteen",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCAoy6rzhSf4ydcYjJw3WoVg" }
+    ],
+    "aliases" : ["io15", "iofi"]
+  },
+  {
+    "name" : "Kureiji Ollie",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCYz_5n-uDuChHtLo7My1HnQ" }
+    ],
+    "aliases" : ["ollie"]
+  },
+  {
+    "name" : "Anya Melfissa",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC727SQYUvx5pDDGQpTICNWg" }
+    ],
+    "aliases" : ["anya"]
+  },
+  {
+    "name" : "Pavolia Reine",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
+    ],
+    "aliases" : ["reine"]
+  }
+]

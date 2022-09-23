@@ -1,0 +1,298 @@
+[
+  {
+    "name" : "Tokino Sora",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCp6993wxpyDPHUpavwDFqgg" }
+    ],
+    "aliases" : ["sora"]
+  },
+  {
+    "name" : "Roboco-san",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCDqI2jOz0weumE8s7paEk6g" }
+    ],
+    "aliases" : ["roboco"]
+  },
+  {
+    "name" : "Sakura Miko",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC-hM6YJuNYVAmUWxeIr9FeA" }
+    ],
+    "aliases" : ["miko", "mikocchi"]
+  },
+  {
+    "name" : "Hoshimachi Suisei",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC5CwaMl1eIgY8h02uZw7u8A" }
+    ],
+    "aliases" : ["suisei"]
+  },
+  {
+    "name" : "AZKI",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC0TXe_LYZ4scaW2XMyi5_kw" }
+    ],
+    "aliases" : ["azki"]
+  },
+  {
+    "name" : "Yozora Mel",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCD8HOxPs4Xvsm8H0ZxXGiBw" }
+    ],
+    "aliases" : ["mel"]
+  },
+  {
+    "name" : "Shirakami Fubuki",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCdn5BQ06XqgXoAxIhbqw5Rg" }
+    ],
+    "aliases" : ["fubuki", "fbk"]
+  },
+  {
+    "name" : "Natsuiro Matsuri",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCQ0UDLQCjY0rmuxCDE38FGg" }
+    ],
+    "aliases" : ["matsuri"]
+  },
+  {
+    "name" : "Aki Rosenthal",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCFTLzh12_nrtzqBPsTCqenA" }
+    ],
+    "aliases" : ["aki", "akirose"]
+  },
+  {
+    "name" : "Akai Haato",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC1CfXB_kRs3C-zaeTG3oGyg" }
+    ],
+    "aliases" : ["haato", "haachama"]
+  },
+  {
+    "name" : "Minato Aqua",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC1opHUrw8rvnsadT-iGp7Cg" }
+    ],
+    "aliases" : ["aqua"]
+  },
+  {
+    "name" : "Murasaki Shion",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCXTpFs_3PqI41qX2d9tL2Rw" }
+    ],
+    "aliases" : ["shion"]
+  },
+  {
+    "name" : "Nakiri Ayame",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC7fk0CB07ly8oSl0aqKkqFg" }
+    ],
+    "aliases" : ["ayame"]
+  },
+  {
+    "name" : "Yuzuki Choco",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC1suqwovbL1kzsoaZgFZLKg" }
+    ],
+    "aliases" : ["choco"]
+  },
+  {
+    "name" : "Oozora Subaru",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCvzGlP9oQwU--Y0r9id_jnA" }
+    ],
+    "aliases" : ["subaru"]
+  },
+  {
+    "name" : "Ookami Mio",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCp-5t9SrOQwXMU7iIjQfARg" }
+    ],
+    "aliases" : ["mio"]
+  },
+  {
+    "name" : "Nekomata Okayu",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCvaTdHTWBGv3MKj3KVqJVCw" }
+    ],
+    "aliases" : ["okayu"]
+  },
+  {
+    "name" : "Inugami Korone",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UChAnqc_AY5_I3Px5dig3X1Q" }
+    ],
+    "aliases" : ["korone"]
+  },
+  {
+    "name" : "Usada Pekora",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC1DCedRgGHBdm81E1llLhOQ" }
+    ],
+    "aliases" : ["pekora"]
+  },
+  {
+    "name" : "Uruha Rushia",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCl_gCybOJRIgOXw6Qb4qJzQ" }
+    ],
+    "aliases" : ["rushia"]
+  },
+  {
+    "name" : "Shiranui Flare",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCvInZx9h3jC2JzsIzoOebWg" }
+    ],
+    "aliases" : ["flare"]
+  },
+  {
+    "name" : "Shirogane Noel",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCdyqAaZDKHXg4Ahi7VENThQ" }
+    ],
+    "aliases" : ["noel", "danchou"]
+  },
+  {
+    "name" : "Houshou Marine",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCCzUftO8KOVkV4wQG1vkUvg" }
+    ],
+    "aliases" : ["marine", "senchou"]
+  },
+  {
+    "name" : "Amane Kanata",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCZlDXzGoo7d44bwdNObFacg" }
+    ],
+    "aliases" : ["kanata", "ppt"]
+  },
+  {
+    "name" : "Tsunomaki Watame",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCqm3BQLlJfvkTsX_hvm0UmA" }
+    ],
+    "aliases" : ["watame"]
+  },
+  {
+    "name" : "Tokoyami Towa",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC1uv2Oq6kNxgATlCiez59hw" }
+    ],
+    "aliases" : ["towa", "tmt"]
+  },
+  {
+    "name" : "Himemori Luna",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCa9Y57gfeY0Zro_noHRVrnw" }
+    ],
+    "aliases" : ["luna"]
+  },
+  {
+    "name" : "Kiryu Coco",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCS9uQI-jC3DE0L4IpXyvr6w" }
+    ],
+    "aliases" : ["coco", "kaichou"]
+  },
+  {
+    "name" : "Yukihana Lamy",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCFKOVgVbGmX65RxO3EtH3iw" }
+    ],
+    "aliases" : ["lamy"]
+  },
+  {
+    "name" : "Momosuzu Nene",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCAWSyEs_Io8MtpY3m-zqILA" }
+    ],
+    "aliases" : ["nene", "nenechi"]
+  },
+  {
+    "name" : "Shishiro Botan",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCUKD-uaobj9jiqB-VXt71mA" }
+    ],
+    "aliases" : ["botan", "shishiron"]
+  },
+  {
+    "name" : "Omaru Polka",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCK9V2B22uJYu3N7eR_BT9QA" }
+    ],
+    "aliases" : ["polka"]
+  },
+  {
+    "name" : "La+ Darkness",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCENwRMx5Yh42zWpzURebzTw" }
+    ],
+    "aliases" : ["la+", "laplus"]
+  },
+  {
+    "name" : "Takane Lui",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCs9_O1tRPMQTHQ-N_L6FU2g" }
+    ],
+    "aliases" : ["lui"]
+  },
+  {
+    "name" : "Hakui Koyori",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC6eWCld0KwmyHFbAqK3V-Rw" }
+    ],
+    "aliases" : ["koyori"]
+  },
+  {
+    "name" : "Sakamata Chloe",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCIBY1ollUsauvVi4hW4cumw" }
+    ],
+    "aliases" : ["chloe"]
+  },
+  {
+    "name" : "Kazama Iroha",
+    "groups": [["HoloJP"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC_vMYWcDjmfdpH6r4TTn1MQ" }
+    ],
+    "aliases" : ["iroha"]
+  }
+]

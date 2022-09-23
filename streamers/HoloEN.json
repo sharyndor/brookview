@@ -1,0 +1,90 @@
+[
+  {
+    "name" : "Calliope Mori",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCL_qhgtOy0dy1Agp8vkySQg" }
+    ],
+    "aliases" : ["calliope", "calli", "mori"]
+  },
+  {
+    "name" : "Takanashi Kiara",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCHsx4Hqa-1ORjQTh9TYDhww" }
+    ],
+    "aliases" : ["kiara"]
+  },
+  {
+    "name" : "Ninomae Ina'nis",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCMwGHR0BTZuLsmjY_NT5Pwg" }
+    ],
+    "aliases" : ["ina'nis", "ina"]
+  },
+  {
+    "name" : "Gawr Gura",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCoSrY_IQQVpmIRZ9Xf-y93g" }
+    ],
+    "aliases" : ["gura"]
+  },
+  {
+    "name" : "Watson Amelia",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCyl1z3jo3XHR1riLFKG5UAg" }
+    ],
+    "aliases" : ["amelia", "ame"]
+  },
+  {
+    "name" : "Irys",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC8rcEBzJSleTkf_-agPM20g" }
+    ],
+    "aliases" : ["irys", "yabairys"]
+  },
+  {
+    "name" : "Tsukumo Sana",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCsUj0dszADCGbF3gNrQEuSQ" }
+    ],
+    "aliases" : ["sana"]
+  },
+  {
+    "name" : "Ceres Fauna",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCO_aKKYxn4tvrqPjcTzZ6EQ" }
+    ],
+    "aliases" : ["fauna"]
+  },
+  {
+    "name" : "Ouro Kronii",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCmbs8T6MWqUHP1tIQvSgKrg" }
+    ],
+    "aliases" : ["kronii"]
+  },
+  {
+    "name" : "Nanashi Mumei",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC3n5uGu18FoCy23ggWWp8tA" }
+    ],
+    "aliases" : ["mumei"]
+  },
+  {
+    "name" : "Hakos Baelz",
+    "groups": [["HoloEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCgmPnx-EEeOrZSg5Tiw7ZRQ" }
+    ],
+    "aliases" : ["baelz", "bae"]
+  }
+]

@@ -1,0 +1,66 @@
+[ 
+  {
+    "name" : "Nyanners",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "nyanners" }
+    ],
+    "aliases" : ["nyanners"]
+  },
+  {
+    "name" : "Projekt Melody",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "projektmelody" }
+    ],
+    "aliases" : ["melody"]
+  },
+  {
+    "name" : "Froot",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "apricot" }
+    ],
+    "aliases" : ["apricot"]
+  },
+  {
+    "name" : "Zentreya",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "zentreya" }
+    ],
+    "aliases" : ["zentreya"]
+  },
+  {
+    "name" : "Silvervale",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "silvervale" }
+    ],
+    "aliases" : ["silvervale"]
+  },
+  {
+    "name" : "Ironmouse",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "ironmouse" }
+    ],
+    "aliases" : ["ironmouse"]
+  },
+  {
+    "name" : "Hime Hajime",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "hajime" }
+    ],
+    "aliases" : ["hajime"]
+  },
+  {
+    "name" : "Veibae",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "veibae" }
+    ],
+    "aliases" : ["veibae"]
+  }
+]

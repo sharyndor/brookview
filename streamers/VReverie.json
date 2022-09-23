@@ -1,0 +1,34 @@
+[  
+  {
+    "name" : "Hotaru Iora",
+    "groups": [["VReverie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC0g_U1QjfhMR-kx8XLmWTCA" }
+    ],
+    "aliases" : ["iora"]
+  },
+  {
+    "name" : "Nova Aokami",
+    "groups": [["VReverie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCA4bOB1Jnw5-lbuoSCfxc-w" }
+    ],
+    "aliases" : ["nova"]
+  },
+  {
+    "name" : "Lilrya Prisvielle",
+    "groups": [["VReverie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCt7vm-7hlwPcYsRacX7QJYw" }
+    ],
+    "aliases" : ["lilrya"]
+  },
+  {
+    "name" : "Ophelia Midnight",
+    "groups": [["VReverie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCZyNPQCjju3KIv9X84diljw" }
+    ],
+    "aliases" : ["ophelia"]
+  }
+]

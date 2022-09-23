@@ -1,0 +1,82 @@
+[
+  {
+    "name" : "Elira Pendora",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCIeSUTOTkF9Hs7q3SGcO-Ow" }
+    ],
+    "aliases" : ["elira"]
+  },
+  {
+    "name" : "Pomu Rainpuff",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCP4nMSTdwU1KqYWu3UH5DHQ" }
+    ],
+    "aliases" : ["pomu"]
+  },
+  {
+    "name" : "Finana Ryugu",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCu-J8uIXuLZh16gG-cT1naw" }
+    ],
+    "aliases" : ["finana"]
+  },
+  {
+    "name" : "Selen Tatsuki",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCV1xUwfM2v2oBtT3JNvic3w" }
+    ],
+    "aliases" : ["selen"]
+  },
+  {
+    "name" : "Rosemi Lovelock",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC4WvIIAo89_AzGUh1AZ6Dkg" }
+    ],
+    "aliases" : ["rosemi"]
+  },
+  {
+    "name" : "Petra Gurin",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCgA2jKRkqpY_8eysPUs8sjw" }
+    ],
+    "aliases" : ["petra"]
+  },
+  {
+    "name" : "Reimu Endou",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCBURM8S4LH7cRZ0Clea9RDA" }
+    ],
+    "aliases" : ["reimu"]
+  },
+  {
+    "name" : "Nina Kosaka",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCkieJGn3pgJikVW8gmMXE2w" }
+    ],
+    "aliases" : ["nina"]
+  },
+  {
+    "name" : "Millie Parfait",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC47rNmkDcNgbOcM-2BwzJTQ" }
+    ],
+    "aliases" : ["millie"]
+  },
+  {
+    "name" : "Enna Alouette",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCR6qhsLpn62WVxCBK1dkLow" }
+    ],
+    "aliases" : ["enna"]
+  }
+]

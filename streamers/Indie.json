@@ -1,0 +1,34 @@
+[
+  {
+    "name" : "kson ONAIR",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
+    ],
+    "aliases" : ["kson"]
+  },
+  {
+    "name" : "Snuffy",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "snuffy" }
+    ],
+    "aliases" : ["snuffy"]
+  },
+  {
+    "name" : "Artemis of the Blue",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "artemisoftheblue" }
+    ],
+    "aliases" : ["artemis"]
+  },
+  {
+    "name" : "girl_dm_",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "girl_dm_" }
+    ],
+    "aliases" : ["girl_dm_", "girldm"]
+  }
+]
