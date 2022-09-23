@@ -571,6 +571,12 @@
     }
     
     function gestureMouseDown(element, event) {
+      /* Gesture was ignored, probably because window focus was lost */
+      if (global.ignoreNextGesture) {
+        global.ignoreNextGesture = false
+        return
+      }
+
       /* Left mouse only */
       if (event.button == 0) {
         gestureStartTime = (new Date()).getTime()
@@ -2051,6 +2057,7 @@
       window.onkeydown = myKeyDown
       window.onkeyup = myKeyUp
       window.onfocus = resetInteractions
+      window.onblur = function() { global.ignoreNextGesture = true; disableStreamInteractions() } /* Ignore first gesture when focus has been lost */
       
       /* Temporary workaround, set globals here */
       global = {}
@@ -2059,6 +2066,7 @@
       global.aliases = new Map()
       global.groups = { groups : {}, streamers : new Map() }
       global.chatEnabled = false
+      global.ignoreNextGesture = false
 
       overlayTimeoutSeconds = 0
       backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
