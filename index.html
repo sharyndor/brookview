@@ -190,25 +190,33 @@
     
     #chat {
       float: right;
+      display: flex;
+      flex-flow: column;
       
       color: #BEBEBE;
       background-color: #202020;
     }
 
-    #chat > iframe {
+    #chat :last-child {
+      flex-grow: 1;
+    }
+
+    #chatFrame {
+      position: relative;
       width: 100%;
       height: 100%;
+      border: none;
     }
 
-    #chat > select > option[type="blank"] {
+    #chat > div > select > option[type="blank"] {
       display: none;
     }
 
-    #chat > select > option[type="yt-channel"] {
+    #chat > div > select > option[type="yt-channel"] {
       display: none;
     }
 
-    #chat > select > option[type="ttv-video"] {
+    #chat > div > select > option[type="ttv-video"] {
       display: none;
     }
 
@@ -287,11 +295,15 @@
   <div id=overlayMod class=overlay style="display: none"></div>
   <div id=grid></div>
   <div id=chat style="display: none">
-    <label>Chat:</label>
-    <select>
-      <option>None</option>
-    </select>
-    <div></div>
+    <div>
+      <label>Chat:</label>
+      <select id="chatOptions">
+        <option>None</option>
+      </select>
+    </div>
+    <div>
+      <iframe id=chatFrame></iframe>
+    </div>
   </div>
   
   <script>
@@ -776,26 +788,24 @@
     }
 
     function populateChat() {
-      var select = chat.children[1]
+      var select = chatOptions
       select.onchange = function(event) {
         if (event.target.value == 'None') {
-          chat.replaceChild(document.createElement('div'), chat.lastChild)
+          chatFrame.setAttribute('src', '')
         } else {
-          chat.replaceChild(document.createElement('iframe'), chat.lastChild)
-          
           var [type, value] = event.target.value.split('=')
           if (type == 'yt-video') {
-            chat.lastChild.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
+            chatFrame.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
           }
           else if (type == 'ttv-channel') {
-            chat.lastChild.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
+            chatFrame.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
           }
         }
       }
     }
     
     function updateChat() {
-      var select = chat.children[1]
+      var select = chatOptions
 
       var gridElements = Array.from(document.querySelectorAll('.grid-element'))
 
@@ -804,7 +814,7 @@
       }
 
       while ((select.children.length - 1) > gridElements.length) {
-        select.removeChild(chat.lastChild)
+        select.removeChild(select.lastChild)
       }
 
       for (var index = 0; index < gridElements.length; ++index) {
