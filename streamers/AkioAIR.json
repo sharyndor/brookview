@@ -1,13 +1,5 @@
 [ 
   {
-    "name" : "RoaFen",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC4zOnqo9ZasN1vIHscCvzMg" }
-    ],
-    "aliases" : ["fen"]
-  },
-  {
     "name" : "Athena Nightingale",
     "groups": [["AkioAIR"]],
     "streams" : [
@@ -16,12 +8,20 @@
     "aliases" : ["athena"]
   },
   {
-    "name" : "Kion Dojima",
+    "name" : "MEW Horizon",
     "groups": [["AkioAIR"]],
     "streams" : [
-      { "type" : "yt-channel", "value" : "UCycPDRVWCQakmKRKh6Z3Dqw" }
+      { "type" : "yt-channel", "value" : "UC1V0A85U1AGi-zQCC8oE55A" }
     ],
-    "aliases" : ["kion"]
+    "aliases" : ["mew"]
+  },
+  {
+    "name" : "RoaFen",
+    "groups": [["AkioAIR"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC4zOnqo9ZasN1vIHscCvzMg" }
+    ],
+    "aliases" : ["fen"]
   },
   {
     "name" : "Nonoah",
@@ -32,11 +32,11 @@
     "aliases" : ["nonoah"]
   },
   {
-    "name" : "MEW Horizon",
+    "name" : "Kion Dojima",
     "groups": [["AkioAIR"]],
     "streams" : [
-      { "type" : "yt-channel", "value" : "UC1V0A85U1AGi-zQCC8oE55A" }
+      { "type" : "yt-channel", "value" : "UCycPDRVWCQakmKRKh6Z3Dqw" }
     ],
-    "aliases" : ["mew"]
+    "aliases" : ["kion"]
   }
 ]

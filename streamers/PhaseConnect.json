@@ -56,20 +56,20 @@
     "aliases" : ["michiru"]
   },
   {
-    "name" : "Remilia Nephys",
+    "name" : "Amaris Yuri",
     "groups": [["PhaseConnect"]],
     "streams" : [
-      { "type" : "yt-channel", "value" : "UC-hMwvRuMsQrfgu0DPKLV2A" }
+      { "type" : "yt-channel", "value" : "UCUC1EIq0MtF-kctHPtQzIjQ" }
     ],
-    "aliases" : ["remilia"]
+    "aliases" : ["yuri"]
   },
   {
-    "name" : "Amanogawa Shiina",
+    "name" : "Kaneko Lumi",
     "groups": [["PhaseConnect"]],
     "streams" : [
-      { "type" : "yt-channel", "value" : "UCnJNNk45O1QYS2oMRYFKSyw" }
+      { "type" : "yt-channel", "value" : "UCx_zwZuGIS4jxO07kFk8G6Q" }
     ],
-    "aliases" : ["shiina"]
+    "aliases" : ["lumi"]
   },
   {
     "name" : "Komachi Panko",
@@ -80,12 +80,28 @@
     "aliases" : ["panko"]
   },
   {
+    "name" : "Chisaka Airi",
+    "groups": [["PhaseConnect"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC5qlAhrec6-0J-K3zmhNPPQ" }
+    ],
+    "aliases" : ["airi"]
+  },
+  {
     "name" : "Erina Makina",
     "groups": [["PhaseConnect"]],
     "streams" : [
       { "type" : "yt-channel", "value" : "UCupmjRr7kPgzXKh-cPxxGbg" }
     ],
     "aliases" : ["erina"]
+  },
+  {
+    "name" : "Remilia Nephys",
+    "groups": [["PhaseConnect"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC-hMwvRuMsQrfgu0DPKLV2A" }
+    ],
+    "aliases" : ["remilia"]
   },
   {
     "name" : "Himemiya Rie",
@@ -96,11 +112,11 @@
     "aliases" : ["rie"]
   },
   {
-    "name" : "Chisaka Airi",
+    "name" : "Amanogawa Shiina",
     "groups": [["PhaseConnect"]],
     "streams" : [
-      { "type" : "yt-channel", "value" : "UC5qlAhrec6-0J-K3zmhNPPQ" }
+      { "type" : "yt-channel", "value" : "UCnJNNk45O1QYS2oMRYFKSyw" }
     ],
-    "aliases" : ["airi"]
+    "aliases" : ["shiina"]
   }
 ]

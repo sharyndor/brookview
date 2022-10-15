@@ -46,5 +46,29 @@
       { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
     ],
     "aliases" : ["reine"]
+  },
+  {
+    "name" : "Vestia Zeta",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCTvHWSfBZgtxE4sILOaurIQ" }
+    ],
+    "aliases" : ["vestia"]
+  },
+  {
+    "name" : "Kaela Kovalskia",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCZLZ8Jjx_RN2CXloOmgTHVg" }
+    ],
+    "aliases" : ["kaela", "kowalski"]
+  },
+  {
+    "name" : "Kobo Kanaeru",
+    "groups": [["HoloID"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCjLEmnpCNeisMxy134KPwWw" }
+    ],
+    "aliases" : ["kobo"]
   }
 ]

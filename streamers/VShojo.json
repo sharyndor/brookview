@@ -1,6 +1,6 @@
 [ 
   {
-    "name" : "Nyanners",
+    "name" : "Nyatasha Nyanners",
     "groups": [["VShojo"]],
     "streams" : [
       { "type" : "ttv-channel", "value" : "nyanners" }
@@ -16,12 +16,12 @@
     "aliases" : ["melody"]
   },
   {
-    "name" : "Froot",
+    "name" : "Apricot (Froot)",
     "groups": [["VShojo"]],
     "streams" : [
       { "type" : "ttv-channel", "value" : "apricot" }
     ],
-    "aliases" : ["apricot"]
+    "aliases" : ["apricot", "froot"]
   },
   {
     "name" : "Zentreya",
@@ -62,5 +62,21 @@
       { "type" : "ttv-channel", "value" : "veibae" }
     ],
     "aliases" : ["veibae"]
+  },
+  {
+    "name" : "kson ONAIR",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
+    ],
+    "aliases" : ["kson"]
+  },
+  {
+    "name" : "Amemiya Nazuna",
+    "groups": [["VShojo"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "AmemiyaNazuna" }
+    ],
+    "aliases" : ["nazuna"]
   }
 ]

@@ -1,0 +1,58 @@
+[
+  {
+    "name" : "Vivian Voss",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCNnsUBscSpTZgTPgShcuG_Q" }
+    ],
+    "aliases" : ["vivian"]
+  },
+  {
+    "name" : "Orion Juno",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UC_l_7Da8HB2cLTx7U88RrsA" }
+    ],
+    "aliases" : ["orion"]
+  },
+  {
+    "name" : "Angelina Kumalo",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCLT3br0YnmS2t3aba_w275A" }
+    ],
+    "aliases" : ["angelina"]
+  },
+  {
+    "name" : "Boomi Mamana",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "stfuboomi" }
+    ],
+    "aliases" : ["boomi"]
+  },
+  {
+    "name" : "Cecilia Amberfall",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "cloverelfy" }
+    ],
+    "aliases" : ["cecilia"]
+  },
+  {
+    "name" : "Neiomi Cielo",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "neiomicielo" }
+    ],
+    "aliases" : ["neiomi"]
+  },
+  {
+    "name" : "Roza Coatl",
+    "groups": [["4V"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCI4PLfuiL9jFOpsEIA20Kjg" }
+    ],
+    "aliases" : ["roza"]
+  }
+]

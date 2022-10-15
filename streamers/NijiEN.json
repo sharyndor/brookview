@@ -78,5 +78,29 @@
       { "type" : "yt-channel", "value" : "UCR6qhsLpn62WVxCBK1dkLow" }
     ],
     "aliases" : ["enna"]
+  },
+  {
+    "name" : "Maria Marionette",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCwaS8_S7kMiKA3izlTWHbQg" }
+    ],
+    "aliases" : ["maria"]
+  },
+  {
+    "name" : "Aia Amare",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCN68LoM3khS4gdBMiWJO8WA" }
+    ],
+    "aliases" : ["aia"]
+  },
+  {
+    "name" : "Scarle Yonaguni",
+    "groups": [["NijiEN"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCFgXWZOUZA2oYHNr6qDmsTQ" }
+    ],
+    "aliases" : ["scarle"]
   }
 ]

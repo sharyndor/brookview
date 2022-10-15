@@ -1,13 +1,5 @@
 [
   {
-    "name" : "kson ONAIR",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
-    ],
-    "aliases" : ["kson"]
-  },
-  {
     "name" : "Snuffy",
     "groups": [["Indie"]],
     "streams" : [
@@ -30,5 +22,37 @@
       { "type" : "ttv-channel", "value" : "girl_dm_" }
     ],
     "aliases" : ["girl_dm_", "girldm"]
+  },
+  {
+    "name" : "Shylily",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "shylily" }
+    ],
+    "aliases" : ["lily"]
+  },
+  {
+    "name" : "Kiki",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCqF1M9cLvoB-zJsLQgIxx4Q" }
+    ],
+    "aliases" : ["kiki"]
+  },
+  {
+    "name" : "fallenshadow",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "ttv-channel", "value" : "fallenshadow" }
+    ],
+    "aliases" : ["shondo"]
+  },
+  {
+    "name" : "Miori Celesta",
+    "groups": [["Indie"]],
+    "streams" : [
+      { "type" : "yt-channel", "value" : "UCyKsg-57XC9pyHbP7v3kCPQ" }
+    ],
+    "aliases" : ["miori", "mio"]
   }
 ]
