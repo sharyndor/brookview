@@ -1,0 +1,259 @@
+/* Prefer not to burn out people's eyes */
+:root {
+  background-color: #202020;
+}
+
+/* Borderless */
+* {
+  margin:  0;
+  padding: 0;
+}
+
+/* Remove the scrollbar */
+body {
+  overflow: hidden;
+}
+
+/* Tightly packed grid, rows/columns set via scripts */
+#grid {
+  display: inline-grid;
+  grid-auto-rows: 1fr;
+  grid-gap: 0px;
+}
+
+/* Hide by default, float it near the side */
+.overlay {
+  position: absolute;
+  padding-left: 5px;
+  padding-right: 5px;
+  width:auto;
+  height:auto;
+  z-index: 325;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  background-color: #585858;
+  border-style: solid;
+  border-color: #A0A0A0;
+  border-radius: 5px;
+  color: #BEBEBE;
+}
+
+.overlayListElement[status="live"] {
+  color: green;
+}
+
+.overlayListElement[status="upcoming"] {
+  color: yellow;
+}
+
+.overlayListElement[status="offline"] {
+  display: none;
+  color: red;
+}
+
+form {
+  overflow: hidden;
+  align-items: center;
+}
+
+label {
+  padding-right: 40px;
+}
+
+input {
+  float: right;
+  clear: both;
+}
+
+/* Show overlay items as clickable */
+summary, details > div {
+  cursor: pointer;
+  width: fit-content;
+}
+
+/* Indent the channel names */
+details > div {
+  padding-left: 20px;
+}
+
+/* Indent each depth of details */
+details > details {
+  padding-left: 20px;
+}
+
+.grid-element {
+  position: relative;
+}
+
+.grid-element > * {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: none;
+
+  z-index: 200;
+}
+
+.grid-element :last-child {
+  z-index: 100;
+}
+
+.grid-overlay {
+  opacity: 80%;
+  user-select: none;
+}
+
+/* Make it obvious what you have selected */
+.grid-overlay:hover {
+  box-sizing: border-box;
+  border: #585858 solid 3px;
+}
+
+.grid-overlay.fade {
+  opacity: 0%;
+  transition: opacity 2s linear 0.5s;
+}
+
+/* Center the hover text */
+.grid-overlay :first-child {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  
+  font-family: Arial;
+  font-size: 4vw;
+  color: #BEBEBE;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: black;
+}
+
+/* Don't allow the hover text to be selectable */
+.grid-overlay:hover :first-child {
+  display: inline;
+  user-select: none;
+}
+
+/* Block iframe interaction when disabled */
+.grid-overlay.disabled {
+  pointer-events: none;
+  display: none;
+}
+
+/* Simple pop-up text for next/prev */
+.grid-status {
+  display: none;
+  user-select: none;
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  
+  font-family: Arial;
+  font-size: 3vw;
+
+  opacity: 80%;
+  
+  color:#FFFFFF;
+  -webkit-text-stroke-width: 2px;
+  -webkit-text-stroke-color: black;
+}
+
+/* Only show on hover */
+.grid-element:hover :nth-child(2) {
+  display: inline
+}
+
+#chat {
+  float: right;
+  display: flex;
+  flex-flow: column;
+  
+  color: #BEBEBE;
+  background-color: #202020;
+}
+
+#chat :last-child {
+  flex-grow: 1;
+}
+
+#chatFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+#chat > div > select > option[type="blank"] {
+  display: none;
+}
+
+#chat > div > select > option[type="yt-channel"] {
+  display: none;
+}
+
+#chat > div > select > option[type="ttv-video"] {
+  display: none;
+}
+
+#overlayInput {
+  display: none;
+  position: absolute;
+  transform: translate(-50%, 0%);
+  z-index: 350;
+  background-color: #585858;
+  border-style: solid;
+  border-color: #A0A0A0;
+  border-radius: 5px;
+
+  width: 20%;
+}
+
+#inputText {
+  position: relative;
+  color: black;
+  width: 100%;
+}
+
+#overlayInput > div {
+  color: white;
+}
+
+#inputList {
+  overflow-y: auto;
+  line-height: 2.5ex;
+  max-height: 25ex;
+  width: 100%;
+}
+
+#overlayBlur {
+  display: none;
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  pointer-events: none;
+  opacity: 30%;
+  z-index: 325;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
