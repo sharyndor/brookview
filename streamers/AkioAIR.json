@@ -3,18 +3,21 @@
     "name" : "Athena Nightingale",
     "group": ["AkioAIR"],
     "yt-channel" : "UCzHjYL0ZSVs4tP-JutQLFrA",
+    "yt-custom" : "AthenaNightingaleCh",
     "aliases" : ["athena"]
   },
   {
     "name" : "MEW Horizon",
     "group": ["AkioAIR"],
     "yt-channel" : "UC1V0A85U1AGi-zQCC8oE55A",
+    "yt-custom" : "mewhorizon",
     "aliases" : ["mew"]
   },
   {
     "name" : "RoaFen",
     "group": ["AkioAIR"],
     "yt-channel" : "UC4zOnqo9ZasN1vIHscCvzMg",
+    "yt-custom" : "PixieFen",
     "aliases" : ["fen"]
   },
   {
@@ -27,6 +30,7 @@
     "name" : "Kion Dojima",
     "group": ["AkioAIR"],
     "yt-channel" : "UCycPDRVWCQakmKRKh6Z3Dqw",
+    "yt-custom" : "KionDojima",
     "aliases" : ["kion"]
   }
 ]

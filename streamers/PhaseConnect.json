@@ -15,12 +15,14 @@
     "name" : "Pipkin Pippa",
     "group": ["PhaseConnect"],
     "yt-channel" : "UCJ46YTYBQVXsfsp8-HryoUA",
+    "yt-custom" : "PipkinPippa",
     "aliases" : ["pipkin", "pippa"]
   },
   {
     "name" : "Tenma Maemi",
     "group": ["PhaseConnect"],
     "yt-channel" : "UC3K7pmiHsNSx1y0tdx2bbCw",
+    "yt-custom" : "TenmaMaemi",
     "aliases" : ["tenma"]
   },
   {

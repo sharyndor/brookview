@@ -45,8 +45,12 @@ body {
   color: yellow;
 }
 
-.overlayListElement[status="offline"] {
+#overlayList .overlayListElement[status="offline"] {
   display: none;
+  color: red;
+}
+
+#inputList .overlayListElement[status="offline"] {
   color: red;
 }
 
@@ -65,7 +69,7 @@ input {
 }
 
 /* Show overlay items as clickable */
-summary, details > div {
+summary, details > div, #inputList > div {
   cursor: pointer;
   width: fit-content;
 }

@@ -3,24 +3,28 @@
     "name" : "Vivian Voss",
     "group": ["4V"],
     "yt-channel" : "UCNnsUBscSpTZgTPgShcuG_Q",
+    "yt-custom" : "VivianVoss4VLive",
     "aliases" : ["vivian"]
   },
   {
     "name" : "Orion Juno",
     "group": ["4V"],
     "yt-channel" : "UC_l_7Da8HB2cLTx7U88RrsA",
+    "yt-custom" : "OrionJunoCh-4VLive",
     "aliases" : ["orion"]
   },
   {
     "name" : "Angelina Kumalo",
     "group": ["4V"],
     "yt-channel" : "UCLT3br0YnmS2t3aba_w275A",
+    "yt-custom" : "AngelinaKumalo",
     "aliases" : ["angelina"]
   },
   {
     "name" : "Boomi Mamana",
     "group": ["4V"],
     "ttv-channel" : "stfuboomi",
+    "yt-custom" : "BoomiMamanaCh-4VLive",
     "aliases" : ["boomi"]
   },
   {
@@ -39,6 +43,7 @@
     "name" : "Roza Coatl",
     "group": ["4V"],
     "yt-channel" : "UCI4PLfuiL9jFOpsEIA20Kjg",
+    "yt-custom" : "RozaCoatl",
     "aliases" : ["roza"]
   }
 ]

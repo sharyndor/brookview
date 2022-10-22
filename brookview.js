@@ -50,14 +50,14 @@ function referYoutube(str) {
 
   /* Custom channel link cannot be used, actual channel id is needed instead */
   if (url.host.includes('youtube') && url.pathname.includes('/c/')) { 
-    var name = url.pathname.split('/').pop()
+    var name = url.pathname.split('/')[2]
     var value = lookupYoutubeCustomChannelName(name)
     return value ? ['yt-custom', name] : checkReferers(prompt('Unknown custom channel name'))
   }
 
   /* Normal channel link, parse out the channel id */
   if (url.host.includes('youtube') && url.pathname.includes('/channel/')) { 
-    return ['yt-channel', url.pathname.split('/').pop()]
+    return ['yt-channel', url.pathname.split('/c/')[2]]
   }
 
   /* Short video link, parse out the video id and timestamp (if present) */
@@ -94,7 +94,6 @@ function referTwitch(str) {
   return null
 }
 
-
 function embedYoutubeVideo(value, extras) {
   return 'https://www.youtube.com/embed/' + value + '?autoplay=1&mute=1' + extras
 }
@@ -117,8 +116,8 @@ function embedTwitchVideo(value, extras) {
 
 function embedAlias(value, extras) {
   var streamer = global.aliases[value]
-  var type =  streamer.status ? streamer.status.type  : streamer.streams[0].type
-  var value = streamer.status ? streamer.status.value : streamer.streams[0].value
+  var type =  streamer.status && streamer.status.type  ? streamer.status.type  : streamer.streams[0].type
+  var value = streamer.status && streamer.status.value ? streamer.status.value : streamer.streams[0].value
 
   return checkEmbeds(type, value, extras)
 }
@@ -133,7 +132,7 @@ function resolveEmbedData(type, value, extras) {
 }
 
 function lookupYoutubeCustomChannelName(name) {
-  return global.lookupCustomYT[name]
+  return global.lookupCustomYT[decodeURIComponent(name)]
 }
 
 function applyUntilSuccess(funs, val) {
@@ -587,7 +586,6 @@ function updateOverlayListGroup(element, group) {
 
     if (updatedStreamer == null) {
       updatedStreamer = addOverlayListStreamer(element, streamer)
-      updatedStreamer.classList.add('overlayListElement')
     }
 
     updateOverlayListStreamer(updatedStreamer, name)
@@ -603,7 +601,7 @@ function updateOverlayListStreamer(listElement, name) {
     var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
 
     var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
-
+    
     listElement.setAttribute('status', statusType)
     listElement.lastChild.textContent = streamer.name + ' ' + status.title
     listElement.lastChild = status.type
@@ -626,6 +624,7 @@ function addOverlayListSubgroup(element, name) {
 
 function addOverlayListStreamer(element, streamer) {
   var div = document.createElement('div')
+  div.classList.add('overlayListElement')
 
   var child = null
   var template = document.createElement('template')
@@ -650,7 +649,16 @@ function addOverlayListStreamer(element, streamer) {
   child = div.appendChild(template.content.firstChild)
   addOverlayStreamerInteraction(child, 'alias', streamer.aliases[0])
 
-  div.name = streamer.name    
+  div.name = streamer.name
+
+  if (streamer.status) {
+    var status = streamer.status
+    var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
+    var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
+
+    var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
+    div.setAttribute('status', statusType)
+  }
   
   return element.appendChild(div)
 }
@@ -851,9 +859,17 @@ function setElementFromPrompt(element) {
 
 function setElementFromString(element, str) {
   if (element && element.classList.contains('grid-element')) {
-    var [type, value, extras] = checkReferers(str) ?? [null, null, null]
-    setElement(element, type, value, extras)
+    var lookup = checkReferers(str)
+    if (lookup) {
+      var [type, value, extras] = checkReferers(str) ?? [null, null, null]
+      setElement(element, type, value, extras)
+    } else {
+      backendDeferredCheckReferers(element, str)
+    }
   }
+}
+
+function backendDeferredCheckReferers(element, str) {
 }
 
 function removeElement(element) {
@@ -1189,7 +1205,6 @@ function connectBackend() {
     backendInput.checked = true
     backendSocket.onclose = function() { backendInput.checked = false }
     backendSocket.onerror = function() { 
-      initializePage()
       if (firstAttempt == false) {
         alert('Backend encountered a problem connecting to: ' + backendLocation)
       }
@@ -1253,12 +1268,8 @@ function checkMessageVersion(message) {
   return sameVersion
 }
 
-function processInitMessage(init) {
-  if (checkMessageVersion(init)) {
-    initializePage(init.initData)
-  } else {
-    initializePage()
-  }
+function processInitMessage(message) {
+
 }
 
 function processUpdateMessage(update) {
@@ -1510,28 +1521,25 @@ function populateOverlayInput() {
 
         /* If online status is available, skip offline streamers */
         /* Otherwise, take anything where the beginning matches */
-        var status = channel?.status?.status ?? 'live'
-        if (status == 'live') {
-          var matchesTerms = true
-          for (var term of searchTerms) {
-            var validInfo = false
-            for (var info of infoList) {
-              if (info.startsWith(term)) {
-                validInfo = true
-                break
-              }
-            }
-            
-            if (!validInfo) {
-              matchesTerms = false
+        var matchesTerms = true
+        for (var term of searchTerms) {
+          var validInfo = false
+          for (var info of infoList) {
+            if (info.startsWith(term)) {
+              validInfo = true
               break
             }
           }
-
-          if (matchesTerms) {
-            channelSet.add(channel)
+          
+          if (!validInfo) {
+            matchesTerms = false
+            break
           }
         }
+
+        if (matchesTerms) {
+          channelSet.add(channel)
+          }
       }
 
       /* Add using the same logic as the list */
@@ -1578,13 +1586,13 @@ function setup() {
   makeDraggable(overlayInput)
   makeDraggable(overlaySize)
 
-  connectBackend()
-
   /* Show the help dialog if the URL is empty */
   var params = new URLSearchParams(window.location.search)
   if (Array.from(params).length == 0) {
     toggleOverlay(overlayHelp)
   }
+
+  initializePage()
 }
 
 function initializePage(streamerList) {
@@ -1593,19 +1601,13 @@ function initializePage(streamerList) {
   if (!global.initialized) {
     global.initialized = true
 
-    if (streamerList && streamerList.length > 0) {
-      updateStreamers(streamerList)
-      finishInitializing()
-    } else {
-      Promise.all(fetchStreamers())
-      .then(streamerLists => streamerLists.map(streamerList => updateStreamers(streamerList)))
-      .then(() => finishInitializing())
-    }
+    Promise.all(fetchStreamers())
+    .then(streamerLists => streamerLists.map(streamerList => updateStreamers(streamerList)))
+    .then(() => finishInitializing())
   }
 }
 
-function finishInitializing()
-{
+function finishInitializing() {
   var params = new URLSearchParams(window.location.search)
   var [rows, columns] = [params.get('rows'), params.get('columns')]
   if (rows && columns) {
@@ -1620,6 +1622,8 @@ function finishInitializing()
   setInterval(updateOverlayListElements, 1000)
 
   setInterval(maintainVideoElements, 1000)
+
+  connectBackend()
 }
 
 function fetchStreamers() {
