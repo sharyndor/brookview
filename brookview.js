@@ -52,7 +52,14 @@ function referYoutube(str) {
   if (url.host.includes('youtube') && url.pathname.includes('/c/')) { 
     var name = url.pathname.split('/')[2]
     var value = lookupYoutubeCustomChannelName(name)
-    return value ? ['yt-custom', name] : checkReferers(prompt('Unknown custom channel name'))
+    if (value) {
+      return ['yt-custom', name]
+    } else {
+      if (backendSocket.readyState != WebSocket.OPEN) {
+        return checkReferers(prompt('Unknown custom channel name'))
+      }
+    }
+    return null
   }
 
   /* Normal channel link, parse out the channel id */
@@ -870,6 +877,13 @@ function setElementFromString(element, str) {
 }
 
 function backendDeferredCheckReferers(element, str) {
+  requestBackendResponse('refer', str, (response) => {
+    if (response.data) {
+      setElementFromString(element, response.data)
+    } else {
+      setElementFromPrompt(element)
+    }
+  })
 }
 
 function removeElement(element) {
@@ -1246,6 +1260,22 @@ function processBackendResponse(response) {
     processInitMessage(message)
   } else if (message.messageType == 'update') {
     processUpdateMessage(message)
+  } else if (message.messageType == 'refer') {
+    global.responseHandlers[message.responseId](message)
+  }
+}
+
+function requestBackendResponse(type, data, fun) {
+  if (backendSocket.readyState == WebSocket.OPEN) {
+    global.backendResponseId += 1
+    global.responseHandlers[global.backendResponseId] = fun
+
+    backendSocket.send(JSON.stringify({
+      messageType : type,
+      messageValue : data,
+      version : supportedBackendVersion,
+      responseId : global.backendResponseId,
+    }))
   }
 }
 
@@ -1567,6 +1597,8 @@ function setup() {
   global.chatEnabled = false
   global.ignoreNextGesture = false
   global.lookupCustomYT = new Map()
+  global.backendResponseId = 0
+  global.responseHandlers = new Map()
 
   backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
   crossReference = new Map()

@@ -254,6 +254,11 @@ class SocketHandler:
 
     sock.backlog.append(message['streamer'])
 
+  
+  def process_refer_message(self, sock : WebSocket, message):
+    message['data'] = checkReferers(message['messageValue'])
+    sock.send_message(WebSocket.Opcode.TEXT, json.dumps(message).encode())
+
   def start(self):
     Thread(target=self.accept_all, name='Accept').start()
 
@@ -277,6 +282,8 @@ class SocketHandler:
               self.process_init_message(sock, message)
             elif message['messageType'] == 'initUpdate':
               self.process_init_update(sock, message)
+            elif message['messageType'] == 'refer':
+              self.process_refer_message(sock, message)
       
       # Check whether the first item of each socket's backlog needs work
       for sock in self.sockets:
@@ -451,6 +458,41 @@ class SocketHandler:
         message['videos'] += self.process_ttv_channel(dataValue)
 
     return message
+
+def checkReferers(str):
+  result = ''
+  print(result)
+  if 'www.youtube.com/c/' in str:
+    # Fetch the data from YouTube
+    keepTrying = True
+    while keepTrying:
+      try:
+        conn = HTTPSConnection('www.youtube.com')
+        conn.request('GET', str.split('.com')[1])
+        response = conn.getresponse()
+        data = response.read()
+        keepTrying = False
+      except:
+        sleep(1)
+        pass
+
+    # Find where the page info is located
+    start = 'var ytInitialData = '.encode()
+    end = ';</script>'.encode()
+    data = data[data.find(start) + len(start):]
+    data = data[:data.find(end)]
+
+    # Convert to JSON
+    try:
+      jdata = json.loads(data)
+    except:
+      return []
+
+    # Real channel id will be in a browseId tag
+    result = find_key_like(jdata, 'browseId')[0]
+    result = 'https://www.youtube.com/channel/' + result
+  print(result)
+  return result
 
 if __name__ == '__main__':
   print('Hello: v' + '.'.join([str(n) for n in VERSION]))
