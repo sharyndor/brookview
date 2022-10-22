@@ -1,58 +1,45 @@
 [
   {
     "name" : "Snuffy",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "snuffy" }
-    ],
+    "group": ["Indie"],
+    "ttv-channel" : "snuffy",
     "aliases" : ["snuffy"]
   },
   {
     "name" : "Artemis of the Blue",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "artemisoftheblue" }
-    ],
+    "group": ["Indie"],
+    "ttv-channel" : "artemisoftheblue",
     "aliases" : ["artemis"]
   },
   {
     "name" : "girl_dm_",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "girl_dm_" }
-    ],
+    "group": ["Indie"],
+    "ttv-channel" : "girl_dm_",
     "aliases" : ["girl_dm_", "girldm"]
   },
   {
     "name" : "Shylily",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "shylily" }
-    ],
+    "group": ["Indie"],
+    "ttv-channel" : "shylily",
     "aliases" : ["lily"]
   },
   {
     "name" : "Kiki",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCqF1M9cLvoB-zJsLQgIxx4Q" }
-    ],
+    "group": ["Indie"],
+    "yt-channel" : "UCqF1M9cLvoB-zJsLQgIxx4Q",
+    "yt-custom" : "KikiCh-",
     "aliases" : ["kiki"]
   },
   {
     "name" : "fallenshadow",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "fallenshadow" }
-    ],
+    "group": ["Indie"],
+    "ttv-channel" : "fallenshadow",
     "aliases" : ["shondo"]
   },
   {
     "name" : "Miori Celesta",
-    "groups": [["Indie"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCyKsg-57XC9pyHbP7v3kCPQ" }
-    ],
+    "group": ["Indie"],
+    "yt-channel" : "UCyKsg-57XC9pyHbP7v3kCPQ",
     "aliases" : ["miori", "mio"]
   }
 ]

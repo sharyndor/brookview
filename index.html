@@ -12,7 +12,29 @@
     <input id=inputText type=text autocomplete=off placeholder="Enter a streamer name, channel link, or video link"><div></div></input>
     <div id=inputList></div>
   </div>
-  <div id=overlayBlur class="overlay"></div>
+  <div id=overlaySize class=overlay style="display: none">
+    <div class="gridImages">
+      <div onclick="createGrid(1, 1)" class="gridImage gridImage1">
+        <div></div>
+      </div>
+      <div onclick="createGrid(2, 2)" class="gridImage gridImage2">
+        <div></div> <div></div>
+        <div></div> <div></div>
+      </div>
+      <div onclick="createGrid(3, 3)" class="gridImage gridImage3">
+        <div></div> <div></div> <div></div>
+        <div></div> <div></div> <div></div>
+        <div></div> <div></div> <div></div>
+      </div>
+    </div>
+    <form id="gridSizeForm">
+      <label>Rows/Columns:</label>
+      <input id=gridSizeInputRows type="number" onkeypress="acceptGridSizeInputKeyPress(event)">
+      <input id=gridSizeInputCols type="number" onkeypress="acceptGridSizeInputKeyPress(event)">
+      <input id=gridSizeInputAccept type="button" value="Accept" onclick=acceptGridSizeInput()>
+    </form>
+  </div>
+  <div id=overlayBlur class=overlay></div>
   <div id=overlayHelp class=overlay style="display: none"></div>
   <div id=overlayList class=overlay style="display: none"></div>
   <div id=overlaySettings class=overlay style="display: none"></div>

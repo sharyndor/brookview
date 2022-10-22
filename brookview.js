@@ -16,13 +16,6 @@
 var hostDomain = new URL(window.location.href).hostname
 var supportedBackendVersion = [0, 4, 0] /* vMajor.Minor.Patch */
 
-const reservedWords = [
-  'rows',
-  'columns',
-  'backend',
-  'blank'
-]
-
 const referFuns = [
   referAlias,
   referYoutube,
@@ -34,6 +27,7 @@ const embedFuns = {
   'alias'       : embedAlias,
   'yt-video'    : embedYoutubeVideo,
   'yt-channel'  : embedYoutubeChannel,
+  'yt-custom'   : embedYoutubeCustomChannel,
   'ttv-video'   : embedTwitchVideo,
   'ttv-channel' : embedTwitchChannel,
 }
@@ -56,12 +50,14 @@ function referYoutube(str) {
 
   /* Custom channel link cannot be used, actual channel id is needed instead */
   if (url.host.includes('youtube') && url.pathname.includes('/c/')) { 
-    return checkReferers(prompt('Embed needs URL with channel ID'))
+    var name = url.pathname.split('/').pop()
+    var value = lookupYoutubeCustomChannelName(name)
+    return value ? ['yt-custom', name] : checkReferers(prompt('Unknown custom channel name'))
   }
 
   /* Normal channel link, parse out the channel id */
   if (url.host.includes('youtube') && url.pathname.includes('/channel/')) { 
-    return ['yt-channel', url.pathname.split('/channel/')[1]]
+    return ['yt-channel', url.pathname.split('/').pop()]
   }
 
   /* Short video link, parse out the video id and timestamp (if present) */
@@ -107,6 +103,10 @@ function embedYoutubeChannel(value) {
   return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
 }
 
+function embedYoutubeCustomChannel(value) {
+  return embedYoutubeChannel(lookupYoutubeCustomChannelName(value))
+}
+
 function embedTwitchChannel(value) {
   return 'https://player.twitch.tv/?channel=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true&height=100%&width=100%'
 }
@@ -132,7 +132,11 @@ function resolveEmbedData(type, value, extras) {
   return [type, value, extras]
 }
 
-function applyUntilSuccess(funs, val, otherwise) {
+function lookupYoutubeCustomChannelName(name) {
+  return global.lookupCustomYT[name]
+}
+
+function applyUntilSuccess(funs, val) {
   for (var fun of funs) {
     try {
       var result = fun(val)
@@ -141,7 +145,7 @@ function applyUntilSuccess(funs, val, otherwise) {
       }
     } catch {}
   }
-  return otherwise
+  return null
 }
 
 function checkReferers(str) {
@@ -152,49 +156,39 @@ function checkReferers(str) {
   }
   
   /* Try each method for something that isn't null */
-  return applyUntilSuccess(referFuns, str, [null, null, null])
+  return applyUntilSuccess(referFuns, str)
 }
 
 function checkEmbeds(type, value, extras) {
   return embedFuns[type](value, extras)
 }
 
-function createGrid(forcePrompt = false) {
-  var params = new URLSearchParams(window.location.search)
-  
-  /* Build the grid based on the URL, prompt if unavailable */
-  var rows = params.get('rows')
-  if (rows == null || forcePrompt) {
-    /* Horrible check to keep prompting until a valid number is entered */
-    do {
-      rows = prompt('Rows:')
-      
-      /* Allow cancellation if the page has already been loaded */
-      if (rows == null && grid.children.length != 0) {
-        return
-      }
-    } while (!(Number(rows) >= 1))
+function promptSize() {
+  toggleOverlay(overlaySize)
+  overlaySize.style.top = 0.2 * (window.innerHeight - overlaySize.clientHeight)+ "px"
+  overlaySize.style.left = 0.5 * (window.innerWidth - overlaySize.clientWidth) + "px"
+  gridSizeInputRows.focus()
+}
+
+function acceptGridSizeInput() {
+  var rows = parseInt(gridSizeInputRows.value)
+  var columns = parseInt(gridSizeInputCols.value)
+
+  /* Handle errors here so that the window stays open */
+  if (isNaN(rows) || isNaN(columns) || rows <= 0 || columns <= 0) {
+    /* createGrid must receive positive integers */
+  } else {
+    createGrid(rows, columns)
   }
-  var columns = params.get('columns')
-  if (columns == null || forcePrompt) {
-    /* Horrible check to keep prompting until a valid number is entered */
-    do {
-      columns = prompt('Columns:')
-      
-      /* Allow cancellation if the page has already been loaded */
-      if (columns == null && grid.children.length != 0) {
-        return
-      }
-    } while (!(Number(columns) >= 1))
+}
+
+function acceptGridSizeInputKeyPress(e) {
+  if (e.key == 'Enter') {
+    acceptGridSizeInput()
   }
-  
-  var totalElements = rows * columns
-  
-  /* Show the help dialog if the URL is empty */
-  if (Array.from(params).length == 0) {
-    toggleOverlayHelp()
-  }
-  
+}
+
+function createGrid(rows, columns) {
   /* Update the css to actually display a grid */
   grid.style.gridTemplateRows    = 'repeat(' + rows    + ', minmax(0, 1fr))'
   grid.style.gridTemplateColumns = 'repeat(' + columns + ', minmax(0, 1fr))'
@@ -202,62 +196,32 @@ function createGrid(forcePrompt = false) {
   /* Add bookkeeping */
   grid.rows = rows
   grid.columns = columns
+
+  /* Remove any existing elements */
+  while (grid.firstChild) {
+    grid.removeChild(grid.firstChild)
+  }
   
-  /* If children don't exist yet, this is a fresh page load */
-  var freshGrid = grid.children.length == 0
+  /* Fill in the grid using the URL */
+  var params = new URLSearchParams(window.location.search)
+  var totalElements = rows * columns
+  params.forEach(function(value, key) {
+    if (grid.children.length < totalElements) {
+      if (key == 'blank') {
+        /* Do nothing */
+      } else if (key in embedFuns) { /* &type=value */
+        var element = grid.appendChild(makeBlankElement())
+        setElement(element, key, value, [])
+      } else if (checkReferers(key)) { /* &string */
+        var element = grid.appendChild(makeBlankElement())
+        setElementFromString(element, key)
+      }
+    }
+  })
   
   /* Pad out the grid using blank elements */
   while (grid.children.length < totalElements) {
     grid.appendChild(makeBlankElement())
-  }
-  
-  if (freshGrid) {
-    /* Fill in the grid using the URL */
-    var currentElement = 0
-    var extras = ''
-    params.forEach(function(value, key) {
-      if (currentElement < totalElements)
-      {
-        var [tempType, tempValue, tempExtras] = checkReferers(key)
-        if (key in embedFuns) {
-          /* Extra data will precede the embed type to make parsing easier */
-          setElement(grid.children[currentElement], key, value, extras)
-          extras = ''
-          ++currentElement
-        } else if (tempType || tempValue || tempExtras) {
-          /* Found something, load it */
-          setElementFromString(grid.children[currentElement], key)
-          extras =''
-          ++currentElement
-        }
-        else if (reservedWords.includes(key)) {
-          /* Do nothing for reserved keywords */
-        }
-        else {
-          /* Otherwise, must be part of the extra data */
-          extras += '&' + key + '=' + value
-        }
-      }
-    })
-  } else {
-    /* If an element is about to be cut off, move it to the first available blank spot */
-    for (var afterIndex = totalElements; afterIndex < grid.children.length; ++afterIndex) {
-      /* Swap non-blank trailing elements... */
-      if (grid.children[afterIndex].type != 'blank') {
-        /* With... */
-        for (var currentIndex = 0; currentIndex < totalElements; ++currentIndex) {
-          /* Any blank leading elements */
-          if (grid.children[currentIndex].type == 'blank') {
-            moveElement(grid.children[afterIndex], grid.children[currentIndex])
-          }
-        }
-      }
-    }
-    
-    /* Cut off elements that couldn't fit */
-    while (grid.children.length > totalElements) {
-      grid.removeChild(grid.lastChild)
-    }
   }
   
   /* Grid is created, go ahead and update the URL */
@@ -265,6 +229,12 @@ function createGrid(forcePrompt = false) {
   
   /* Size the grid elements correctly */
   resizeGrid()
+  
+  /* Ensure the overlays are hidden to clear out lingering references to elements */
+  hideOverlays()
+
+  gridSizeInputRows.value = ''
+  gridSizeInputCols.value = ''
 }
 
 function adaptMouseToTouch(fun) {
@@ -296,7 +266,8 @@ function gestureMouseDown(element, event) {
     gestureStartX = event.clientX
     gestureStartY = event.clientY
     
-    handleStreamGesture(element, event)
+    var key = handleStreamGesture(element, event)
+    myKeyDown({ key: key })
 
     window.onmouseup = function(event) {
       gestureMouseUp(element, event)
@@ -317,20 +288,22 @@ function gestureMouseDown(element, event) {
 }
 
 function gestureMouseUp(element, event) {
-  handleStreamGesture(element, event)
-
   /* Left mouse only */
   if (event == null || event.button == 0) {
-    setElementFromClick(element)
+    var key = handleStreamGesture(element, event)
+    myKeyUp({ key : key })
+
     window.onmouseup = null
     window.onmousemove = null
     window.ontouchend = null
     window.ontouchmove = null
+    resetInteractions()
   }
 }
 
 function gestureMouseMove(element, event) {
-  handleStreamGesture(element, event)
+  var key = handleStreamGesture(element, event)
+  myKeyDown({ key: key })
 }
 
 function handleStreamGesture(element, event) {
@@ -365,7 +338,7 @@ function handleStreamGesture(element, event) {
     key = 'd'
   }
 
-  myKeyDown({ key: key })
+  return key
 }
 
 function makeBlankElement() {
@@ -381,27 +354,32 @@ function makeBlankElement() {
   div.type = 'blank'
   div.setAttribute('type', 'blank')
   
-  /* First child is the box/text displayed on hover */
   var gridOverlay = div.appendChild(document.createElement('div'))
   gridOverlay.classList.add('grid-overlay')
-  gridOverlay.appendChild(document.createElement('div'))
+
   gridOverlay.addEventListener('mousemove', function(e) {
     e.target.classList.remove('fade')
     
     if (e.interactTimeout) {
       clearTimeout(e.interactTimeout)
     }
+
     e.target.interactTimeout = setTimeout(function() {
       e.target.classList.add('fade')
     }, 2000)
   })
 
+  /* First child is the box/text displayed on hover */
+  var gridAction = gridOverlay.appendChild(document.createElement('div'))
+  gridAction.classList.add('gridAction')
+
   /* Second child is shown when cycling between next/prev */
   var gridStatus = gridOverlay.appendChild(document.createElement('div'))
-  gridStatus.classList.add('grid-status')
+  gridStatus.classList.add('gridStatus')
 
   /* Last child is the actual content */
-  div.appendChild(document.createElement('div'))
+  var content = div.appendChild(document.createElement('div'))
+  content.classList.add('content')
   
   /* Add extra variables */
   div.channelNameTimeout = null
@@ -422,25 +400,39 @@ function setElement(element, type, value, extras) {
     [element.type, element.value, element.extras] = resolveEmbedData(type, value, extras)
 
     /* Remove null properties */
-    element.type   ? {} : element.removeAttribute('type')
-    element.value  ? {} : element.removeAttribute('value')
-    element.extras ? {} : element.removeAttribute('extras')
+    element.type   ? element.setAttribute('type',   element.type)   : element.removeAttribute('type')
+    element.value  ? element.setAttribute('value',  element.value)  : element.removeAttribute('value')
+    element.extras ? element.setAttribute('extras', element.extras) : element.removeAttribute('extras')
     
     /* Create and set up the iframe */
-    var frame = document.createElement('iframe')
-    frame.classList.add('content')
-    frame.setAttribute('src', checkEmbeds(type, value, extras))
-    frame.setAttribute('allow', 'fullscreen')
-    
-    /* last child is the actual content */
-    element.replaceChild(frame, element.querySelector('.content'))
+    setIFrameContent(element, checkEmbeds(type, value, extras))
     
     /* Element was modified, update the URL */
     updateURL()
   }
 }
 
+function setIFrameContent(element, src) {
+  /* Create and set up the iframe */
+  var frame = document.createElement('iframe')
+  frame.classList.add('content')
+  frame.setAttribute('src', src)
+  frame.setAttribute('allow', 'fullscreen')
+  
+  /* last child is the actual content */
+  element.replaceChild(frame, element.querySelector('.content'))
+}
+
+function embedLink(element) {
+  setIFrameContent(element, prompt())
+}
+
 function updateURL() {
+  /* Do nothing if grid hasn't been created */
+  if (grid.rows == null || grid.columns == null) {
+    return
+  }
+
   /* Throw away any existing parameters */
   var baseURL = window.location.href.split('?')[0]
   
@@ -461,7 +453,9 @@ function updateURL() {
   })
   
   /* Actually replace the URL */
-  window.history.replaceState('', '', baseURL)
+  if (window.location.href != baseURL) {
+    window.history.replaceState('', '', baseURL)
+  }
   
   updateChat()
 }
@@ -540,8 +534,7 @@ function populateOverlayHelp() {
   escapeDiv.textContent = ('Esc to close')
   overlayHelp.append(escapeDiv)
   
-  var helpText = ""
-  for (var [key, value] of Object.entries(getActions())) {
+  for (var [key, value] of Object.entries(actions)) {
     var helpDiv = document.createElement('div')
     helpDiv.textContent = key + ' - ' + value[0] + '\r\n'
     helpDiv.setAttribute('title', value[2])
@@ -670,16 +663,11 @@ function addOverlayStreamerInteraction(element, type, value) {
     setElement(listElement, event.target.type, event.target.value, [])
 
     toggleOverlayInput(false)
-    
-    /* Refresh automatic removal */
-    setOverlayAutoRemoveTimer()
   }
 
   element.onmousedown = function(event) { 
     /* Needed to allow dragging from list elements without moving the list */
     event.stopPropagation()
-    /* Treat this as an interaction to prevent the overlay from timing out */
-    setOverlayAutoRemoveTimer()
     /* Disable interactions to allow dropping onto iframes */
     disableStreamInteractions()
   }
@@ -711,38 +699,14 @@ function populateOverlaySettings() {
 
   backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'text', updateBackendLocation)
   backendLocationSetting.value = backendLocation
-
-  backendRestartSetting = addOverlaySetting(form, 'Restart Backend', 'button', null)
-  backendRestartSetting.addEventListener('click', requestBackendRestart)
-
-  backendUpdateSetting = addOverlaySetting(form, 'Update Backend', 'button', null)
-  backendUpdateSetting.addEventListener('click', requestBackendAutoUpdate)
-  
-  overlayTimeoutInput = addOverlaySetting(form, 'Overlay Timeout', 'number', function(e) { overlayTimeoutSeconds = e.target.value; setOverlayAutoRemoveTimer() })
-  overlayTimeoutInput.value = overlayTimeoutSeconds = 0
 }
 
 function populateOverlayMod() {
-  /* Disable key presses while the forms have focus */
-  overlayMod.addEventListener('focusin', function() { setKeyEvents(false) })
-  overlayMod.addEventListener('focusout', function() { setKeyEvents(true) })
-  
   var div = overlayMod.appendChild(document.createElement('div'))
   overlayMod.lastChild.textContent = 'Esc to close'
   
   var form = overlayMod.appendChild(document.createElement('form'))
   form.onsubmit = function(e) { e.preventDefault() }
-
-  global.mod = {}
-  global.mod.name = addOverlaySetting(form, 'Name', 'text', null)
-  global.mod.group = addOverlaySetting(form, 'Group', 'text', null)
-  global.mod.stream1 = addOverlaySetting(form, 'Stream', 'text', null)
-  global.mod.stream2 = addOverlaySetting(form, 'Stream', 'text', null)
-  global.mod.aliases = addOverlaySetting(form, 'Aliases', 'text', null)
-
-  var accept = global.mod.accept = addOverlaySetting(form, null, 'button', null)
-  accept.value = 'Add Streamer'
-  accept.onclick = addStreamer
 
   var dump = addOverlaySetting(form, null, 'button', null)
   dump.value = 'Dump JSON'
@@ -775,54 +739,6 @@ function loadStreamersFromPrompt() {
       }, 1000);
     }
   }
-}
-
-function toggleOverlayMod() {
-  toggleOverlay(overlayMod)
-  return true
-}
-
-function addStreamer() {
-  var streamer = {
-    name : '',
-    groups : [],
-    streams : [],
-    aliases : [],
-  }
-
-  streamer.name = global.mod.name.value
-  if (global.streamers[streamer.name]) {
-    alert(streamer.name + ' already exists!')
-    return
-  }
-
-  streamer.groups = [global.mod.group.value.split(',').map(e => e.trim()).filter(e => e)]
-
-  var [type, value, extras] = checkReferers(global.mod.stream1.value)
-  if (type && value) {
-    streamer.streams.push({
-      type : type,
-      value : value,
-    })
-  }
-
-  var [type, value, extras] = checkReferers(global.mod.stream2.value)
-  if (type && value) {
-    streamer.streams.push({
-      type : type,
-      value : value,
-    })
-  }
-
-  streamer.aliases =  global.mod.aliases.value.split(',').map(e => e.trim().toLowerCase()).filter(e => e)
-
-  updateStreamers([streamer])
-  
-  backendSocket.send(JSON.stringify({
-    messageType : 'initUpdate',
-    version : supportedBackendVersion,
-    streamer : streamer,
-  }))
 }
 
 function addOverlaySetting(form, name, type, fun) {
@@ -880,8 +796,7 @@ function disableStreamInteractions() {
 function resetInteractions() {
   /* Reset the global state used for tracking keys/clicks */
   lastKey = null
-  lastElementClicked = null
-  firstElementKey = null
+  keyElement = null
   
   /* Clear the text */
   document.querySelectorAll('.grid-overlay :first-child').forEach(function(text) {
@@ -889,69 +804,33 @@ function resetInteractions() {
   })
 }
 
-function getActions() {
-  /* Functions here must return true/false */
-  /* Returning true will clear the interactions currently being tracked */
-  /* Returning false should only be used if further selections are needed */
-  /* e.g. Move/Copy require multiple inputs */
-  var dict = {
-    'h'  : ['help',          toggleOverlayHelp,       'Toggles the help overlay'],
-    'l'  : ['list',          toggleOverlayList,       'Toggles the stream list overlay'],
-    's'  : ['switch',        setElementFromPrompt,    'Prompts to select a new stream'],
-    'n'  : ['next',          nextElement,             'Skips to the next stream within the current group'],
-    'p'  : ['previous',      previousElement,         'Skips to the previous stream within the current group'],
-    'j'  : ['next+',         nextGlobalElement,       'Skips to the next stream, regardless of current group'],
-    'k'  : ['previous+',     previousGlobalElement,   'Skips to the previous stream, regardless of current group'],
-    'd'  : ['delete',        removeElement,           'Removes the stream'],
-    'm'  : ['move',          moveElement,             'Moves the stream between locations'],
-    'c'  : ['chat',          toggleChat,              'Toggles the chat panel'],
-    'r'  : ['reload',        reloadElement,           'Reloads the stream'],
-    'f'  : ['fullscreen',    toggleFullscreen,        'Toggles fullscreen'],
-    'a'  : ['adjust layout', adjustLayout,            'Prompts to select new row/column inputs'],
-    'b'  : ['backend',       connectBackend,          'Connects to a background service for fetching video data'],
-    '`'  : ['settings',      toggleOverlaySettings,   'Toggles the settings menu'],
-    '\\' : ['modify list',   toggleOverlayMod,        'Toggles the window for modifying the streamer list'],
-    ' '  : ['interact',      allowStreamInteractions, 'Disable page interactions and allow access to the stream']
-  }
-  return dict
-}
-
-function setElementFromClick(element) {
-  /* Do nothing if no click action */
-  if (!lastKey) {
-    return
-  }
-
-  /* Find an action, otherwise just prompt for a new embed */
-  var action = setElementFromPrompt
-  if (lastKey in getActions()) {
-    action = getActions()[lastKey][1]
-  }
-  
-  /* Save the last element clicked to use with the action */
-  lastElement = lastElementClicked
-  
-  /* Set the last element clicked now in case the action needs to change it */
-  lastElementClicked = element
-  
-  /* Do something with the elements, extra arguments will be discarded naturally */
-  if (action(element, lastElement)) {
-    /* Action succeeded when true, reset interactions */
-    resetInteractions()
-  }
-  
-  /* Don't reset everything after a click, just the element from a key press */
-  firstElementKey = null
+const actions = {
+  /*      Name             UpAction                                 HelpText */
+  'h'  : ['help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'],
+  'l'  : ['list',          toggleOverlayList,                       'Toggles the stream list overlay'],
+  's'  : ['switch',        setElementFromPrompt,                    'Prompts to select a new stream'],
+  'n'  : ['next',          nextElement,                             'Skips to the next stream within the current group'],
+  'p'  : ['previous',      previousElement,                         'Skips to the previous stream within the current group'],
+  'j'  : ['next+',         nextGlobalElement,                       'Skips to the next stream, regardless of current group'],
+  'k'  : ['previous+',     previousGlobalElement,                   'Skips to the previous stream, regardless of current group'],
+  'd'  : ['delete',        removeElement,                           'Removes the stream'],
+  'm'  : ['move',          moveElement,                             'Moves the stream between locations'],
+  'c'  : ['chat',          toggleChat,                              'Toggles the chat panel'],
+  'r'  : ['reload',        reloadElement,                           'Reloads the stream'],
+  'f'  : ['fullscreen',    toggleFullscreen,                        'Toggles fullscreen'],
+  'a'  : ['adjust layout', promptSize,                              'Prompts to select new row/column inputs'],
+  'b'  : ['backend',       connectBackend,                          'Connects to a background service for fetching video data'],
+  '`'  : ['settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'],
+  '\\' : ['modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'],
+  ' '  : ['interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'],
+  'e'  : ['embed',         embedLink,                               'Embeds the target link']
 }
 
 function setElementFromKey(element, key) {
   /* Find an action, otherwise do nothing */
-  if (key in getActions()) {
-    /* Do something with the elements, extra arguments will be discarded naturally */
-    if (getActions()[key][1](element, firstElementKey)) {
-      /* Action succeeded when true, reset interactions */
-      resetInteractions()
-    }
+  if (key in actions) {
+    /* Do something with the elements */
+    actions[key][1](element)
   }
 }
 
@@ -963,29 +842,16 @@ function setElementFromDrop(element, event) {
   setElementFromString(element, event.dataTransfer.getData('text/plain'))
 }
 
-function setOverlayAutoRemoveTimer() {
-  /* Reset any ongoing timeout before starting a new one*/
-  if (typeof overlayTimeout != 'undefined') {
-    clearTimeout(overlayTimeout)
-  }
-  
-  if (overlayTimeoutSeconds > 0) {
-    overlayTimeout = setTimeout(hideOverlays, overlayTimeoutSeconds * 1000)
-  }
-  return true
-}
-
 function setElementFromPrompt(element) {
   if (element && element.classList.contains('grid-element')) {
     listElement = element
     toggleOverlayInput(true)
   }
-  return true
 }
 
 function setElementFromString(element, str) {
   if (element && element.classList.contains('grid-element')) {
-    var [type, value, extras] = checkReferers(str)
+    var [type, value, extras] = checkReferers(str) ?? [null, null, null]
     setElement(element, type, value, extras)
   }
 }
@@ -997,46 +863,28 @@ function removeElement(element) {
     /* Element was modified, update the URL */
     updateURL()
   }
-  
-  return true
 }
 
 function reloadElement(element) {
   if (element && element.classList.contains('grid-element')) {
     /* Reuse the existing data from the element */
     setElement(element, element.type, element.value, element.extras)
-    return true
   }
 }
 
-function moveElement(currentElement, lastElement) {
-  if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
-    if (currentElement != lastElement) {
-      /* Save the last element */
-      var lastType   = lastElement.type
-      var lastValue  = lastElement.value
-      var lastExtras = lastElement.extras
+function moveElement(element) {
+  if (element && element.classList.contains('grid-element') && keyElement && keyElement.classList.contains('grid-element')) {
+    if (element != keyElement) {
+      /* Save the key element's data */
+      var [lastType, lastValue, lastExtras] = [keyElement.type, keyElement.value, keyElement.extras]
       
-      /* Set last element from the current */
-      setElement(lastElement, currentElement.type, currentElement.value, currentElement.extras)
+      /* Set key element from the passed element */
+      setElement(keyElement, element.type, element.value, element.extras)
       
-      /* Set the current element from the last */
-      setElement(currentElement, lastType, lastValue, lastExtras)
+      /* Set the passed element from the saved data */
+      setElement(element, lastType, lastValue, lastExtras)
     }
-    return true
   }
-  return false
-}
-
-function copyElement(currentElement, lastElement) {
-  if (currentElement && currentElement.classList.contains('grid-element') && lastElement && lastElement.classList.contains('grid-element')) {
-    if (currentElement != lastElement) {
-      /* Set the element using the data from the last element */
-      setElement(currentElement, lastElement.type, lastElement.value, lastElement.extras)
-    }
-    return true
-  }
-  return false
 }
 
 function myKeyDown(event) {
@@ -1059,16 +907,13 @@ function myKeyDown(event) {
     lastKey = key
     
     /* Grab whatever is underneath when an action is started */
-    firstElementKey = document.querySelector('.grid-element:hover')
+    keyElement = document.querySelector('.grid-element:hover')
     
     /* Disable interactions via css to allow for click events to reach the parent div */
     disableStreamInteractions()
     
     /* Add the overlay text for the active action */
-    var content = ''
-    if (lastKey in getActions()) {
-      content = getActions()[lastKey][0] ?? ''
-    }
+    var content = lastKey in actions ? actions[lastKey][0] ?? '' : ''
 
     document.querySelectorAll('.grid-overlay :first-child').forEach(function(overlay) {
       overlay.textContent = content
@@ -1084,7 +929,7 @@ function myKeyUp(event) {
     /* Complete the action with whatever is under the mouse */
     setElementFromKey(document.querySelector('.grid-element:hover'), lastKey)
     
-    lastKey = null
+    resetInteractions()
   }
 }
 
@@ -1190,7 +1035,6 @@ function nextElement(element) {
     setElementFromString(element, global.streamers[name].aliases[0])
     setChannelNameTimer(element, name)
   }
-  return true
 }
 
 function previousElement(element) {
@@ -1207,7 +1051,6 @@ function previousElement(element) {
     setElementFromString(element, global.streamers[name].aliases[0])
     setChannelNameTimer(element, name)
   }
-  return true
 }
 
 function nextGlobalElement(element) {
@@ -1224,7 +1067,6 @@ function nextGlobalElement(element) {
     setElementFromString(element, global.streamers[name].aliases[0])
     setChannelNameTimer(element, name)
   }
-  return true
 }
 
 function previousGlobalElement(element) {
@@ -1241,7 +1083,6 @@ function previousGlobalElement(element) {
     setElementFromString(element, global.streamers[name].aliases[0])
     setChannelNameTimer(element, name)
   }
-  return true
 }
 
 function toggleFullscreen(element) {
@@ -1256,17 +1097,6 @@ function toggleFullscreen(element) {
       document.exitFullscreen()
     }
   }
-  return true
-}
-
-function adjustLayout() {
-  /* Recreate the grid and prompt for new row/column inputs */
-  createGrid(true)
-  
-  /* Ensure the overlays are hidden to clear out lingering references to elements */
-  hideOverlays()
-  
-  return true
 }
 
 function toggleOverlay(overlay) {
@@ -1277,9 +1107,6 @@ function toggleOverlay(overlay) {
       overlay.style.display = 'inline-block'
       overlay.style.top = '2%'
       overlay.style.left = '2%'
-      
-      /* Refresh automatic removal */
-      setOverlayAutoRemoveTimer()
     } else {
       overlay.style.display = 'none'
     }
@@ -1287,36 +1114,26 @@ function toggleOverlay(overlay) {
 }
 
 function toggleOverlays(overlay) {
-  /* Disable everything */
+  /* Disable everything but the selected overlay */
   for (var element of document.querySelectorAll('.overlay')) {
-    element.style.display = 'none'
+    if (element != overlay) {
+      element.style.display = 'none'
+    }
   }
   
   /* Toggle the element passed in */
   toggleOverlay(overlay)
 }
 
-function toggleOverlayHelp() {
-  toggleOverlays(overlayHelp)
-  return true
-}
-
 function toggleOverlayList(element) {
-  toggleOverlays(overlayList)
   listElement = element
-  return true
-}
-
-function toggleOverlaySettings(element) {
-  toggleOverlays(overlaySettings)
-  return true
+  toggleOverlays(overlayList)
 }
 
 function hideOverlays() {
   /* Reset the overlay elements */
   listElement = null
   toggleOverlays(null)
-  return true
 }
 
 function toggleChat(e) {
@@ -1329,8 +1146,6 @@ function toggleChat(e) {
   }
 
   resizeGrid()
-
-  return true
 }
 
 function updateBackendLocation(e) {
@@ -1388,12 +1203,9 @@ function connectBackend() {
 
   setTimeout(function() {
     if (backendSocket.readyState != WebSocket.OPEN) {
-      console.log('Too slow')
       backendSocket.close()
     }
   }, 500)
-
-  return true
 }
 
 function requestBackendRestart() {
@@ -1553,11 +1365,6 @@ function dragMouseDown(element, event) {
       dragMouseMove(element, event)
     }
   }
-  
-  /* If an overlay is manipulated, refresh automatic removal */
-  if (element.classList.contains('overlay')) {
-    setOverlayAutoRemoveTimer()
-  }
 }
 
 function dragMouseUp(element, event) {
@@ -1568,11 +1375,6 @@ function dragMouseUp(element, event) {
     
     window.onmouseup = null
     window.onmousemove = null
-  }
-  
-  /* If an overlay is manipulated, refresh automatic removal */
-  if (element.classList.contains('overlay')) {
-    setOverlayAutoRemoveTimer()
   }
 }
 
@@ -1593,11 +1395,6 @@ function dragMouseMove(element, event) {
   dragStartX = event.clientX
   dragStartY = event.clientY
   
-  /* If an overlay is manipulated, refresh automatic removal */
-  if (element.classList.contains('overlay')) {
-    setOverlayAutoRemoveTimer()
-  }
-  
   /* Prevent text selection while dragging */
   event.preventDefault()
 }
@@ -1605,21 +1402,33 @@ function dragMouseMove(element, event) {
 function updateStreamers(streamerList) {
   for (var streamer of streamerList) {
     global.streamers[streamer.name] = global.streamers[streamer.name] ?? streamer
+    
+    /* Assemble stream list from properties */
+    /* Iterate in property order to allow for priority ordering */
+    streamer.streams = []
+    for (var prop in streamer) {
+      if (prop in embedFuns) {
+        streamer.streams.push({ type : prop, value : streamer[prop] })
+      }
+    }
 
     /* Populate list of streamers by name */
     for (var alias of streamer.aliases) {
       global.aliases[alias] = global.aliases[alias] ?? streamer
     }
     
-    for (var groupSet of streamer.groups) {
-      /* Create nested groups */
-      var group = global.groups
-      for (var subgroup of groupSet) {
-        group = group.groups[subgroup] = group.groups[subgroup] ?? { groups : new Map(), streamers : new Map() }
-      }
-      
-      /* Add streamer if it doesn't exist */
-      group.streamers[streamer.name] = group.streamers[streamer.name] ?? streamer
+    /* Iterative build any maps needed to represent nested groups */
+    var group = global.groups
+    for (var subgroup of streamer.group) {
+      group = group.groups[subgroup] = group.groups[subgroup] ?? { groups : new Map(), streamers : new Map() }
+    }
+    
+    /* Add streamer if it doesn't exist */
+    group.streamers[streamer.name] = group.streamers[streamer.name] ?? streamer
+
+    /* Associate quick lookup for custom YT channels */
+    if (streamer["yt-custom"]) {
+      global.lookupCustomYT[streamer["yt-custom"]] = streamer["yt-channel"]
     }
   }
 }
@@ -1653,21 +1462,11 @@ function populateOverlayInput() {
 
   inputText.addEventListener('keypress', function (e) {
     if (e.key == 'Enter') {
-      if (inputList.children.length > 0)
-      {
-        e.preventDefault()
-        setElementFromString(listElement, inputList.children[0].alias)
-        inputText.blur()
-        toggleOverlayInput(false)
-      }
-      else
-      {
-        e.preventDefault()
-        console.log(inputText)
-        setElementFromString(listElement, inputText.value)
-        inputText.blur()
-        toggleOverlayInput(false)
-      }
+      var lookup = inputList.children.length > 0 ? inputList.children[0].alias : inputText.value
+      e.preventDefault()
+      setElementFromString(listElement, lookup)
+      inputText.blur()
+      toggleOverlayInput(false)
     }
   })
 
@@ -1703,10 +1502,8 @@ function populateOverlayInput() {
         }
 
         /* Add any groups */
-        for (var group of channel.groups) {
-          for (var subgroup of group) {
-            infoList.push(subgroup)
-          }
+        for (var subgroup of channel.group) {
+          infoList.push(subgroup)
         }
 
         infoList = infoList.map(e => e.trim().toLowerCase())
@@ -1761,12 +1558,12 @@ function setup() {
   global.groups = { groups : {}, streamers : new Map() }
   global.chatEnabled = false
   global.ignoreNextGesture = false
+  global.lookupCustomYT = new Map()
 
-  overlayTimeoutSeconds = 0
   backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
   crossReference = new Map()
   alreadyWarnedVersion = false
-  
+
   populateOverlayInput()
   populateOverlayHelp()
   populateOverlayList()
@@ -1779,8 +1576,15 @@ function setup() {
   makeDraggable(overlaySettings)
   makeDraggable(overlayMod)
   makeDraggable(overlayInput)
+  makeDraggable(overlaySize)
 
   connectBackend()
+
+  /* Show the help dialog if the URL is empty */
+  var params = new URLSearchParams(window.location.search)
+  if (Array.from(params).length == 0) {
+    toggleOverlay(overlayHelp)
+  }
 }
 
 function initializePage(streamerList) {
@@ -1790,11 +1594,11 @@ function initializePage(streamerList) {
     global.initialized = true
 
     if (streamerList && streamerList.length > 0) {
-      console.log('Loading from server!')
       updateStreamers(streamerList)
       finishInitializing()
     } else {
-      fetchStreamers()
+      Promise.all(fetchStreamers())
+      .then(streamerLists => streamerLists.map(streamerList => updateStreamers(streamerList)))
       .then(() => finishInitializing())
     }
   }
@@ -1802,7 +1606,14 @@ function initializePage(streamerList) {
 
 function finishInitializing()
 {
-  createGrid()
+  var params = new URLSearchParams(window.location.search)
+  var [rows, columns] = [params.get('rows'), params.get('columns')]
+  if (rows && columns) {
+    createGrid(rows, columns)
+  } else {
+    promptSize()
+  }
+  
   resetInteractions()
 
   updateOverlayListElements()
@@ -1812,32 +1623,27 @@ function finishInitializing()
 }
 
 function fetchStreamers() {
-  return fetchStreamer(0, defaultStreamers)
-}
-
-function fetchStreamer(i, list) {
-  return i < list.length
-  ? fetch('streamers/' + list[i] + '.json')
-    .then(response => response.json())
-    .then(streamers => updateStreamers(streamers))
-    .then(() => fetchStreamer(i + 1, list))
-  : Promise.resolve()
+  return defaultStreamers.map(
+    streamer => 
+      fetch(streamer)
+      .then(response => response.json())
+  )
 }
 
 defaultStreamers = [
-  'HoloEN',
-  'HoloJP',
-  'HoloID',
-  'NijiEN',
-  'VOMS',
-  'PhaseConnect',
-  'PRISM',
-  'Tsunderia',
-  '4V',
-  'AkioAIR',
-  'VShojo',
-  'VReverie',
-  'Indie',
+  'streamers/HoloEN.json',
+  'streamers/HoloJP.json',
+  'streamers/HoloID.json',
+  'streamers/NijiEN.json',
+  'streamers/VOMS.json',
+  'streamers/PhaseConnect.json',
+  'streamers/PRISM.json',
+  'streamers/Tsunderia.json',
+  'streamers/4V.json',
+  'streamers/AkioAIR.json',
+  'streamers/VShojo.json',
+  'streamers/VReverie.json',
+  'streamers/Indie.json',
 ]
 
 window.addEventListener('load', setup)

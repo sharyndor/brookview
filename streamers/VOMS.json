@@ -1,26 +1,20 @@
 [
   {
     "name" : "Amano Pikamee",
-    "groups": [["VOMS"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCajhBT4nMrg3DLS-bLL2RCg" }
-    ],
+    "group": ["VOMS"],
+    "yt-channel" : "UCajhBT4nMrg3DLS-bLL2RCg",
     "aliases" : ["pikamee"]
   },
   {
     "name" : "Hikasa Tomoshika",
-    "groups": [["VOMS"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC3vzVK_N_SUVKqbX69L_X4g" }
-    ],
+    "group": ["VOMS"],
+    "yt-channel" : "UC3vzVK_N_SUVKqbX69L_X4g",
     "aliases" : ["tomoshika"]
   },
   {
     "name" : "Haneuzu Miuneru",
-    "groups": [["VOMS"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCE5VgVGRPfNCjXPeTe1QJHA" }
-    ],
+    "group": ["VOMS"],
+    "yt-channel" : "UCE5VgVGRPfNCjXPeTe1QJHA",
     "aliases" : ["miuneru"]
   }
 ]

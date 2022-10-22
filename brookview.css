@@ -93,13 +93,14 @@ details > details {
   z-index: 200;
 }
 
-.grid-element :last-child {
+.grid-element > .content {
   z-index: 100;
 }
 
 .grid-overlay {
   opacity: 80%;
   user-select: none;
+  z-index: 150;
 }
 
 /* Make it obvious what you have selected */
@@ -130,7 +131,7 @@ details > details {
 }
 
 /* Don't allow the hover text to be selectable */
-.grid-overlay:hover :first-child {
+.grid-overlay:hover > .gridAction {
   display: inline;
   user-select: none;
 }
@@ -138,11 +139,11 @@ details > details {
 /* Block iframe interaction when disabled */
 .grid-overlay.disabled {
   pointer-events: none;
-  display: none;
+  z-index: 50;
 }
 
 /* Simple pop-up text for next/prev */
-.grid-status {
+.gridStatus {
   display: none;
   user-select: none;
   position: absolute;
@@ -256,4 +257,59 @@ details > details {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+#overlaySize {
+}
+
+.gridImages {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.gridImage {
+  margin: 0.5vw;
+  width: 10vw;
+  height: 10vh;
+  
+  display: grid;
+  cursor: pointer;
+}
+
+.gridImage > div {
+  border: 1px solid #f1f1f1;
+}
+
+.gridImage:hover > div {
+  border: 2px solid #f1f1f1;
+}
+
+.gridImage1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.gridImage2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.gridImage3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+#gridSizeForm {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-bottom: 0.5vw;
+}
+
+#gridSizeInputRows, #gridSizeInputCols {
+  width: 4ch;
+}
+
+#gridSizeInputAccept {
+  width: auto;
+  padding-left: 2px;
+  padding-right: 2px;
 }

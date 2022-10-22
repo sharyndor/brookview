@@ -1,82 +1,62 @@
 [ 
   {
     "name" : "Nyatasha Nyanners",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "nyanners" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "nyanners",
     "aliases" : ["nyanners"]
   },
   {
     "name" : "Projekt Melody",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "projektmelody" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "projektmelody",
     "aliases" : ["melody"]
   },
   {
     "name" : "Apricot (Froot)",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "apricot" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "apricot",
     "aliases" : ["apricot", "froot"]
   },
   {
     "name" : "Zentreya",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "zentreya" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "zentreya",
     "aliases" : ["zentreya"]
   },
   {
     "name" : "Silvervale",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "silvervale" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "silvervale",
     "aliases" : ["silvervale"]
   },
   {
     "name" : "Ironmouse",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "ironmouse" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "ironmouse",
     "aliases" : ["ironmouse"]
   },
   {
     "name" : "Hime Hajime",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "hajime" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "hajime",
     "aliases" : ["hajime"]
   },
   {
     "name" : "Veibae",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "veibae" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "veibae",
     "aliases" : ["veibae"]
   },
   {
     "name" : "kson ONAIR",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC9ruVYPv7yJmV0Rh0NKA-Lw" }
-    ],
+    "group": ["VShojo"],
+    "yt-channel" : "UC9ruVYPv7yJmV0Rh0NKA-Lw",
     "aliases" : ["kson"]
   },
   {
     "name" : "Amemiya Nazuna",
-    "groups": [["VShojo"]],
-    "streams" : [
-      { "type" : "ttv-channel", "value" : "AmemiyaNazuna" }
-    ],
+    "group": ["VShojo"],
+    "ttv-channel" : "AmemiyaNazuna",
     "aliases" : ["nazuna"]
   }
 ]

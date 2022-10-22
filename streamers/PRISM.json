@@ -1,98 +1,74 @@
 [ 
   {
     "name" : "Iku Hoshifuri",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC2hWFlqMew61Jy6A8zu5HzQ" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UC2hWFlqMew61Jy6A8zu5HzQ",
     "aliases" : ["iku"]
   },
   {
     "name" : "Aoi Tokimori",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCRWF6QSuklmwY3UJHyVTQ1w" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCRWF6QSuklmwY3UJHyVTQ1w",
     "aliases" : ["aoi"]
   },
   {
     "name" : "Ibuki Meno",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCZfQRuwSLty74QAj55BaKlA" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCZfQRuwSLty74QAj55BaKlA",
     "aliases" : ["meno"]
   },
   {
     "name" : "Rita Kamishiro",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCBJFsaCvgBa1a9BnEaxu97Q" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCBJFsaCvgBa1a9BnEaxu97Q",
     "aliases" : ["rito"]
   },
   {
     "name" : "Luto Araka",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCnYhIk9aGEx_bIgheVjs53w" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCnYhIk9aGEx_bIgheVjs53w",
     "aliases" : ["luto"]
   },
   {
     "name" : "Shiki Miyoshino",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCswvd6_YWmd6riRk-8oT-sA" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCswvd6_YWmd6riRk-8oT-sA",
     "aliases" : ["shiki"]
   },
   {
     "name" : "Nia Suzune",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCw1KNjVqfrJSfcFd6zlcSzA" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCw1KNjVqfrJSfcFd6zlcSzA",
     "aliases" : ["nia"]
   },
   {
     "name" : "Pina Pengin",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCpeRj9-GaLGNUoKdI5I7vZA" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCpeRj9-GaLGNUoKdI5I7vZA",
     "aliases" : ["pina"]
   },
   {
     "name" : "Yura Rikudou",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC0ZTVxCHkZanT5dnP2FZD4Q" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UC0ZTVxCHkZanT5dnP2FZD4Q",
     "aliases" : ["yura"]
   },
   {
     "name" : "Naki Kamizuki",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCgM1sly6rnxqWe8GLbceEag" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCgM1sly6rnxqWe8GLbceEag",
     "aliases" : ["naki"]
   },
   {
     "name" : "Sara Nagare",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCkJ64W0J7R0zCSAsZfRIhVQ" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCkJ64W0J7R0zCSAsZfRIhVQ",
     "aliases" : ["sara"]
   },
   {
     "name" : "Non Anon",
-    "groups": [["PRISM"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCx_A6fns9qKjybu-6k0ur1g" }
-    ],
+    "group": ["PRISM"],
+    "yt-channel" : "UCx_A6fns9qKjybu-6k0ur1g",
     "aliases" : ["non"]
   }
 ]

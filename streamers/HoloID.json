@@ -1,74 +1,56 @@
 [
   {
     "name" : "Ayunda Risu",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCOyYb1c43VlX9rc_lT6NKQw" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCOyYb1c43VlX9rc_lT6NKQw",
     "aliases" : ["risu"]
   },
   {
     "name" : "Moona Hoshinova",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCP0BspO_AMEe3aQqqpo89Dg" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCP0BspO_AMEe3aQqqpo89Dg",
     "aliases" : ["moona"]
   },
   {
     "name" : "Airani Iofifteen",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCAoy6rzhSf4ydcYjJw3WoVg" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCAoy6rzhSf4ydcYjJw3WoVg",
     "aliases" : ["io15", "iofi"]
   },
   {
     "name" : "Kureiji Ollie",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCYz_5n-uDuChHtLo7My1HnQ" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCYz_5n-uDuChHtLo7My1HnQ",
     "aliases" : ["ollie"]
   },
   {
     "name" : "Anya Melfissa",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC727SQYUvx5pDDGQpTICNWg" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UC727SQYUvx5pDDGQpTICNWg",
     "aliases" : ["anya"]
   },
   {
     "name" : "Pavolia Reine",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UChgTyjG-pdNvxxhdsXfHQ5Q" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UChgTyjG-pdNvxxhdsXfHQ5Q",
     "aliases" : ["reine"]
   },
   {
     "name" : "Vestia Zeta",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCTvHWSfBZgtxE4sILOaurIQ" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCTvHWSfBZgtxE4sILOaurIQ",
     "aliases" : ["vestia"]
   },
   {
     "name" : "Kaela Kovalskia",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCZLZ8Jjx_RN2CXloOmgTHVg" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCZLZ8Jjx_RN2CXloOmgTHVg",
     "aliases" : ["kaela", "kowalski"]
   },
   {
     "name" : "Kobo Kanaeru",
-    "groups": [["HoloID"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCjLEmnpCNeisMxy134KPwWw" }
-    ],
+    "group": ["HoloID"],
+    "yt-channel" : "UCjLEmnpCNeisMxy134KPwWw",
     "aliases" : ["kobo"]
   }
 ]

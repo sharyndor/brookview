@@ -1,42 +1,32 @@
 [ 
   {
     "name" : "Athena Nightingale",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCzHjYL0ZSVs4tP-JutQLFrA" }
-    ],
+    "group": ["AkioAIR"],
+    "yt-channel" : "UCzHjYL0ZSVs4tP-JutQLFrA",
     "aliases" : ["athena"]
   },
   {
     "name" : "MEW Horizon",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC1V0A85U1AGi-zQCC8oE55A" }
-    ],
+    "group": ["AkioAIR"],
+    "yt-channel" : "UC1V0A85U1AGi-zQCC8oE55A",
     "aliases" : ["mew"]
   },
   {
     "name" : "RoaFen",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC4zOnqo9ZasN1vIHscCvzMg" }
-    ],
+    "group": ["AkioAIR"],
+    "yt-channel" : "UC4zOnqo9ZasN1vIHscCvzMg",
     "aliases" : ["fen"]
   },
   {
     "name" : "Nonoah",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCbi3MM5-QP4MY1YkWfv4UJA" }
-    ],
+    "group": ["AkioAIR"],
+    "yt-channel" : "UCbi3MM5-QP4MY1YkWfv4UJA",
     "aliases" : ["nonoah"]
   },
   {
     "name" : "Kion Dojima",
-    "groups": [["AkioAIR"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCycPDRVWCQakmKRKh6Z3Dqw" }
-    ],
+    "group": ["AkioAIR"],
+    "yt-channel" : "UCycPDRVWCQakmKRKh6Z3Dqw",
     "aliases" : ["kion"]
   }
 ]

@@ -1,42 +1,32 @@
 [
   {
     "name" : "Inukai Purin",
-    "groups": [["Tsunderia"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCdrQWcX7XLDSUEh9SAxnyBg" }
-    ],
+    "group": ["Tsunderia"],
+    "yt-channel" : "UCdrQWcX7XLDSUEh9SAxnyBg",
     "aliases" : ["purin"]
   },
   {
     "name" : "Amemachi Hanabi",
-    "groups": [["Tsunderia"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UC8yXRB_jKDeapwQak2i30EA" }
-    ],
+    "group": ["Tsunderia"],
+    "yt-channel" : "UC8yXRB_jKDeapwQak2i30EA",
     "aliases" : ["hanabi"]
   },
   {
     "name" : "Tsurugi Nen",
-    "groups": [["Tsunderia"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCNUS0XshN1Tf7iLdd0MpPAg" }
-    ],
+    "group": ["Tsunderia"],
+    "yt-channel" : "UCNUS0XshN1Tf7iLdd0MpPAg",
     "aliases" : ["nen"]
   },
   {
     "name" : "Chikafuji Lisa",
-    "groups": [["Tsunderia"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCdureux7B_V-xhM7tYImASQ" }
-    ],
-    "aliases" : ["Lisa"]
+    "group": ["Tsunderia"],
+    "yt-channel" : "UCdureux7B_V-xhM7tYImASQ",
+    "aliases" : ["lisa"]
   },
   {
     "name" : "Amiya Aranha",
-    "groups": [["Tsunderia"]],
-    "streams" : [
-      { "type" : "yt-channel", "value" : "UCykMWf8B8I7c_jA8FTy2tGw" }
-    ],
+    "group": ["Tsunderia"],
+    "yt-channel" : "UCykMWf8B8I7c_jA8FTy2tGw",
     "aliases" : ["amiya"]
   }
 ]
