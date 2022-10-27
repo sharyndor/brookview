@@ -1040,7 +1040,7 @@ function findListElementFromGridElement(element) {
   streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
 
   if (streamer) {
-    for (var listElement of document.querySelectorAll('.overlayListElement')) {
+    for (var listElement of overlayList.querySelectorAll('.overlayListElement')) {
       if (streamer.name == listElement.name) {
         return listElement
       }

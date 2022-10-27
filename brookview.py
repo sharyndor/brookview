@@ -491,7 +491,6 @@ def checkReferers(str):
     # Real channel id will be in a browseId tag
     result = find_key_like(jdata, 'browseId')[0]
     result = 'https://www.youtube.com/channel/' + result
-  print(result)
   return result
 
 if __name__ == '__main__':
