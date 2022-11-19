@@ -797,7 +797,7 @@ function allowStreamInteractions() {
   if (global.interactTimeout) {
     clearTimeout(global.interactTimeout)
   }
-  global.interactTimeout = setTimeout(disableStreamInteractions, 4000);
+  global.interactTimeout = setTimeout(disableStreamInteractions, 10000);
 
   return true
 }
