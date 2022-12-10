@@ -77,5 +77,23 @@
     "group": ["NijiEN"],
     "yt-channel" : "UCFgXWZOUZA2oYHNr6qDmsTQ",
     "aliases" : ["scarle"]
+  },
+  {
+    "name" : "Kotoka Torahime",
+    "group": ["NijiEN"],
+    "yt-channel" : "UCggO2c1unS-oLwTLT0ICywg",
+    "aliases" : ["kotoka"]
+  },
+  {
+    "name" : "Zaion LanZa",
+    "group": ["NijiEN"],
+    "yt-channel" : "UCIairB9UMDvqSKfMdv1jmjg",
+    "aliases" : ["zaion"]
+  },
+  {
+    "name" : "Meloco Kyoran",
+    "group": ["NijiEN"],
+    "yt-channel" : "UChKXd7oqD18qiIYBoRIHTlw",
+    "aliases" : ["meloco"]
   }
 ]
