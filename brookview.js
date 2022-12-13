@@ -355,7 +355,7 @@ function makeBlankElement() {
   div.ondragover = function (event) { event.preventDefault() }
 
   div.addEventListener('mouseenter', () => disableStreamInteractions(div))
-  div.addEventListener('mouseleave', () => allowStreamInteractions(div))
+  div.addEventListener('mouseleave', () => disableStreamInteractions(div))
 
   /* Prevent right-click to allow right-click to exit input box*/
   div.addEventListener('contextmenu', e => e.preventDefault())
