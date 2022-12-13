@@ -303,7 +303,6 @@ function gestureMouseUp(element, event) {
     window.onmousemove = null
     window.ontouchend = null
     window.ontouchmove = null
-    resetInteractions()
   }
 }
 
@@ -354,6 +353,12 @@ function makeBlankElement() {
   makeGesturable(div)
   div.ondrop     = function (event) { setElementFromDrop(div, event) }
   div.ondragover = function (event) { event.preventDefault() }
+
+  div.addEventListener('mouseenter', () => disableStreamInteractions(div))
+  div.addEventListener('mouseleave', () => allowStreamInteractions(div))
+
+  /* Prevent right-click to allow right-click to exit input box*/
+  div.addEventListener('contextmenu', e => e.preventDefault())
   
   /* Add bookkeeping */
   div.classList.add('grid-element')
@@ -362,18 +367,6 @@ function makeBlankElement() {
   
   var gridOverlay = div.appendChild(document.createElement('div'))
   gridOverlay.classList.add('grid-overlay')
-
-  gridOverlay.addEventListener('mousemove', function(e) {
-    e.target.classList.remove('fade')
-    
-    if (e.interactTimeout) {
-      clearTimeout(e.interactTimeout)
-    }
-
-    e.target.interactTimeout = setTimeout(function() {
-      e.target.classList.add('fade')
-    }, 2000)
-  })
 
   /* First child is the box/text displayed on hover */
   var gridAction = gridOverlay.appendChild(document.createElement('div'))
@@ -540,10 +533,10 @@ function populateOverlayHelp() {
   escapeDiv.textContent = ('Esc to close')
   overlayHelp.append(escapeDiv)
   
-  for (var [key, value] of Object.entries(actions)) {
+  for (var [key, action] of Object.entries(actions)) {
     var helpDiv = document.createElement('div')
-    helpDiv.textContent = key + ' - ' + value[0] + '\r\n'
-    helpDiv.setAttribute('title', value[2])
+    helpDiv.textContent = key + ' - ' + action.name + '\r\n'
+    helpDiv.setAttribute('title', action.text)
     overlayHelp.append(helpDiv)
   }
 }
@@ -684,9 +677,8 @@ function addOverlayStreamerInteraction(element, type, value) {
     /* Needed to allow dragging from list elements without moving the list */
     event.stopPropagation()
     /* Disable interactions to allow dropping onto iframes */
-    disableStreamInteractions()
+    disableStreamInteractions(element)
   }
-  element.onmouseup = resetInteractions
 
   /* Allow the element to be dragged */
   element.setAttribute('draggable', true)
@@ -694,7 +686,6 @@ function addOverlayStreamerInteraction(element, type, value) {
     /* Use the stream data as the drop data */
     event.dataTransfer.setData('text/plain', event.target.type + '=' + event.target.value)
   }
-  element.ondragend = resetInteractions
 
   return element
 }
@@ -785,68 +776,44 @@ function setKeyEvents(enabled) {
   }
 }
 
-function allowStreamInteractions() {
-  document.querySelectorAll('.grid-overlay').forEach(function(frame) {
-    frame.classList.add('disabled')
-  })
+function allowStreamInteractions(element) {
+  window.focus()
+  element.firstChild.classList.add('disabled')
+}
 
-  document.querySelectorAll('iframe').forEach(function(e) {
-    e.blur()
-  })
+function disableStreamInteractions(element) {
+  window.focus()
+  element.firstChild.classList.remove('disabled')
+}
 
-  if (global.interactTimeout) {
-    clearTimeout(global.interactTimeout)
+class Action {
+  constructor(name, action, text) {
+    this.name = name
+    this.action = action
+    this.text = text
   }
-  global.interactTimeout = setTimeout(disableStreamInteractions, 10000);
-
-  return true
-}
-
-function disableStreamInteractions() {
-  document.querySelectorAll('.grid-overlay').forEach(function(frame) {
-    frame.classList.remove('disabled')
-  })
-}
-
-function resetInteractions() {
-  /* Reset the global state used for tracking keys/clicks */
-  lastKey = null
-  keyElement = null
-  
-  /* Clear the text */
-  document.querySelectorAll('.grid-overlay :first-child').forEach(function(text) {
-    text.textContent = ''
-  })
 }
 
 const actions = {
-  /*      Name             UpAction                                 HelpText */
-  'h'  : ['help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'],
-  'l'  : ['list',          toggleOverlayList,                       'Toggles the stream list overlay'],
-  's'  : ['switch',        setElementFromPrompt,                    'Prompts to select a new stream'],
-  'n'  : ['next',          nextElement,                             'Skips to the next stream within the current group'],
-  'p'  : ['previous',      previousElement,                         'Skips to the previous stream within the current group'],
-  'j'  : ['next+',         nextGlobalElement,                       'Skips to the next stream, regardless of current group'],
-  'k'  : ['previous+',     previousGlobalElement,                   'Skips to the previous stream, regardless of current group'],
-  'd'  : ['delete',        removeElement,                           'Removes the stream'],
-  'm'  : ['move',          moveElement,                             'Moves the stream between locations'],
-  'c'  : ['chat',          toggleChat,                              'Toggles the chat panel'],
-  'r'  : ['reload',        reloadElement,                           'Reloads the stream'],
-  'f'  : ['fullscreen',    toggleFullscreen,                        'Toggles fullscreen'],
-  'a'  : ['adjust layout', promptSize,                              'Prompts to select new row/column inputs'],
-  'b'  : ['backend',       connectBackend,                          'Connects to a background service for fetching video data'],
-  '`'  : ['settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'],
-  '\\' : ['modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'],
-  ' '  : ['interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'],
-  'e'  : ['embed',         embedLink,                               'Embeds the target link']
-}
-
-function setElementFromKey(element, key) {
-  /* Find an action, otherwise do nothing */
-  if (key in actions) {
-    /* Do something with the elements */
-    actions[key][1](element)
-  }
+  /*                Name             UpAction                                 HelpText */
+  'h'  : new Action('help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'),
+  'l'  : new Action('list',          toggleOverlayList,                       'Toggles the stream list overlay'),
+  's'  : new Action('switch',        setElementFromPrompt,                    'Prompts to select a new stream'),
+  'n'  : new Action('next',          nextElement,                             'Skips to the next stream within the current group'),
+  'p'  : new Action('previous',      previousElement,                         'Skips to the previous stream within the current group'),
+  'j'  : new Action('next+',         nextGlobalElement,                       'Skips to the next stream, regardless of current group'),
+  'k'  : new Action('previous+',     previousGlobalElement,                   'Skips to the previous stream, regardless of current group'),
+  'd'  : new Action('delete',        removeElement,                           'Removes the stream'),
+  'm'  : new Action('move',          moveElement,                             'Moves the stream between locations'),
+  'c'  : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
+  'r'  : new Action('reload',        reloadElement,                           'Reloads the stream'),
+  'f'  : new Action('fullscreen',    toggleFullscreen,                        'Toggles fullscreen'),
+  'a'  : new Action('adjust layout', promptSize,                              'Prompts to select new row/column inputs'),
+  'b'  : new Action('backend',       connectBackend,                          'Connects to a background service for fetching video data'),
+  '`'  : new Action('settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'),
+  '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
+  ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
+  'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
 }
 
 function setElementFromDrop(element, event) {
@@ -902,14 +869,14 @@ function reloadElement(element) {
   }
 }
 
-function moveElement(element) {
-  if (element && element.classList.contains('grid-element') && keyElement && keyElement.classList.contains('grid-element')) {
-    if (element != keyElement) {
+function moveElement(element, firstElement) {
+  if (element && element.classList.contains('grid-element') && firstElement && firstElement.classList.contains('grid-element')) {
+    if (element != firstElement) {
       /* Save the key element's data */
-      var [lastType, lastValue, lastExtras] = [keyElement.type, keyElement.value, keyElement.extras]
+      var [lastType, lastValue, lastExtras] = [firstElement.type, firstElement.value, firstElement.extras]
       
       /* Set key element from the passed element */
-      setElement(keyElement, element.type, element.value, element.extras)
+      setElement(firstElement, element.type, element.value, element.extras)
       
       /* Set the passed element from the saved data */
       setElement(element, lastType, lastValue, lastExtras)
@@ -917,50 +884,41 @@ function moveElement(element) {
   }
 }
 
-function myKeyDown(event) {
-  var key = event.key.toLowerCase()
-  
-  /* Disallow any modifiers that aren't shift */
-  if (event.ctrlKey || event.altKey || event.metaKey) {
-    return
-  }
-  
-  /* Special case for escape to close the overlay */
-  if (key == 'escape') {
-    hideOverlays()
-    resetInteractions()
-    return
-  }
-  
-  if (lastKey != key) {
-    /* Save the pressed key */
-    lastKey = key
-    
-    /* Grab whatever is underneath when an action is started */
-    keyElement = document.querySelector('.grid-element:hover')
-    
-    /* Disable interactions via css to allow for click events to reach the parent div */
-    disableStreamInteractions()
-    
-    /* Add the overlay text for the active action */
-    var content = lastKey in actions ? actions[lastKey][0] ?? '' : ''
+function setCurrentAction(action, element) {
+  global.currentAction = action
+  global.originalElement = element
 
-    document.querySelectorAll('.grid-overlay :first-child').forEach(function(overlay) {
-      overlay.textContent = content
-    })
+  /* Add the overlay text for the active action */
+  document.querySelectorAll('.grid-overlay :first-child').forEach(function(overlay) {
+    overlay.textContent = action ? action.name : ''
+  })
+}
+
+function clearCurrentAction() {
+  setCurrentAction(null, null)
+}
+
+function activateAction(action, element) {
+  if (action && action == global.currentAction) {
+    action.action(element, global.originalElement)
+
+    clearCurrentAction()
   }
 }
 
+function getAction(key) {
+  key = key.toLowerCase()
+  return key in actions ? actions[key.toLowerCase()] : null
+}
+
+function myKeyDown(event) {
+  /* Grab whatever is underneath when an action is started */
+  setCurrentAction(getAction(event.key), document.querySelector('.grid-element:hover'))
+}
+
 function myKeyUp(event) {
-  var key = event.key.toLowerCase()
-  
-  /* Ignore release events that weren't the first key pressed */
-  if (key == lastKey) {
-    /* Complete the action with whatever is under the mouse */
-    setElementFromKey(document.querySelector('.grid-element:hover'), lastKey)
-    
-    resetInteractions()
-  }
+  /* Grab whatever is underneath when an action is completed */
+  activateAction(getAction(event.key), document.querySelector('.grid-element:hover'))
 }
 
 function findAdjacentEntry(list, entry, offset) {
@@ -1115,17 +1073,11 @@ function previousGlobalElement(element) {
   }
 }
 
-function toggleFullscreen(element) {
-  if (element && element.classList.contains('grid-element')) {
-    /* Only fullscreen iframes */
-    if (document.fullscreenElement == null) {
-      if (element.lastChild.tagName.toLowerCase() == 'iframe') {
-        element.lastChild.requestFullscreen()
-      }
-    }
-    else {
-      document.exitFullscreen()
-    }
+function toggleFullscreen() {
+  if (document.fullscreenElement == null) {
+    document.documentElement.requestFullscreen()
+  } else {
+    document.exitFullscreen()
   }
 }
 
@@ -1394,7 +1346,7 @@ function dragMouseDown(element, event) {
   /* Left mouse only */
   if (event.button == 0) {
     /* Disable interactions via css to allow for keep dragging smooth */
-    disableStreamInteractions()
+    disableStreamInteractions(element)
     
     dragStartX = event.clientX
     dragStartY = event.clientY
@@ -1411,9 +1363,6 @@ function dragMouseDown(element, event) {
 function dragMouseUp(element, event) {
   /* Left mouse only */
   if (event == null || event.button == 0) {
-    /* Allow interactions again */
-    resetInteractions()
-    
     window.onmouseup = null
     window.onmousemove = null
   }
@@ -1585,12 +1534,10 @@ function setup() {
   window.onresize = resizeGrid
   window.onkeydown = myKeyDown
   window.onkeyup = myKeyUp
-  window.onfocus = resetInteractions
-  window.onblur = function() { global.ignoreNextGesture = true; disableStreamInteractions() } /* Ignore first gesture when focus has been lost */
+  window.onblur = function() { clearCurrentAction() }
   
   /* Temporary workaround, set globals here */
   global = {}
-  lastKey = null
   global.streamers = new Map()
   global.aliases = new Map()
   global.groups = { groups : {}, streamers : new Map() }
@@ -1602,7 +1549,6 @@ function setup() {
 
   backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
   crossReference = new Map()
-  alreadyWarnedVersion = false
 
   populateOverlayInput()
   populateOverlayHelp()
@@ -1647,8 +1593,6 @@ function finishInitializing() {
   } else {
     promptSize()
   }
-  
-  resetInteractions()
 
   updateOverlayListElements()
   setInterval(updateOverlayListElements, 1000)
