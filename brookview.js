@@ -438,11 +438,6 @@ function updateURL() {
   /* Add parameters for rows/columns */
   baseURL += '?rows='    + grid.rows
   baseURL += '&columns=' + grid.columns
-
-  /* Save backend location in URL if it isn't the default value */
-  if (backendLocation.toLowerCase() != 'localhost:8080') {
-    baseURL += '&backend=' + backendLocation
-  }
   
   /* Add parameters for the types/value of each piece of the grid */
   document.querySelectorAll('.grid-element').forEach(function(element) {
@@ -527,7 +522,7 @@ function resizeGrid() {
 }
 
 function populateOverlayHelp() {
-  listElement = null
+  global.listElement = null
   
   var escapeDiv = document.createElement('div')
   escapeDiv.textContent = ('Esc to close')
@@ -542,7 +537,7 @@ function populateOverlayHelp() {
 }
 
 function populateOverlayList() {
-  listElement = null
+  global.listElement = null
   
   var escapeDiv = document.createElement('div')
   escapeDiv.textContent = ('Esc to close')
@@ -668,7 +663,7 @@ function addOverlayStreamerInteraction(element, type, value) {
   element.value = value
 
   element.onclick = function(event){ 
-    setElement(listElement, event.target.type, event.target.value, [])
+    setElement(global.listElement, event.target.type, event.target.value, [])
 
     toggleOverlayInput(false)
   }
@@ -703,8 +698,8 @@ function populateOverlaySettings() {
   
   backendInput = addOverlaySetting(form, 'Backend', 'checkbox', connectBackend)
 
-  backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'text', updateBackendLocation)
-  backendLocationSetting.value = backendLocation
+  backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'text', e => setBackendLocation(e.target.value))
+  backendLocationSetting.value = getBackendLocation()
 }
 
 function populateOverlayMod() {
@@ -826,7 +821,7 @@ function setElementFromDrop(element, event) {
 
 function setElementFromPrompt(element) {
   if (element && element.classList.contains('grid-element')) {
-    listElement = element
+    global.listElement = element
     toggleOverlayInput(true)
   }
 }
@@ -913,12 +908,14 @@ function getAction(key) {
 
 function myKeyDown(event) {
   /* Grab whatever is underneath when an action is started */
-  setCurrentAction(getAction(event.key), document.querySelector('.grid-element:hover'))
+  global.originalElement = global.originalElement ? global.originalElement : document.querySelector('.grid-element:hover')
+  setCurrentAction(getAction(event.key), global.originalElement)
 }
 
 function myKeyUp(event) {
   /* Grab whatever is underneath when an action is completed */
   activateAction(getAction(event.key), document.querySelector('.grid-element:hover'))
+  global.originalElement = null
 }
 
 function findAdjacentEntry(list, entry, offset) {
@@ -996,84 +993,47 @@ function findListElementFromGridElement(element) {
   var streamer = null
   streamer = streamer ?? findStreamer(element.type, element.value)
   streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
+  return streamer ? Array.prototype.find.call(overlayList.querySelectorAll('.overlayListElement'), e => e.name == streamer.name) : null
+}
 
-  if (streamer) {
-    for (var listElement of overlayList.querySelectorAll('.overlayListElement')) {
-      if (streamer.name == listElement.name) {
-        return listElement
-      }
-    }
+function setElementRelative(gridElement, listElement, elements, offset) {
+  var adjElement = overlayList.querySelectorAll('.overlayListElement')[0]
+
+  if (listElement) {
+    var elementIndex = Array.prototype.indexOf.call(elements, listElement)
+    adjElement = elements[(elementIndex + elements.length + offset) % elements.length]
   }
 
-  return null
+  setElementFromString(gridElement, adjElement.alias)
+}
+
+function setElementRelativeToGroup(element, offset) {
+  var listElement = findListElementFromGridElement(element)
+  return setElementRelative(element, listElement, listElement.parentElement.querySelectorAll('.overlayListElement'), offset)
+}
+
+function setElementRelativeToGlobal(element, offset) {
+  var listElement = findListElementFromGridElement(element)
+  return setElementRelative(element, listElement, overlayList.querySelectorAll('.overlayListElement'), offset)
 }
 
 function nextElement(element) {
-  if (element && element.classList.contains('grid-element')) {
-    var listElement = findListElementFromGridElement(element)
-
-    var name = null
-    if (listElement) {
-      name = findAdjacentEntry(listElement.parentElement.children, listElement, 1)
-    }
-
-    /* Default to the first streamer if nothing can be found */
-    name = name ?? Object.values(global.streamers)[0].name
-
-    setElementFromString(element, global.streamers[name].aliases[0])
-    setChannelNameTimer(element, name)
-  }
+  setElementRelativeToGroup(element, 1)
 }
 
 function previousElement(element) {
-  if (element && element.classList.contains('grid-element')) {
-    var listElement = findListElementFromGridElement(element)
-
-    var name = findAdjacentEntry(
-      overlayList.querySelectorAll('.overlayListElement'), listElement, -1
-    )
-
-    /* Default to the first streamer if nothing can be found */
-    name = name ?? Object.values(global.streamers)[0].name
-
-    setElementFromString(element, global.streamers[name].aliases[0])
-    setChannelNameTimer(element, name)
-  }
+  setElementRelativeToGroup(element, -1)
 }
 
 function nextGlobalElement(element) {
-  if (element && element.classList.contains('grid-element')) {
-    var listElement = findListElementFromGridElement(element)
-
-    var name = findAdjacentEntry(
-      overlayList.querySelectorAll('.overlayListElement'), listElement, 1
-    )
-
-    /* Default to the first streamer if nothing can be found */
-    name = name ?? Object.values(global.streamers)[0].name
-
-    setElementFromString(element, global.streamers[name].aliases[0])
-    setChannelNameTimer(element, name)
-  }
+  setElementRelativeToGlobal(element, 1)
 }
 
 function previousGlobalElement(element) {
-  if (element && element.classList.contains('grid-element')) {
-    var listElement = findListElementFromGridElement(element)
-
-    var name = findAdjacentEntry(
-      overlayList.querySelectorAll('.overlayListElement'), listElement, -1
-    )
-
-    /* Default to the first streamer if nothing can be found */
-    name = name ?? Object.values(global.streamers)[0].name
-
-    setElementFromString(element, global.streamers[name].aliases[0])
-    setChannelNameTimer(element, name)
-  }
+  setElementRelativeToGlobal(element, -1)
 }
 
-function toggleFullscreen() {
+function toggleFullscreen(element) {
   if (document.fullscreenElement == null) {
     document.documentElement.requestFullscreen()
   } else {
@@ -1108,13 +1068,13 @@ function toggleOverlays(overlay) {
 }
 
 function toggleOverlayList(element) {
-  listElement = element
+  global.listElement = element
   toggleOverlays(overlayList)
 }
 
 function hideOverlays() {
   /* Reset the overlay elements */
-  listElement = null
+  global.listElement = null
   toggleOverlays(null)
 }
 
@@ -1130,9 +1090,12 @@ function toggleChat(e) {
   resizeGrid()
 }
 
-function updateBackendLocation(e) {
-  backendLocation = e.target.value
-  updateURL()
+function setBackendLocation(location) {
+  localStorage.setItem('backendLocation', location)
+}
+
+function getBackendLocation() {
+  return localStorage.getItem('backendLocation')
 }
 
 function requestBackendData(sock) {
@@ -1155,7 +1118,7 @@ function requestBackendData(sock) {
 
 function connectBackend() {
   if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
-    backendSocket = new WebSocket('ws://' + backendLocation)
+    backendSocket = new WebSocket('ws://' + getBackendLocation())
     backendSocket.onopen = function() { requestBackendData(backendSocket) }
     backendSocket.onmessage = processBackendResponse
     
@@ -1172,7 +1135,7 @@ function connectBackend() {
     backendSocket.onclose = function() { backendInput.checked = false }
     backendSocket.onerror = function() { 
       if (firstAttempt == false) {
-        alert('Backend encountered a problem connecting to: ' + backendLocation)
+        alert('Backend encountered a problem connecting to: ' + getBackendLocation())
       }
     }
   } else {
@@ -1231,25 +1194,6 @@ function requestBackendResponse(type, data, fun) {
   }
 }
 
-function checkMessageVersion(message) {
-  var version = message.version
-
-  var sameVersion = true
-  for (var i = 0; i < 3; ++i) {
-    if (version[i] != supportedBackendVersion[i]) {
-      sameVersion = false
-    }
-  }
-
-  /* Only update if the versions match, otherwise notify the user */
-  /* TODO: Proper backwards compatibility */ 
-  if (!sameVersion) {
-    alert('Your backend is out of date. Please update from the settings menu.')
-  }
-
-  return sameVersion
-}
-
 function processInitMessage(message) {
 
 }
@@ -1303,37 +1247,6 @@ function processUpdateMessage(update) {
   updatedStreamer.status = {
     status : 'offline'
   }
-}
-
-function maintainGridElement(element) {
-  var type = element.type
-  var value = element.value
-
-  for (var streamer of Object.values(global.streamers)) {
-    for (var stream of streamer.streams) {
-      if (stream.type != type || stream.value != value) {
-        continue
-      }
-
-      if ('status' in streamer && streamer.status.status == 'offline') {
-        removeElement(element)
-      } else if ('status' in streamer && streamer.status.status != 'offline') {
-        element.type = streamer.status.type
-        element.value = streamer.status.value
-      }
-      
-      return
-    }
-  }
-}
-
-function maintainVideoElements() {
-  for (var element of document.querySelectorAll('.grid-element')) {
-    maintainGridElement(element)
-  }
-
-  updateURL()
-  updateChat()
 }
 
 function makeDraggable(element) {
@@ -1454,7 +1367,7 @@ function populateOverlayInput() {
     if (e.key == 'Enter') {
       var lookup = inputList.children.length > 0 ? inputList.children[0].alias : inputText.value
       e.preventDefault()
-      setElementFromString(listElement, lookup)
+      setElementFromString(global.listElement, lookup)
       inputText.blur()
       toggleOverlayInput(false)
     }
@@ -1479,52 +1392,35 @@ function populateOverlayInput() {
       inputList.removeChild(inputList.firstChild)
     }
 
-    var searchTerms = e.target.value.split(' ').map(e => e.trim().toLowerCase()).filter(e => e)
+    var channelMatches = []
+    var searchString = e.target.value;
+    var searchTerms = searchString.split(' ').map(e => e.trim().toLowerCase()).filter(e => e)
     if (searchTerms) {
-      var channelSet = new Set()
       for (var [name, channel] of Object.entries(global.streamers)) {
         /* Start with the name as filter criteria */
         var infoList = name.split(' ')
 
         /* Add any aliases */
-        for (var alias of channel.aliases) {
-          infoList.push(alias)
-        }
+        infoList.concat(channel.aliases)
 
         /* Add any groups */
         for (var subgroup of channel.group) {
           infoList.push(subgroup)
         }
 
+        /* Lowercase everything */
         infoList = infoList.map(e => e.trim().toLowerCase())
 
-        /* If online status is available, skip offline streamers */
-        /* Otherwise, take anything where the beginning matches */
-        var matchesTerms = true
-        for (var term of searchTerms) {
-          var validInfo = false
-          for (var info of infoList) {
-            if (info.startsWith(term)) {
-              validInfo = true
-              break
-            }
-          }
-          
-          if (!validInfo) {
-            matchesTerms = false
-            break
-          }
+        /* Every term must have some member in the info which starts with the term*/
+        if (searchTerms.every(term => infoList.some(info => info.startsWith(term)))) {
+          channelMatches.push(channel)
         }
-
-        if (matchesTerms) {
-          channelSet.add(channel)
-          }
       }
+    }
 
-      /* Add using the same logic as the list */
-      for (var channel of channelSet) {
-        addOverlayListStreamer(inputList, channel)
-      }
+    /* Add using the same logic as the list */
+    for (var channel of channelMatches) {
+      addOverlayListStreamer(inputList, channel)
     }
   }
 }
@@ -1547,7 +1443,7 @@ function setup() {
   global.backendResponseId = 0
   global.responseHandlers = new Map()
 
-  backendLocation = new URLSearchParams(window.location.search).get('backend') || 'localhost:8080'
+  setBackendLocation(getBackendLocation() || 'localhost:8080')
   crossReference = new Map()
 
   populateOverlayInput()
@@ -1595,10 +1491,6 @@ function finishInitializing() {
   }
 
   updateOverlayListElements()
-  setInterval(updateOverlayListElements, 1000)
-
-  setInterval(maintainVideoElements, 1000)
-
   connectBackend()
 }
 
