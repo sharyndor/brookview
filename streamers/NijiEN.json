@@ -2,98 +2,98 @@
   {
     "name" : "Elira Pendora",
     "group": ["NijiEN"],
-    "yt-channel" : "UCIeSUTOTkF9Hs7q3SGcO-Ow",
+    "ytChannel" : "UCIeSUTOTkF9Hs7q3SGcO-Ow",
     "aliases" : ["elira"]
   },
   {
     "name" : "Pomu Rainpuff",
     "group": ["NijiEN"],
-    "yt-channel" : "UCP4nMSTdwU1KqYWu3UH5DHQ",
+    "ytChannel" : "UCP4nMSTdwU1KqYWu3UH5DHQ",
     "aliases" : ["pomu"]
   },
   {
     "name" : "Finana Ryugu",
     "group": ["NijiEN"],
-    "yt-channel" : "UCu-J8uIXuLZh16gG-cT1naw",
-    "yt-custom" : "FinanaRyugu-NIJISANJIEN",
+    "ytChannel" : "UCu-J8uIXuLZh16gG-cT1naw",
+    "ytOldHandle" : "FinanaRyugu-NIJISANJIEN",
     "aliases" : ["finana"]
   },
   {
     "name" : "Selen Tatsuki",
     "group": ["NijiEN"],
-    "yt-channel" : "UCV1xUwfM2v2oBtT3JNvic3w",
+    "ytChannel" : "UCV1xUwfM2v2oBtT3JNvic3w",
     "aliases" : ["selen"]
   },
   {
     "name" : "Rosemi Lovelock",
     "group": ["NijiEN"],
-    "yt-channel" : "UC4WvIIAo89_AzGUh1AZ6Dkg",
+    "ytChannel" : "UC4WvIIAo89_AzGUh1AZ6Dkg",
     "aliases" : ["rosemi"]
   },
   {
     "name" : "Petra Gurin",
     "group": ["NijiEN"],
-    "yt-channel" : "UCgA2jKRkqpY_8eysPUs8sjw",
+    "ytChannel" : "UCgA2jKRkqpY_8eysPUs8sjw",
     "aliases" : ["petra"]
   },
   {
     "name" : "Reimu Endou",
     "group": ["NijiEN"],
-    "yt-channel" : "UCBURM8S4LH7cRZ0Clea9RDA",
+    "ytChannel" : "UCBURM8S4LH7cRZ0Clea9RDA",
     "aliases" : ["reimu"]
   },
   {
     "name" : "Nina Kosaka",
     "group": ["NijiEN"],
-    "yt-channel" : "UCkieJGn3pgJikVW8gmMXE2w",
+    "ytChannel" : "UCkieJGn3pgJikVW8gmMXE2w",
     "aliases" : ["nina"]
   },
   {
     "name" : "Millie Parfait",
     "group": ["NijiEN"],
-    "yt-channel" : "UC47rNmkDcNgbOcM-2BwzJTQ",
+    "ytChannel" : "UC47rNmkDcNgbOcM-2BwzJTQ",
     "aliases" : ["millie"]
   },
   {
     "name" : "Enna Alouette",
     "group": ["NijiEN"],
-    "yt-channel" : "UCR6qhsLpn62WVxCBK1dkLow",
+    "ytChannel" : "UCR6qhsLpn62WVxCBK1dkLow",
     "aliases" : ["enna"]
   },
   {
     "name" : "Maria Marionette",
     "group": ["NijiEN"],
-    "yt-channel" : "UCwaS8_S7kMiKA3izlTWHbQg",
+    "ytChannel" : "UCwaS8_S7kMiKA3izlTWHbQg",
     "aliases" : ["maria"]
   },
   {
     "name" : "Aia Amare",
     "group": ["NijiEN"],
-    "yt-channel" : "UCN68LoM3khS4gdBMiWJO8WA",
+    "ytChannel" : "UCN68LoM3khS4gdBMiWJO8WA",
     "aliases" : ["aia"]
   },
   {
     "name" : "Scarle Yonaguni",
     "group": ["NijiEN"],
-    "yt-channel" : "UCFgXWZOUZA2oYHNr6qDmsTQ",
+    "ytChannel" : "UCFgXWZOUZA2oYHNr6qDmsTQ",
     "aliases" : ["scarle"]
   },
   {
     "name" : "Kotoka Torahime",
     "group": ["NijiEN"],
-    "yt-channel" : "UCggO2c1unS-oLwTLT0ICywg",
+    "ytChannel" : "UCggO2c1unS-oLwTLT0ICywg",
     "aliases" : ["kotoka"]
   },
   {
     "name" : "Zaion LanZa",
     "group": ["NijiEN"],
-    "yt-channel" : "UCIairB9UMDvqSKfMdv1jmjg",
+    "ytChannel" : "UCIairB9UMDvqSKfMdv1jmjg",
     "aliases" : ["zaion"]
   },
   {
     "name" : "Meloco Kyoran",
     "group": ["NijiEN"],
-    "yt-channel" : "UChKXd7oqD18qiIYBoRIHTlw",
+    "ytChannel" : "UChKXd7oqD18qiIYBoRIHTlw",
     "aliases" : ["meloco"]
   }
 ]

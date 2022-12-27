@@ -2,48 +2,48 @@
   {
     "name" : "Vivian Voss",
     "group": ["4V"],
-    "yt-channel" : "UCNnsUBscSpTZgTPgShcuG_Q",
-    "yt-custom" : "VivianVoss4VLive",
+    "ytChannel" : "UCNnsUBscSpTZgTPgShcuG_Q",
+    "ytOldHandle" : "VivianVoss4VLive",
     "aliases" : ["vivian"]
   },
   {
     "name" : "Orion Juno",
     "group": ["4V"],
-    "yt-channel" : "UC_l_7Da8HB2cLTx7U88RrsA",
-    "yt-custom" : "OrionJunoCh-4VLive",
+    "ytChannel" : "UC_l_7Da8HB2cLTx7U88RrsA",
+    "ytOldHandle" : "OrionJunoCh-4VLive",
     "aliases" : ["orion"]
   },
   {
     "name" : "Angelina Kumalo",
     "group": ["4V"],
-    "yt-channel" : "UCLT3br0YnmS2t3aba_w275A",
-    "yt-custom" : "AngelinaKumalo",
+    "ytChannel" : "UCLT3br0YnmS2t3aba_w275A",
+    "ytOldHandle" : "AngelinaKumalo",
     "aliases" : ["angelina"]
   },
   {
     "name" : "Boomi Mamana",
     "group": ["4V"],
-    "ttv-channel" : "stfuboomi",
-    "yt-custom" : "BoomiMamanaCh-4VLive",
+    "ttvChannel" : "stfuboomi",
+    "ytOldHandle" : "BoomiMamanaCh-4VLive",
     "aliases" : ["boomi"]
   },
   {
     "name" : "Cecilia Amberfall",
     "group": ["4V"],
-    "ttv-channel" : "cloverelfy",
+    "ttvChannel" : "cloverelfy",
     "aliases" : ["cecilia"]
   },
   {
     "name" : "Neiomi Cielo",
     "group": ["4V"],
-    "ttv-channel" : "neiomicielo",
+    "ttvChannel" : "neiomicielo",
     "aliases" : ["neiomi"]
   },
   {
     "name" : "Roza Coatl",
     "group": ["4V"],
-    "yt-channel" : "UCI4PLfuiL9jFOpsEIA20Kjg",
-    "yt-custom" : "RozaCoatl",
+    "ytChannel" : "UCI4PLfuiL9jFOpsEIA20Kjg",
+    "ytOldHandle" : "RozaCoatl",
     "aliases" : ["roza"]
   }
 ]

@@ -2,44 +2,44 @@
   {
     "name" : "Snuffy",
     "group": ["Indie"],
-    "ttv-channel" : "snuffy",
+    "ttvChannel" : "snuffy",
     "aliases" : ["snuffy"]
   },
   {
     "name" : "Artemis of the Blue",
     "group": ["Indie"],
-    "ttv-channel" : "artemisoftheblue",
+    "ttvChannel" : "artemisoftheblue",
     "aliases" : ["artemis"]
   },
   {
     "name" : "girl_dm_",
     "group": ["Indie"],
-    "ttv-channel" : "girl_dm_",
+    "ttvChannel" : "girl_dm_",
     "aliases" : ["girl_dm_", "girldm"]
   },
   {
     "name" : "Shylily",
     "group": ["Indie"],
-    "ttv-channel" : "shylily",
+    "ttvChannel" : "shylily",
     "aliases" : ["lily"]
   },
   {
     "name" : "Kiki",
     "group": ["Indie"],
-    "yt-channel" : "UCqF1M9cLvoB-zJsLQgIxx4Q",
-    "yt-custom" : "KikiCh-",
+    "ytChannel" : "UCqF1M9cLvoB-zJsLQgIxx4Q",
+    "ytOldHandle" : "KikiCh-",
     "aliases" : ["kiki"]
   },
   {
     "name" : "fallenshadow",
     "group": ["Indie"],
-    "ttv-channel" : "fallenshadow",
+    "ttvChannel" : "fallenshadow",
     "aliases" : ["shondo"]
   },
   {
     "name" : "Miori Celesta",
     "group": ["Indie"],
-    "yt-channel" : "UCyKsg-57XC9pyHbP7v3kCPQ",
-    "aliases" : ["miori", "mio"]
+    "ytChannel" : "UCyKsg-57XC9pyHbP7v3kCPQ",
+    "aliases" : ["miori"]
   }
 ]

@@ -2,61 +2,61 @@
   {
     "name" : "Nyatasha Nyanners",
     "group": ["VShojo"],
-    "ttv-channel" : "nyanners",
+    "ttvChannel" : "nyanners",
     "aliases" : ["nyanners"]
   },
   {
     "name" : "Projekt Melody",
     "group": ["VShojo"],
-    "ttv-channel" : "projektmelody",
+    "ttvChannel" : "projektmelody",
     "aliases" : ["melody"]
   },
   {
     "name" : "Apricot (Froot)",
     "group": ["VShojo"],
-    "ttv-channel" : "apricot",
+    "ttvChannel" : "apricot",
     "aliases" : ["apricot", "froot"]
   },
   {
     "name" : "Zentreya",
     "group": ["VShojo"],
-    "ttv-channel" : "zentreya",
+    "ttvChannel" : "zentreya",
     "aliases" : ["zentreya"]
   },
   {
     "name" : "Silvervale",
     "group": ["VShojo"],
-    "ttv-channel" : "silvervale",
+    "ttvChannel" : "silvervale",
     "aliases" : ["silvervale"]
   },
   {
     "name" : "Ironmouse",
     "group": ["VShojo"],
-    "ttv-channel" : "ironmouse",
+    "ttvChannel" : "ironmouse",
     "aliases" : ["ironmouse"]
   },
   {
     "name" : "Hime Hajime",
     "group": ["VShojo"],
-    "ttv-channel" : "hajime",
+    "ttvChannel" : "hajime",
     "aliases" : ["hajime"]
   },
   {
     "name" : "Veibae",
     "group": ["VShojo"],
-    "ttv-channel" : "veibae",
+    "ttvChannel" : "veibae",
     "aliases" : ["veibae"]
   },
   {
     "name" : "kson ONAIR",
     "group": ["VShojo"],
-    "yt-channel" : "UC9ruVYPv7yJmV0Rh0NKA-Lw",
+    "ytChannel" : "UC9ruVYPv7yJmV0Rh0NKA-Lw",
     "aliases" : ["kson"]
   },
   {
     "name" : "Amemiya Nazuna",
     "group": ["VShojo"],
-    "ttv-channel" : "AmemiyaNazuna",
+    "ttvChannel" : "AmemiyaNazuna",
     "aliases" : ["nazuna"]
   }
 ]

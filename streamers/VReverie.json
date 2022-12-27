@@ -2,25 +2,25 @@
   {
     "name" : "Hotaru Iora",
     "group": ["VReverie"],
-    "yt-channel" : "UC0g_U1QjfhMR-kx8XLmWTCA",
+    "ytChannel" : "UC0g_U1QjfhMR-kx8XLmWTCA",
     "aliases" : ["iora"]
   },
   {
     "name" : "Nova Aokami",
     "group": ["VReverie"],
-    "yt-channel" : "UCA4bOB1Jnw5-lbuoSCfxc-w",
+    "ytChannel" : "UCA4bOB1Jnw5-lbuoSCfxc-w",
     "aliases" : ["nova"]
   },
   {
     "name" : "Lilrya Prisvielle",
     "group": ["VReverie"],
-    "yt-channel" : "UCt7vm-7hlwPcYsRacX7QJYw",
+    "ytChannel" : "UCt7vm-7hlwPcYsRacX7QJYw",
     "aliases" : ["lilrya"]
   },
   {
     "name" : "Ophelia Midnight",
     "group": ["VReverie"],
-    "yt-channel" : "UCZyNPQCjju3KIv9X84diljw",
+    "ytChannel" : "UCZyNPQCjju3KIv9X84diljw",
     "aliases" : ["ophelia"]
   }
 ]

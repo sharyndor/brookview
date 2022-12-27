@@ -17,61 +17,57 @@ var hostDomain = new URL(window.location.href).hostname
 var supportedBackendVersion = [0, 4, 0] /* vMajor.Minor.Patch */
 
 const referFuns = [
-  referAlias,
+  referName,
   referYoutube,
   referTwitch,
 ]
 
 const embedFuns = { 
-  'blank'       : null,
-  'alias'       : embedAlias,
-  'yt-video'    : embedYoutubeVideo,
-  'yt-channel'  : embedYoutubeChannel,
-  'yt-custom'   : embedYoutubeCustomChannel,
-  'ttv-video'   : embedTwitchVideo,
-  'ttv-channel' : embedTwitchChannel,
+  'blank'      : null,
+  'name'       : embedName,
+  'ytVideo'    : embedYoutubeVideo,
+  'ytChannel'  : embedYoutubeChannel,
+  'ytHandle'   : embedYoutubeHandle,
+  'ttvVideo'   : embedTwitchVideo,
+  'ttvChannel' : embedTwitchChannel,
 }
 
-function referAlias(str) {
-  alias = str.toLowerCase()
-  return alias in global.aliases ? ['alias', alias, []] : null
+function referName(str) {
+  return ['name', str]
 }
 
 function referYoutube(str) {
   /* Try to treat the string as a URL */
   var url = new URL(str)
+  var pathPieces = url.pathname.split('/')
 
-  /* Normal video link, parse out the video id and timestamp (if present) */
-  if (url.host.includes('youtube') && url.searchParams.has('v')) { 
-      var timeStamp = url.searchParams.get('t')
-      var extras = timeStamp ? '&start=' + timeStamp : ''
-      return ['yt-video', url.searchParams.get('v'), extras]
+  /* Youtube video link - www.youtube.com/watch?v=id&t=# */
+  if (url.host.includes('www.youtube.com') && url.searchParams.has('v')) { 
+    var timeStamp = url.searchParams.get('t')
+    var extras = timeStamp ? '&start=' + timeStamp : ''
+    return ['ytVideo', url.searchParams.get('v'), extras]
   }
 
-  /* Custom channel link cannot be used, actual channel id is needed instead */
-  if (url.host.includes('youtube') && url.pathname.includes('/c/')) { 
-    var name = url.pathname.split('/')[2]
-    var value = lookupYoutubeCustomChannelName(name)
-    if (value) {
-      return ['yt-custom', name]
-    } else {
-      if (backendSocket.readyState != WebSocket.OPEN) {
-        return checkReferers(prompt('Unknown custom channel name'))
-      }
-    }
-    return null
+  /* Youtube handle - www.youtube.com/@Handle */
+  if (url.host.includes('www.youtube.com') && pathPieces[1].startsWith('@')) {
+    return ['ytHandle', pathPieces[1]]
   }
 
-  /* Normal channel link, parse out the channel id */
-  if (url.host.includes('youtube') && url.pathname.includes('/channel/')) { 
-    return ['yt-channel', url.pathname.split('/c/')[2]]
+  /* Youtube old handle - www.youtube.com/c/Handle */
+  if (url.host.includes('www.youtube.com') && pathPieces[1] == 'c') {
+    return ['ytOldHandle', pathPieces[2]]
   }
 
-  /* Short video link, parse out the video id and timestamp (if present) */
+  /* Youtube channel id - www.youtube.com/channel/ChannelId */
+  if (url.host.includes('www.youtube.com') && pathPieces[1] == 'channel') { 
+    return ['ytChannel', pathPieces[2]]
+  }
+
+  /* Youtube video link - youtu.be/id */
   if (url.host.includes('youtu.be')) { 
     var timestamp = url.searchParams.get('t')
     var extras = timestamp ? '&start=' + timestamp : ''
-    return ['yt-video', url.pathname.substring(1), extras]
+    return ['ytVideo', pathPieces[1], extras]
   }
 
   return null
@@ -80,24 +76,37 @@ function referYoutube(str) {
 function referTwitch(str) {
   /* Start with ttv- as shorthand for twitch channels */
   if (str.startsWith('ttv-')) {
-    return ['ttv-channel', str.substring(4)]
+    return ['ttvChannel', str.substring(4)]
   }
 
   /* Try to treat the string as a URL */
   var url = new URL(str)
+  var pathPieces = url.pathname.split('/')
 
-  /* VOD */
-  if (url.host.includes('twitch.tv') && url.pathname.includes('/videos/')) { 
+  /* Twitch VOD - www.twitch.tv/videos/id?t=# */
+  if (url.host.includes('www.twitch.tv') && pathPieces[1] == 'videos') { 
     var timeStamp = url.searchParams.get('t')
     var extras = timeStamp ? '&time=' + timeStamp : ''
-    return ['ttv-video', url.pathname.split('/videos/')[1], extras]
+    return ['ttvVideo', pathPieces[2], extras]
   }
    
-  /* Probably trying to reference a channel, parse out the channel name */
-  if (url.host.includes('twitch.tv')) {
-    return ['ttv-channel', url.pathname.substring(1)]
+  /* Twitch Channel - www.twitch.tv/channel */
+  if (url.host.includes('www.twitch.tv')) {
+    return ['ttvChannel', pathPieces[1]]
   }
 
+  return null
+}
+
+function embedName(value, extras) {
+  var lookup = global.lookup[value]
+  if (lookup) {
+    if (lookup.ytChannel) {
+      return embedYoutubeChannel(lookup.ytChannel)
+    } else if (lookup.ytChannel) {
+      return embedTwitchChannel(lookup.ttvChannel)
+    }
+  }
   return null
 }
 
@@ -109,8 +118,9 @@ function embedYoutubeChannel(value) {
   return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
 }
 
-function embedYoutubeCustomChannel(value) {
-  return embedYoutubeChannel(lookupYoutubeCustomChannelName(value))
+function embedYoutubeHandle(value) {
+  var lookup = global.lookup.get(['ytHandle', value])
+  return embedYoutubeHandle(lookup.ytChannel)
 }
 
 function embedTwitchChannel(value) {
@@ -119,27 +129,6 @@ function embedTwitchChannel(value) {
 
 function embedTwitchVideo(value, extras) {
   return 'https://player.twitch.tv/?video=' + value + '&parent=' + hostDomain + '&autoplay=true&muted=true&height=100%&width=100%' + extras
-}
-
-function embedAlias(value, extras) {
-  var streamer = global.aliases[value]
-  var type =  streamer.status && streamer.status.type  ? streamer.status.type  : streamer.streams[0].type
-  var value = streamer.status && streamer.status.value ? streamer.status.value : streamer.streams[0].value
-
-  return checkEmbeds(type, value, extras)
-}
-
-function resolveEmbedData(type, value, extras) {
-  if (type == 'alias') {
-    var streamer = global.aliases[value]
-    type =  streamer.status ? streamer.status.type  : streamer.streams[0].type
-    value = streamer.status ? streamer.status.value : streamer.streams[0].value
-  }
-  return [type, value, extras]
-}
-
-function lookupYoutubeCustomChannelName(name) {
-  return global.lookupCustomYT[decodeURIComponent(name)]
 }
 
 function applyUntilSuccess(funs, val) {
@@ -213,7 +202,7 @@ function createGrid(rows, columns) {
   var totalElements = rows * columns
   params.forEach(function(value, key) {
     if (grid.children.length < totalElements) {
-      if (key == 'blank') {
+      if (key == 'blank' || key == 'rows' || key == 'columns') {
         /* Do nothing */
       } else if (key in embedFuns) { /* &type=value */
         var element = grid.appendChild(makeBlankElement())
@@ -396,18 +385,20 @@ function setElement(element, type, value, extras) {
     removeElement(element)
   } else {
     /* Add bookkeeping */
-    [element.type, element.value, element.extras] = resolveEmbedData(type, value, extras)
-
+    [element.type, element.value, element.extras] = [type, value, extras]
     /* Remove null properties */
     element.type   ? element.setAttribute('type',   element.type)   : element.removeAttribute('type')
     element.value  ? element.setAttribute('value',  element.value)  : element.removeAttribute('value')
     element.extras ? element.setAttribute('extras', element.extras) : element.removeAttribute('extras')
     
     /* Create and set up the iframe */
-    setIFrameContent(element, checkEmbeds(type, value, extras))
+    var embedString = checkEmbeds(type, value, extras)
+    if (embedString) {
+      setIFrameContent(element, embedString)
     
-    /* Element was modified, update the URL */
-    updateURL()
+      /* Element was modified, update the URL */
+      updateURL()
+    }
   }
 }
 
@@ -461,10 +452,10 @@ function populateChat() {
       chatFrame.setAttribute('src', '')
     } else {
       var [type, value] = event.target.value.split('=')
-      if (type == 'yt-video') {
+      if (type == 'ytVideo') {
         chatFrame.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
       }
-      else if (type == 'ttv-channel') {
+      else if (type == 'ttvChannel') {
         chatFrame.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
       }
     }
@@ -507,7 +498,8 @@ function resizeGrid() {
   var realHeight = Math.floor(window.innerHeight / rows)    * rows
   var realWidth  = Math.floor(window.innerWidth  / columns) * columns
   
-  if (global.chatEnabled) {
+  /* TODO: Rework chat */
+  if (chat.hasAttribute('style') == false) {
     chatWidth = Math.floor(window.innerWidth * 0.20)
     realWidth -= chatWidth;
     
@@ -544,47 +536,38 @@ function populateOverlayList() {
   overlayList.append(escapeDiv)
 }
 
-function updateOverlayListElements() {
-  updateOverlayListGroup(overlayList, global.groups)
-}
-
-function updateOverlayListGroup(element, group) {
+function updateOverlayListGroup(element, name, group) {
   /* Ensure each subgroup is represented */
-  for (var [name, subgroup] of Object.entries(group.groups)) {
-    /* Search for an existing details child with a same-named summary */
-    var updatedDetails = null
-    for (var subgroupDetails of element.children) {
-      if (subgroupDetails.tagName == 'DETAILS' && subgroupDetails.name == name) {
-        updatedDetails = subgroupDetails
+  for (var subgroup of group) {
+    var subgroupElement = null
+    for (var child of element.children) {
+      if (child.tagName == 'DETAILS' && child.name == subgroup) {
+        subgroupElement = child
         break
       }
     }
 
-    /* If one wasn't found, add one */
-    if (updatedDetails == null) {
-      updatedDetails = addOverlayListSubgroup(element, name)
+    if (subgroupElement == null) {
+      subgroupElement = addOverlayListSubgroup(element, subgroup)
     }
-    
-    /* Recurse over the group */
-    updateOverlayListGroup(updatedDetails, subgroup)
+
+    element = subgroupElement
   }
 
-  for (var [name, streamer] of Object.entries(group.streamers)) {
-    /* Search for an existing same-named div */
-    var updatedStreamer = null
-    for (var streamerElement of element.children) {
-      if (streamerElement.tagName == 'DIV' && streamerElement.name == name) {
-        updatedStreamer = streamerElement
-        break
-      }
+  /* Ensure the streamer is represented */
+  var streamerElement = null
+  for (var child of element.children) {
+    if (child.tagName == 'DIV' && child.name == name) {
+      streamerElement = child
+      break
     }
-
-    if (updatedStreamer == null) {
-      updatedStreamer = addOverlayListStreamer(element, streamer)
-    }
-
-    updateOverlayListStreamer(updatedStreamer, name)
   }
+
+  if (streamerElement == null) {
+    streamerElement = addOverlayListStreamer(element, name)
+  }
+
+  updateOverlayListStreamer(streamerElement, name)
 }
 
 function updateOverlayListStreamer(listElement, name) {
@@ -617,32 +600,31 @@ function addOverlayListSubgroup(element, name) {
   return details
 }
 
-function addOverlayListStreamer(element, streamer) {
+function addOverlayListStreamer(element, name) {
+  var streamer = global.streamers[name]
+
   var div = document.createElement('div')
   div.classList.add('overlayListElement')
 
   var child = null
   var template = document.createElement('template')
 
-  for (var stream of streamer.streams) {
-    if (stream.type == 'yt-channel') {
-      template.innerHTML = '<span>[YT]</span>'
-    } else if (stream.type == 'ttv-channel') {
-      template.innerHTML = '<span>[TTV]</span>'
-    } else {
-      template.innerHTML = null
-    }
-
-    if (template.innerHTML) {
-      child = div.appendChild(template.content.firstChild)
-      addOverlayStreamerInteraction(child, stream.type, stream.value)
-    }
+  if (streamer.ytChannel) {
+    template.innerHTML = '<span>[YT]</span>'
+    child = div.appendChild(template.content.firstChild)
+    addOverlayStreamerInteraction(child, 'ytChannel', streamer.ytChannel)
   }
 
-  div.alias = streamer.aliases[0]
+  if (streamer.ttvChannel) {
+    template.innerHTML = '<span>[TTV]</span>'
+    child = div.appendChild(template.content.firstChild)
+    addOverlayStreamerInteraction(child, 'ttvChannel', streamer.ttvChannel)
+  }
+
+  div.name = streamer.name
   template.innerHTML = '<span>' + streamer.name + '</span>'
   child = div.appendChild(template.content.firstChild)
-  addOverlayStreamerInteraction(child, 'alias', streamer.aliases[0])
+  addOverlayStreamerInteraction(child, 'name', streamer.name)
 
   div.name = streamer.name
 
@@ -671,8 +653,8 @@ function addOverlayStreamerInteraction(element, type, value) {
   element.onmousedown = function(event) { 
     /* Needed to allow dragging from list elements without moving the list */
     event.stopPropagation()
-    /* Disable interactions to allow dropping onto iframes */
-    disableStreamInteractions(element)
+
+    disableStreamInteractions()
   }
 
   /* Allow the element to be dragged */
@@ -728,8 +710,6 @@ function loadStreamersFromPrompt() {
   var load = prompt()
   if (load) {
     global.streamers = new Map()
-    global.aliases = new Map()
-    global.groups = { groups : {}, streamers : new Map() }
 
     updateStreamers(JSON.parse(load))
 
@@ -778,7 +758,10 @@ function allowStreamInteractions(element) {
 
 function disableStreamInteractions(element) {
   window.focus()
-  element.firstChild.classList.remove('disabled')
+
+  if (element) {
+    element.firstChild.classList.remove('disabled')
+  }
 }
 
 class Action {
@@ -794,10 +777,10 @@ const actions = {
   'h'  : new Action('help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'),
   'l'  : new Action('list',          toggleOverlayList,                       'Toggles the stream list overlay'),
   's'  : new Action('switch',        setElementFromPrompt,                    'Prompts to select a new stream'),
-  'n'  : new Action('next',          nextElement,                             'Skips to the next stream within the current group'),
-  'p'  : new Action('previous',      previousElement,                         'Skips to the previous stream within the current group'),
-  'j'  : new Action('next+',         nextGlobalElement,                       'Skips to the next stream, regardless of current group'),
-  'k'  : new Action('previous+',     previousGlobalElement,                   'Skips to the previous stream, regardless of current group'),
+  'n'  : new Action('next',          e => setElementRelativeToGroup(e,  1),   'Skips to the next stream within the current group'),
+  'p'  : new Action('previous',      e => setElementRelativeToGroup(e, -1),   'Skips to the previous stream within the current group'),
+  'j'  : new Action('next+',         e => setElementRelativeToGlobal(e, 1),   'Skips to the next stream, regardless of current group'),
+  'k'  : new Action('previous+',     e => setElementRelativeToGlobal(e, -1),  'Skips to the previous stream, regardless of current group'),
   'd'  : new Action('delete',        removeElement,                           'Removes the stream'),
   'm'  : new Action('move',          moveElement,                             'Moves the stream between locations'),
   'c'  : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
@@ -809,6 +792,7 @@ const actions = {
   '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
   ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
+  'escape' : new Action('',          toggleOverlays,                          'Closes all overlay windows'),
 }
 
 function setElementFromDrop(element, event) {
@@ -969,11 +953,8 @@ function setChannelNameTimer(element, name) {
   )
 }
 
+/* TODO: Update */
 function findStreamer(type, value) {
-  if (type == 'alias') {
-    return global.aliases[value]
-  }
-
   for (var streamer of Object.values(global.streamers)) {
     if (streamer.status && streamer.status.type == type && streamer.status.value == value) {
       return streamer
@@ -990,7 +971,7 @@ function findStreamer(type, value) {
 }
 
 function findListElementFromGridElement(element) {
-  var streamer = null
+  var streamer = global.lookup[element.value] ?? null
   streamer = streamer ?? findStreamer(element.type, element.value)
   streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
   return streamer ? Array.prototype.find.call(overlayList.querySelectorAll('.overlayListElement'), e => e.name == streamer.name) : null
@@ -1004,33 +985,24 @@ function setElementRelative(gridElement, listElement, elements, offset) {
     adjElement = elements[(elementIndex + elements.length + offset) % elements.length]
   }
 
-  setElementFromString(gridElement, adjElement.alias)
+  if (adjElement) {
+    setElementFromString(gridElement, adjElement.name)
+  }
 }
 
 function setElementRelativeToGroup(element, offset) {
   var listElement = findListElementFromGridElement(element)
-  return setElementRelative(element, listElement, listElement.parentElement.querySelectorAll('.overlayListElement'), offset)
+  return setElementRelative(
+    element, 
+    listElement, 
+    listElement ? listElement.parentElement.querySelectorAll('.overlayListElement') : null, 
+    offset
+  )
 }
 
 function setElementRelativeToGlobal(element, offset) {
   var listElement = findListElementFromGridElement(element)
   return setElementRelative(element, listElement, overlayList.querySelectorAll('.overlayListElement'), offset)
-}
-
-function nextElement(element) {
-  setElementRelativeToGroup(element, 1)
-}
-
-function previousElement(element) {
-  setElementRelativeToGroup(element, -1)
-}
-
-function nextGlobalElement(element) {
-  setElementRelativeToGlobal(element, 1)
-}
-
-function previousGlobalElement(element) {
-  setElementRelativeToGlobal(element, -1)
 }
 
 function toggleFullscreen(element) {
@@ -1079,14 +1051,13 @@ function hideOverlays() {
 }
 
 function toggleChat(e) {
-  global.chatEnabled = !global.chatEnabled
-
-  if (global.chatEnabled) {
+  if (chat.hasAttribute('style')) {
     chat.removeAttribute('style')
   } else {
     chat.setAttribute('style', 'display: none')
   }
 
+  /* Resize grid to account for chat */
   resizeGrid()
 }
 
@@ -1198,55 +1169,8 @@ function processInitMessage(message) {
 
 }
 
-function processUpdateMessage(update) {
-  /* Search for the updated streamer */
-  var updatedStreamer = global.streamers[update.name] ?? null
-
-  /* Add a new streamer if none was found */
-  if (updatedStreamer == null) {
-    updatedStreamer = {
-      name : update.name,
-      groups : [],
-      videos : [],
-    }
-    global.streamers[update.name] = updatedStreamer
-  }
-
-  /* Update each video in the message */
-  for (var video of update.videos) {
-    var foundVideo = false
-    for (var stream of updatedStreamer.streams) {
-      if (video.type == stream.type && video.value == stream.value) {
-        foundVideo = true
-        break
-      }
-    }
-
-    if (!foundVideo) {
-      updatedStreamer.streams.push({
-        type : video.type,
-        value : video.value,
-      })
-    }
-  }
-
-  for (var video of update.videos) {
-    if (video.status == 'live') {
-      updatedStreamer.status = video
-      return
-    }
-  }
-
-  for (var video of update.videos) {
-    if (video.status == 'upcoming') {
-      updatedStreamer.status = video
-      return
-    }
-  }
-
-  updatedStreamer.status = {
-    status : 'offline'
-  }
+function processUpdateMessage(message) {
+  updateStreamers(message.streamers)
 }
 
 function makeDraggable(element) {
@@ -1302,37 +1226,119 @@ function dragMouseMove(element, event) {
   event.preventDefault()
 }
 
+class Streamer {
+  constructor(name, group) {
+    /* This data should not change after creation*/
+    this.name = name
+    this.group = group
+
+    /* This data can be added to after creation */
+    this.terms = {}
+    this.aliases = {}
+
+    /* This data can be changed from null after creation */
+    this.ytHandle = null
+    this.ytChannel = null
+    this.ttvChannel = null
+
+    /* This data will only come from the backend and may change whenever */
+    this.status = null
+    this.streams = []
+  }
+}
+
+function updateGroups(name, group) {
+  updateOverlayListGroup(overlayList, name, group)
+}
+
+function updateLiveStatus(streamer, status, streams) {
+  
+}
+
+function updateGlobalLookup(streamer, lookup) {
+  /* Check for an existing lookup */
+  if (lookup in global.lookup) {
+    /* Fail if the lookup is for something else */
+    if (global.lookup[lookup] != streamer) {
+      console.log("Warning: data exists for:", global.lookup[lookup].name, "vs", streamer.name)
+    }
+  }
+  else {
+    global.lookup[lookup] = streamer
+  }
+}
+
+function updateStreamerTerms(streamer, term) {
+  streamer.terms[term] = term
+}
+
+function updateLookups(streamer) {
+  /* Add name lookups */
+  updateGlobalLookup(streamer, streamer.name)
+  for (var subname in streamer.name.split(' ')) {
+    updateStreamerTerms(streamer, subname)
+  }
+
+  /* Add group lookups */
+  for (var subgroup in streamer.group) {
+    updateStreamerTerms(streamer, subgroup)
+  }
+
+  /* Add alias lookups */
+  for (var alias in streamer.aliases) {
+    updateGlobalLookup(streamer, alias)
+    updateStreamerTerms(streamer, alias)
+  }
+
+  /* Add stream lookups */
+  for (var prop in streamer) {
+    if (prop in embedFuns && streamer[prop]) {
+      updateGlobalLookup(streamer, [prop, streamer[prop]])
+    }
+  }
+}
+
+function updateStreamer(streamerData) {
+  if (streamerData.name == null) {
+    console.log("Weird streamer data. Name was not found!")
+    return
+  }
+
+  var newStreamer = false
+  var streamer = global.streamers[streamerData.name] ?? null
+  if (streamer == null) {
+    /* Streamer not found, create one */
+    var [name, group] = [streamerData.name, streamerData.group]
+    streamer = global.streamers[name] = new Streamer(name, group)
+    newStreamer = true
+  }
+
+  /* Update aliases */
+  for (var alias of streamerData.aliases) {
+    streamer.aliases[alias] = alias
+  }
+
+  /* Update channel data */
+  streamer.ytHandle = streamer.ytHandle ?? streamerData.ytHandle
+  streamer.ytChannel = streamer.ytChannel ?? streamerData.ytChannel
+  streamer.ttvChannel = streamer.ttvChannel ?? streamerData.ttvChannel
+
+  /* New streamer added, update the groups */
+  /* Must be done after setting channel data for links to be populated */
+  if (newStreamer) {
+    updateGroups(name, group)
+  }
+
+  /* Update live status */
+  updateLiveStatus(streamer, streamerData.status, streamerData.streams)
+
+  /* Update lookups */
+  updateLookups(streamer)
+}
+
 function updateStreamers(streamerList) {
   for (var streamer of streamerList) {
-    global.streamers[streamer.name] = global.streamers[streamer.name] ?? streamer
-    
-    /* Assemble stream list from properties */
-    /* Iterate in property order to allow for priority ordering */
-    streamer.streams = []
-    for (var prop in streamer) {
-      if (prop in embedFuns) {
-        streamer.streams.push({ type : prop, value : streamer[prop] })
-      }
-    }
-
-    /* Populate list of streamers by name */
-    for (var alias of streamer.aliases) {
-      global.aliases[alias] = global.aliases[alias] ?? streamer
-    }
-    
-    /* Iterative build any maps needed to represent nested groups */
-    var group = global.groups
-    for (var subgroup of streamer.group) {
-      group = group.groups[subgroup] = group.groups[subgroup] ?? { groups : new Map(), streamers : new Map() }
-    }
-    
-    /* Add streamer if it doesn't exist */
-    group.streamers[streamer.name] = group.streamers[streamer.name] ?? streamer
-
-    /* Associate quick lookup for custom YT channels */
-    if (streamer["yt-custom"]) {
-      global.lookupCustomYT[streamer["yt-custom"]] = streamer["yt-channel"]
-    }
+    updateStreamer(streamer)
   }
 }
 
@@ -1365,7 +1371,7 @@ function populateOverlayInput() {
 
   inputText.addEventListener('keypress', function (e) {
     if (e.key == 'Enter') {
-      var lookup = inputList.children.length > 0 ? inputList.children[0].alias : inputText.value
+      var lookup = inputList.children.length > 0 ? inputList.children[0].name : inputText.value
       e.preventDefault()
       setElementFromString(global.listElement, lookup)
       inputText.blur()
@@ -1387,40 +1393,23 @@ function populateOverlayInput() {
     }
   })
 
-  inputText.oninput = function (e) { 
+  inputText.oninput = function (e) {
+    /* Clear the existing list */
     while (inputList.firstChild) {
       inputList.removeChild(inputList.firstChild)
     }
 
-    var channelMatches = []
     var searchString = e.target.value;
     var searchTerms = searchString.split(' ').map(e => e.trim().toLowerCase()).filter(e => e)
-    if (searchTerms) {
-      for (var [name, channel] of Object.entries(global.streamers)) {
-        /* Start with the name as filter criteria */
-        var infoList = name.split(' ')
 
-        /* Add any aliases */
-        infoList.concat(channel.aliases)
-
-        /* Add any groups */
-        for (var subgroup of channel.group) {
-          infoList.push(subgroup)
-        }
-
-        /* Lowercase everything */
-        infoList = infoList.map(e => e.trim().toLowerCase())
-
-        /* Every term must have some member in the info which starts with the term*/
-        if (searchTerms.every(term => infoList.some(info => info.startsWith(term)))) {
-          channelMatches.push(channel)
-        }
-      }
-    }
+    /* Every search term must have some matching streamer term */
+    var streamerMatches = Object.values(global.streamers).filter(
+      streamer => searchTerms.every(term => Object.keys(streamer.terms).some(info => info.startsWith(term)))
+    )
 
     /* Add using the same logic as the list */
-    for (var channel of channelMatches) {
-      addOverlayListStreamer(inputList, channel)
+    for (var streamer of streamerMatches) {
+      addOverlayListStreamer(inputList, streamer.name)
     }
   }
 }
@@ -1432,14 +1421,11 @@ function setup() {
   window.onkeyup = myKeyUp
   window.onblur = function() { clearCurrentAction() }
   
-  /* Temporary workaround, set globals here */
+  /* Set globals here */
   global = {}
   global.streamers = new Map()
-  global.aliases = new Map()
-  global.groups = { groups : {}, streamers : new Map() }
-  global.chatEnabled = false
+  global.lookup = new Map()
   global.ignoreNextGesture = false
-  global.lookupCustomYT = new Map()
   global.backendResponseId = 0
   global.responseHandlers = new Map()
 
@@ -1490,7 +1476,6 @@ function finishInitializing() {
     promptSize()
   }
 
-  updateOverlayListElements()
   connectBackend()
 }
 
