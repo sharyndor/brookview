@@ -792,7 +792,7 @@ const actions = {
   '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
   ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
-  'escape' : new Action('',          toggleOverlays,                          'Closes all overlay windows'),
+  'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
 }
 
 function setElementFromDrop(element, event) {
