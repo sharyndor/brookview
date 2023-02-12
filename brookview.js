@@ -32,13 +32,32 @@ const embedFuns = {
   'ttvChannel' : embedTwitchChannel,
 }
 
+function convertToURL(str) {
+  try {
+    return new URL(str)
+  } catch {
+    return null
+  }
+}
+
+
 function referName(str) {
-  return ['name', str]
+  if (str in global.lookup) {
+    return ['name', str]
+  }
+
+  return null
 }
 
 function referYoutube(str) {
   /* Try to treat the string as a URL */
-  var url = new URL(str)
+  var url = convertToURL(str)
+
+  /* Wasn't a URL, fail here */
+  if (url == null) {
+    return null
+  }
+
   var pathPieces = url.pathname.split('/')
 
   /* Youtube video link - www.youtube.com/watch?v=id&t=# */
@@ -80,7 +99,13 @@ function referTwitch(str) {
   }
 
   /* Try to treat the string as a URL */
-  var url = new URL(str)
+  var url = convertToURL(str)
+
+  /* Wasn't a URL, fail here */
+  if (url == null) {
+    return null
+  }
+
   var pathPieces = url.pathname.split('/')
 
   /* Twitch VOD - www.twitch.tv/videos/id?t=# */
