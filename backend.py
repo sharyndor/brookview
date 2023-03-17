@@ -11,29 +11,33 @@ from math import floor
 class Handler(SimpleHTTPRequestHandler):
   def __init__(self, *args, **kwargs):
     self.handlers = {
-      '/lookup.json' : self.handleLookup,
-      '/videos.json' : self.handleVideos,
+      '/resolve/youtube' : self.handleResolve,
+      '/lookup/youtube' : self.handleLookup,
+      '/videos/youtube' : self.handleVideos,
     }
 
     super(Handler, self).__init__(*args, **kwargs)
 
   def do_GET(self):
-    print(self.path)
-    parseResult = urlparse(self.path)
+    for handlerPath, handler in self.handlers.items():
+      if self.path.startswith(handlerPath):
+        return handler(self.path.removeprefix(handlerPath))
 
-    if handlerFun := self.handlers.get(parseResult.path):
-      return handlerFun(parseResult.query)
-    else:
-      return SimpleHTTPRequestHandler.do_GET(self)
+    self.send_response(404)
+    self.end_headers()
+
+  def handleResolve(self, query):
+    pass
   
-  def handleLookup(self, queryString):
-    query = parse_qs(queryString)
+  def handleLookup(self, query):
+    pqs = parse_qs(query)
 
-    channelId = queryChannelId(query['yt'][0])
+    conn = HTTPSConnection('www.youtube.com')
+    conn.request('GET', query)
+    response = conn.getresponse()
+    data = response.read()
 
-    result = {
-      'channelId' : channelId
-    }
+    result = {'foo' : 'bar'}
 
     self.send_response(200)
     self.send_header('Content-Type', 'application/json')
@@ -41,11 +45,9 @@ class Handler(SimpleHTTPRequestHandler):
 
     self.wfile.write(json.dumps(result, indent=4).encode())
   
-  def handleVideos(self, queryString):
-    query = parse_qs(queryString)
-
-    channelId = queryChannelId(query['yt'][0])
-    videoId = queryLiveVideoId(channelId)
+  def handleVideos(self, query):
+    channelId  = queryChannelId(query['yt'][0])
+    videoId    = queryLiveVideoId(channelId)
     videoState = queryVideoInfo(videoId)
 
     jstring = json.dumps(videoState, indent=4)
