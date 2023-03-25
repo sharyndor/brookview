@@ -12,117 +12,143 @@ class Handler(SimpleHTTPRequestHandler):
   def __init__(self, *args, **kwargs):
     self.handlers = {
       '/resolve/youtube' : self.handleResolve,
-      '/lookup/youtube' : self.handleLookup,
-      '/videos/youtube' : self.handleVideos,
+      '/live/youtube'    : self.handleLive,
     }
+
+    self.history = {}
 
     super(Handler, self).__init__(*args, **kwargs)
 
   def do_GET(self):
     for handlerPath, handler in self.handlers.items():
       if self.path.startswith(handlerPath):
-        return handler(self.path.removeprefix(handlerPath))
+        try:
+          result = handler(self.path.removeprefix(handlerPath))
+        except:
+          result = {}
+        return self.respond(result)
 
-    self.send_response(404)
-    self.end_headers()
-
-  def handleResolve(self, query):
-    pass
+    return SimpleHTTPRequestHandler.do_GET(self)
   
-  def handleLookup(self, query):
-    pqs = parse_qs(query)
+  def update_history(self, key, value):
+    self.history.setdefault(key, {}).update(value)
+  
+  def collect_channel_data(self, pathQuery):
+    status, data = query_site('www.youtube.com', pathQuery + '/live')
+    jdata = getYT_JSON(data)
 
-    conn = HTTPSConnection('www.youtube.com')
-    conn.request('GET', query)
-    response = conn.getresponse()
-    data = response.read()
+    channelData = {}
 
-    result = {'foo' : 'bar'}
+    metadata = jdata['metadata']['channelMetadataRenderer']
+    channelData['name'] = metadata['title']
+    channelData['channelId'] = metadata['externalId']
+    channelData['vanityId'] = metadata['vanityChannelUrl'].removeprefix('http://www.youtube.com/')
 
+    for video in find_key_like(jdata, "videoRenderer"):
+      viewCountText = ' '.join(find_key_like(video['viewCountText'], 'text'))
+      if 'watching' in viewCountText:
+        liveVideo = channelData['liveVideo'] = {}
+        liveVideo['videoId'] = video['videoId']
+        liveVideo['title'] = ' '.join(find_key_like(video['title'], 'text'))
+        liveVideo['updateTime'] = int(time())
+        break
+
+    self.update_history(channelData['channelId'], channelData)
+    self.update_history(channelData['vanityId'], channelData)
+
+    if liveVideo:
+      self.update_history(liveVideo['videoId'], liveVideo)
+
+    return channelData
+
+  def collect_video_data(self, pathQuery):
+    status, data = query_site('www.youtube.com', pathQuery + '/live')
+    jdata = getYT_JSON(data)
+
+    channelData = {}
+
+    details = jdata['microformat']['playerMicroformatRenderer']
+    videoDetails = jdata['videoDetails']
+
+    channelData['name'] = videoDetails['author']
+    channelData['channelId'] = videoDetails['channelId']
+    channelData['vanityId'] = details['ownerProfileUrl'].removeprefix('http://www.youtube.com/')
+
+    if videoDetails['isLive']:
+      liveVideo = channelData['liveVideo'] = {}
+      liveVideo['videoId'] = videoDetails['videoId']
+      liveVideo['title'] = videoDetails['title']
+      liveVideo['updateTime'] = int(time())
+
+    self.history[channelData['channelId']] = channelData
+    self.history[channelData['vanityId']] = channelData
+
+    if liveVideo:
+      self.history[liveVideo['videoId']] = liveVideo
+
+    return channelData
+
+  def resolve_from_channel(self, path):
+    if path not in self.history[path]:
+      self.collect_channel_data(path)
+    return self.history.get(path)
+  
+  def resolve_from_video(self, path):
+    if path not in self.history[path]:
+      self.collect_video_data(path)
+    return self.history.get(path)
+
+  def handleResolve(self, pathQuery):
+    parse_result = urlparse(pathQuery)
+    path, queries = parse_result.path, parse_qs(parse_result.query)
+    path_pieces = [piece for piece in path.split('/') if piece]
+
+    result = {}
+    if path_pieces[0] == 'channel':
+      result['channelId'] = path_pieces[1]
+    elif path_pieces[0] == 'c':
+      result['channelId'] = self.resolve_from_channel('/c/' + path_pieces[1])
+    elif path_pieces[0].startswith('@'):
+      result['channelId'] = self.resolve_from_channel('/' + path_pieces[0])
+    else:
+      result['note'] = 'Failed to determine channelId'
+
+    return self.respond(result)
+  
+  def handleLive(self, pathQuery):
+    parse_result = urlparse(pathQuery)
+    path, queries = parse_result.path, parse_qs(parse_result.query)
+    path_pieces = [piece for piece in path.split('/') if piece]
+
+    result = {}
+    if path_pieces[0] == 'watch':
+      result['channelId'] = queries['v'][0]
+    elif path_pieces[0] == 'c':
+      result['channelId'] = self.resolve_from_video('/c/' + path_pieces[1])
+    elif path_pieces[0].startswith('@'):
+      result['channelId'] = self.resolve_from_video('/' + path_pieces[0])
+    else:
+      result['note'] = 'Failed to determine channelId'
+
+    return self.respond(result)
+
+  def respond(self, jdata):
     self.send_response(200)
     self.send_header('Content-Type', 'application/json')
     self.end_headers()
 
-    self.wfile.write(json.dumps(result, indent=4).encode())
-  
-  def handleVideos(self, query):
-    channelId  = queryChannelId(query['yt'][0])
-    videoId    = queryLiveVideoId(channelId)
-    videoState = queryVideoInfo(videoId)
+    self.wfile.write(json.dumps(jdata, indent=2).encode())
 
-    jstring = json.dumps(videoState, indent=4)
-    
-    self.send_response(200)
-    self.send_header('Content-Type', 'application/json')
-    self.end_headers()
-
-    self.wfile.write(jstring.encode())
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
   """Handle requests in a separate thread."""
 
-lookups = {}
-
-def queryChannelId(page):
-  if page in lookups:
-    return lookups[page]
-
-  jdata = resolve_YT_JSON(page)
-  channelId = json_search(
-    jdata, dict, 
-    'responseContext',
-    'serviceTrackingParams',
-    {'service' : 'GFEEDBACK'},
-    'params',
-    {'key' : 'browse_id'}
-  ).get('value')
-
-  lookups[page] = channelId
-
-  return channelId
+def query_site(site, query):
+    conn = HTTPSConnection(site)
+    conn.request('GET', query)
+    response = conn.getresponse()
+    return response.status, response.read()
   
-def queryLiveVideoId(channelId):
-  jdata = resolve_YT_JSON2('embed/live_stream?channel=' + channelId)
-  return jdata['VIDEO_ID']
-
-def queryVideoInfo(videoId):
-  jdata = resolve_YT_JSON3('watch?v=' + videoId)
-
-  with open('out.json', 'w') as file:
-    file.write(json.dumps(jdata, indent=4))
-
-  videoDetails = find_key_like(jdata, 'videoDetails')[0]
-
-  liveBroadcastDetails = find_key_like(jdata, 'liveBroadcastDetails')[0]
-
-  startTime = datetime.fromisoformat(liveBroadcastDetails['startTimestamp']).timestamp()
-
-  result = {
-    'title' : videoDetails['title'],
-    'channel' : videoDetails['channelId'],
-    'live' : liveBroadcastDetails['isLiveNow'],
-    'time' : startTime,
-  }
-
-  return result
-
-def resolve_YT_JSON(page):
-  return getYT_JSON(resolve_YT(page))
-
-def resolve_YT_JSON2(page):
-  return getYT_JSON2(resolve_YT(page))
-
-def resolve_YT_JSON3(page):
-  return getYT_JSON3(resolve_YT(page))
-
-def resolve_YT(page):
-  conn = HTTPSConnection('www.youtube.com')
-  print('query:', page)
-  conn.request('GET', '/' + page)
-  response = conn.getresponse()
-  data = response.read()
-  return data
-
 def getYT_JSON(data):
   # Find where the page info is located
   start, end = 'var ytInitialData = ', ';</script>'
@@ -134,40 +160,13 @@ def getYT_JSON(data):
   try:
     return json.loads(data)
   except:
-    return []
-
-def getYT_JSON2(data):
-  # Find where the page info is located
-  start, end = 'ytcfg.set(', ');'
-  start, end = start.encode(), end.encode()
-  data = data[data.find(start) + len(start):]
-  data = data[:data.find(end)]
-
-  # Convert to JSON
-  try:
-    return json.loads(data)
-  except:
-    return []
-
-def getYT_JSON3(data):
-  # Find where the page info is located
-  start, end = 'var ytInitialPlayerResponse = ', ';</script>'
-  start, end = start.encode(), end.encode()
-  data = data[data.find(start) + len(start):]
-
-  data = data[:data.find(end)]
-
-  # Convert to JSON
-  try:
-    return json.loads(data)
-  except:
-    return []
+    return None
   
 def find_key_like(o, s):
   result = []
   if type(o) is dict:
     for k, v in o.items():
-      if s in k:
+      if s == k:
         result.append(v)
       else:
         result += find_key_like(v, s)
@@ -192,6 +191,10 @@ def json_search(d, t, *kargs):
       return arg([json_search(n, t, *kargs[1:]) for n in d])
     else:
       return t()
+
+def log_to_file(data, name):
+  with open(name, 'w') as file:
+    file.write(json.dumps(data, indent=2))
 
 if __name__ == '__main__':
   server = ThreadedHTTPServer(('localhost', 8080), Handler)

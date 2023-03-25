@@ -368,7 +368,7 @@ function makeBlankElement() {
   div.ondrop     = function (event) { setElementFromDrop(div, event) }
   div.ondragover = function (event) { event.preventDefault() }
 
-  div.addEventListener('mouseenter', () => disableStreamInteractions(div))
+  // div.addEventListener('mouseenter', () => disableStreamInteractions(div))
   div.addEventListener('mouseleave', () => disableStreamInteractions(div))
 
   /* Prevent right-click to allow right-click to exit input box*/
@@ -806,7 +806,7 @@ const actions = {
   'p'  : new Action('previous',      e => setElementRelativeToGroup(e, -1),   'Skips to the previous stream within the current group'),
   'j'  : new Action('next+',         e => setElementRelativeToGlobal(e, 1),   'Skips to the next stream, regardless of current group'),
   'k'  : new Action('previous+',     e => setElementRelativeToGlobal(e, -1),  'Skips to the previous stream, regardless of current group'),
-  'd'  : new Action('delete',        removeElement,                           'Removes the stream'),
+  'd'  : new Action('delete',        deleteElement,                           'Removes the stream, the link will be copied to the clipboard'),
   'm'  : new Action('move',          moveElement,                             'Moves the stream between locations'),
   'c'  : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
   'r'  : new Action('reload',        reloadElement,                           'Reloads the stream'),
@@ -817,6 +817,7 @@ const actions = {
   '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
   ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
+  'v'  : new Action('clipboard',     setElementFromClipboard,                 'Uses the cliboard to select a stream'),
   'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
 }
 
@@ -835,6 +836,12 @@ function setElementFromPrompt(element) {
   }
 }
 
+function setElementFromClipboard(element) {
+  navigator.clipboard.readText().then((contents) => {
+    setElementFromString(element, contents)
+  })
+}
+
 function setElementFromString(element, str) {
   if (element && element.classList.contains('grid-element')) {
     var lookup = checkReferers(str)
@@ -844,6 +851,37 @@ function setElementFromString(element, str) {
     } else {
       backendDeferredCheckReferers(element, str)
     }
+  }
+}
+
+function convertElementDataToLink(type, value) {
+  conversions = {
+    'name' : value,
+    'ytVideo' : 'www.youtube.com/watch?v=' + value,
+    'ytChannel' : 'www.youtube.com/channel/' + value,
+    'ytHandle' : 'www.youtube.com/@' + value,
+    'ttvVideo' : 'www.twitch.tv/videos/' + value,
+    'ttvChannel' : 'www.twitch.tv/' + value,
+  }
+
+  if (type in conversions) {
+    return conversions[type]
+  } else {
+    return null
+  }
+}
+
+function copyToClipboard(text) {
+  if (text) {
+    navigator.clipboard.writeText(text)
+  }
+}
+
+function deleteElement(element) {
+  console.log('foo')
+  if (element && element.classList.contains('grid-element')) {
+    copyToClipboard(convertElementDataToLink(element.type, element.value))
+    removeElement(element)
   }
 }
 
