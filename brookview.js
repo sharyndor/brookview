@@ -33,6 +33,10 @@ const embedFuns = {
 }
 
 function convertToURL(str) {
+  if (!str.includes('://')) {
+    str = 'https://' + str
+  }
+
   try {
     return new URL(str)
   } catch {
@@ -806,7 +810,7 @@ const actions = {
   'p'  : new Action('previous',      e => setElementRelativeToGroup(e, -1),   'Skips to the previous stream within the current group'),
   'j'  : new Action('next+',         e => setElementRelativeToGlobal(e, 1),   'Skips to the next stream, regardless of current group'),
   'k'  : new Action('previous+',     e => setElementRelativeToGlobal(e, -1),  'Skips to the previous stream, regardless of current group'),
-  'd'  : new Action('delete',        deleteElement,                           'Removes the stream, the link will be copied to the clipboard'),
+  'd'  : new Action('delete',        deleteElement,                           'Removes the stream, the link will be saved to local storage'),
   'm'  : new Action('move',          moveElement,                             'Moves the stream between locations'),
   'c'  : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
   'r'  : new Action('reload',        reloadElement,                           'Reloads the stream'),
@@ -817,7 +821,7 @@ const actions = {
   '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
   ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
-  'v'  : new Action('clipboard',     setElementFromClipboard,                 'Uses the cliboard to select a stream'),
+  'v'  : new Action('clipboard',     setElementFromClipboard,                 'Uses local storage to select a stream'),
   'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
 }
 
@@ -837,9 +841,11 @@ function setElementFromPrompt(element) {
 }
 
 function setElementFromClipboard(element) {
-  navigator.clipboard.readText().then((contents) => {
-    setElementFromString(element, contents)
-  })
+  var clip = localStorage.getItem('clipboard')
+  if (clip) {
+    setElementFromString(element, clip)
+    localStorage.removeItem('clipboard')
+  }
 }
 
 function setElementFromString(element, str) {
@@ -865,7 +871,7 @@ function convertElementDataToLink(type, value) {
   }
 
   if (type in conversions) {
-    return conversions[type]
+    return 'http://' + conversions[type]
   } else {
     return null
   }
@@ -873,12 +879,13 @@ function convertElementDataToLink(type, value) {
 
 function copyToClipboard(text) {
   if (text) {
-    navigator.clipboard.writeText(text)
+    localStorage.setItem('clipboard', text)
+  } else {
+    localStorage.removeItem('clipboard')
   }
 }
 
 function deleteElement(element) {
-  console.log('foo')
   if (element && element.classList.contains('grid-element')) {
     copyToClipboard(convertElementDataToLink(element.type, element.value))
     removeElement(element)
