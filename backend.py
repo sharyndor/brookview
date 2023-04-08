@@ -3,19 +3,25 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 import json
+import os
 
 from datetime import datetime, timezone
 from time import time
 from math import floor
 
+
+history = {}
+
+if os.path.exists('history.json'):
+  with open('history.json', 'r') as file:
+    history = json.loads(file.read())
+
 class Handler(SimpleHTTPRequestHandler):
   def __init__(self, *args, **kwargs):
     self.handlers = {
-      '/resolve/youtube' : self.handleResolve,
-      '/live/youtube'    : self.handleLive,
+      '/refer/youtube' : self.handleRefer,
+      '/live/youtube'  : self.handleLive,
     }
-
-    self.history = {}
 
     super(Handler, self).__init__(*args, **kwargs)
 
@@ -24,17 +30,22 @@ class Handler(SimpleHTTPRequestHandler):
       if self.path.startswith(handlerPath):
         try:
           result = handler(self.path.removeprefix(handlerPath))
+          return
         except:
-          result = {}
-        return self.respond(result)
+          self.send_response(500)
+          self.send_header('Content-Type', 'application/json')
+          self.end_headers()
+          return
 
     return SimpleHTTPRequestHandler.do_GET(self)
   
   def update_history(self, key, value):
-    self.history.setdefault(key, {}).update(value)
+    global history
+    history.setdefault(key, {}).update(value)
+    log_to_file(history, 'history.json')
   
   def collect_channel_data(self, pathQuery):
-    status, data = query_site('www.youtube.com', pathQuery + '/live')
+    status, data = query_site('www.youtube.com', pathQuery + '/streams')
     jdata = getYT_JSON(data)
 
     channelData = {}
@@ -62,6 +73,8 @@ class Handler(SimpleHTTPRequestHandler):
     return channelData
 
   def collect_video_data(self, pathQuery):
+    global history
+
     status, data = query_site('www.youtube.com', pathQuery + '/live')
     jdata = getYT_JSON(data)
 
@@ -80,25 +93,29 @@ class Handler(SimpleHTTPRequestHandler):
       liveVideo['title'] = videoDetails['title']
       liveVideo['updateTime'] = int(time())
 
-    self.history[channelData['channelId']] = channelData
-    self.history[channelData['vanityId']] = channelData
+    history[channelData['channelId']] = channelData
+    history[channelData['vanityId']] = channelData
 
     if liveVideo:
-      self.history[liveVideo['videoId']] = liveVideo
+      history[liveVideo['videoId']] = liveVideo
 
     return channelData
 
-  def resolve_from_channel(self, path):
-    if path not in self.history[path]:
-      self.collect_channel_data(path)
-    return self.history.get(path)
-  
-  def resolve_from_video(self, path):
-    if path not in self.history[path]:
-      self.collect_video_data(path)
-    return self.history.get(path)
+  def refer_from_channel(self, path):
+    global history
 
-  def handleResolve(self, pathQuery):
+    if path not in history:
+      self.update_history(path, self.collect_channel_data(path))
+    return history.get(path)
+  
+  def refer_from_video(self, path):
+    global history
+
+    if path not in history:
+      self.update_history(path, self.collect_video_data(path))
+    return history.get(path)
+
+  def handleRefer(self, pathQuery):
     parse_result = urlparse(pathQuery)
     path, queries = parse_result.path, parse_qs(parse_result.query)
     path_pieces = [piece for piece in path.split('/') if piece]
@@ -107,9 +124,9 @@ class Handler(SimpleHTTPRequestHandler):
     if path_pieces[0] == 'channel':
       result['channelId'] = path_pieces[1]
     elif path_pieces[0] == 'c':
-      result['channelId'] = self.resolve_from_channel('/c/' + path_pieces[1])
+      result['channelId'] = self.refer_from_channel('/c/' + path_pieces[1])
     elif path_pieces[0].startswith('@'):
-      result['channelId'] = self.resolve_from_channel('/' + path_pieces[0])
+      result['channelId'] = self.refer_from_channel('/' + path_pieces[0])
     else:
       result['note'] = 'Failed to determine channelId'
 
@@ -124,9 +141,9 @@ class Handler(SimpleHTTPRequestHandler):
     if path_pieces[0] == 'watch':
       result['channelId'] = queries['v'][0]
     elif path_pieces[0] == 'c':
-      result['channelId'] = self.resolve_from_video('/c/' + path_pieces[1])
+      result['channelId'] = self.refer_from_video('/c/' + path_pieces[1])
     elif path_pieces[0].startswith('@'):
-      result['channelId'] = self.resolve_from_video('/' + path_pieces[0])
+      result['channelId'] = self.refer_from_video('/' + path_pieces[0])
     else:
       result['note'] = 'Failed to determine channelId'
 
@@ -138,7 +155,6 @@ class Handler(SimpleHTTPRequestHandler):
     self.end_headers()
 
     self.wfile.write(json.dumps(jdata, indent=2).encode())
-
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
   """Handle requests in a separate thread."""
@@ -158,7 +174,9 @@ def getYT_JSON(data):
 
   # Convert to JSON
   try:
-    return json.loads(data)
+    obj = json.loads(data)
+    log_to_file(obj, 'resolve.json')
+    return obj
   except:
     return None
   

@@ -14,7 +14,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var hostDomain = new URL(window.location.href).hostname
-var supportedBackendVersion = [0, 4, 0] /* vMajor.Minor.Patch */
 
 const referFuns = [
   referName,
@@ -27,7 +26,6 @@ const embedFuns = {
   'name'       : embedName,
   'ytVideo'    : embedYoutubeVideo,
   'ytChannel'  : embedYoutubeChannel,
-  'ytHandle'   : embedYoutubeHandle,
   'ttvVideo'   : embedTwitchVideo,
   'ttvChannel' : embedTwitchChannel,
 }
@@ -73,12 +71,12 @@ function referYoutube(str) {
 
   /* Youtube handle - www.youtube.com/@Handle */
   if (url.host.includes('www.youtube.com') && pathPieces[1].startsWith('@')) {
-    return ['ytHandle', pathPieces[1]]
-  }
-
-  /* Youtube old handle - www.youtube.com/c/Handle */
-  if (url.host.includes('www.youtube.com') && pathPieces[1] == 'c') {
-    return ['ytOldHandle', pathPieces[2]]
+    var lookup = global.lookup.get(['ytHandle', pathPieces[1]])
+    if (lookup) {
+      return ['ytChannel', lookup.ytChannel]
+    } else {
+      return null
+    }
   }
 
   /* Youtube channel id - www.youtube.com/channel/ChannelId */
@@ -145,11 +143,6 @@ function embedYoutubeVideo(value, extras) {
 
 function embedYoutubeChannel(value) {
   return 'https://www.youtube.com/embed/live_stream?channel=' + value + '&autoplay=1&mute=1'
-}
-
-function embedYoutubeHandle(value) {
-  var lookup = global.lookup.get(['ytHandle', value])
-  return embedYoutubeHandle(lookup.ytChannel)
 }
 
 function embedTwitchChannel(value) {
@@ -707,10 +700,8 @@ function populateOverlaySettings() {
   var form = overlaySettings.appendChild(document.createElement('form'))
   form.onsubmit = function(e) { e.preventDefault() }
   
-  backendInput = addOverlaySetting(form, 'Backend', 'checkbox', connectBackend)
-
-  backendLocationSetting = addOverlaySetting(form, 'Backend Location', 'text', e => setBackendLocation(e.target.value))
-  backendLocationSetting.value = getBackendLocation()
+  backendInput = addOverlaySetting(form, 'Backend', 'checkbox', updateBackendEnabled)
+  backendInput.checked = getBackendEnabled()
 }
 
 function populateOverlayMod() {
@@ -738,16 +729,16 @@ function dumpStreamersToPrompt() {
 function loadStreamersFromPrompt() {
   var load = prompt()
   if (load) {
-    global.streamers = new Map()
+    try {
+      /* Start with parsing the data */
+      var promptData = JSON.parse(load)
 
-    updateStreamers(JSON.parse(load))
+      /* Clear old map */
+      global.streamers = new Map()
 
-    if (backendSocket.readyState == WebSocket.OPEN) {
-      backendSocket.close()
-      setTimeout(() => {
-        connectBackend()
-      }, 1000);
-    }
+      /* Update with provided data */
+      updateStreamers(promptData)
+    } catch { }
   }
 }
 
@@ -788,7 +779,7 @@ function allowStreamInteractions(element) {
 function disableStreamInteractions(element) {
   window.focus()
 
-  if (element) {
+  if (element && element.classList.contains('grid-element')) {
     element.firstChild.classList.remove('disabled')
   }
 }
@@ -816,12 +807,13 @@ const actions = {
   'r'  : new Action('reload',        reloadElement,                           'Reloads the stream'),
   'f'  : new Action('fullscreen',    toggleFullscreen,                        'Toggles fullscreen'),
   'a'  : new Action('adjust layout', promptSize,                              'Prompts to select new row/column inputs'),
-  'b'  : new Action('backend',       connectBackend,                          'Connects to a background service for fetching video data'),
+  'b'  : new Action('backend',       toggleBackend,                           'Enables use of the backend for fetching video data'),
   '`'  : new Action('settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'),
   '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
   ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
-  'v'  : new Action('clipboard',     setElementFromClipboard,                 'Uses local storage to select a stream'),
+  'x'  : new Action('cut',           cutElement,                              'Deletes the stream and saves the link to local storage'),
+  'v'  : new Action('paste',         pasteElement,                            'Uses local storage to select a stream'),
   'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
 }
 
@@ -840,7 +832,14 @@ function setElementFromPrompt(element) {
   }
 }
 
-function setElementFromClipboard(element) {
+function cutElement(element) {
+  if (element && element.classList.contains('grid-element')) {
+    copyToClipboard(convertElementDataToLink(element.type, element.value))
+    removeElement(element)
+  }
+}
+
+function pasteElement(element) {
   var clip = localStorage.getItem('clipboard')
   if (clip) {
     setElementFromString(element, clip)
@@ -855,7 +854,7 @@ function setElementFromString(element, str) {
       var [type, value, extras] = checkReferers(str) ?? [null, null, null]
       setElement(element, type, value, extras)
     } else {
-      backendDeferredCheckReferers(element, str)
+      setElementFromBackend(element, str)
     }
   }
 }
@@ -887,19 +886,8 @@ function copyToClipboard(text) {
 
 function deleteElement(element) {
   if (element && element.classList.contains('grid-element')) {
-    copyToClipboard(convertElementDataToLink(element.type, element.value))
     removeElement(element)
   }
-}
-
-function backendDeferredCheckReferers(element, str) {
-  requestBackendResponse('refer', str, (response) => {
-    if (response.data) {
-      setElementFromString(element, response.data)
-    } else {
-      setElementFromPrompt(element)
-    }
-  })
 }
 
 function removeElement(element) {
@@ -1120,6 +1108,51 @@ function hideOverlays() {
   toggleOverlays(null)
 }
 
+function toggleBackend() {
+  backendInput.checked = !backendInput.checked
+  updateBackendEnabled()
+}
+
+function getBackendEnabled() {
+  return localStorage.getItem('backendEnabled') === 'true'
+}
+
+function setBackendEnabled(enabled) {
+  localStorage.setItem('backendEnabled', enabled)
+}
+
+function updateBackendEnabled() {
+  setBackendEnabled(backendInput.checked == true)
+}
+
+function setElementFromBackend(element, str) {
+  if (element && element.classList.contains('grid-element')) {
+    if (getBackendEnabled()) {
+      var path = ''
+      if (path = lstripFromFind(str, 'youtube.com/')) {
+        fetch('/refer/youtube/' + path)
+        .then(response => response.json())
+        .then(json => setElementFromBackendResponse(element, json))
+      } else if (path = lstripFromFind(str, 'youtu.be/')) {
+        fetch('/refer/youtube/' + path)
+        .then(response => response.json())
+        .then(json => setElementFromBackendResponse(element, json))
+      }
+    }
+  }
+}
+
+function setElementFromBackendResponse(element, response) {
+  if (element && element.classList.contains('grid-element')) {
+    console.log(response)
+    setElementFromString(element, 'www.youtube.com/channel/' + response.channelId.channelId)
+  }
+}
+
+function lstripFromFind(str, term) {
+  return str.includes(term) ? str.substr(str.indexOf(term) + term.length) : ''
+}
+
 function toggleChat(e) {
   if (chat.hasAttribute('style')) {
     chat.removeAttribute('style')
@@ -1129,118 +1162,6 @@ function toggleChat(e) {
 
   /* Resize grid to account for chat */
   resizeGrid()
-}
-
-function setBackendLocation(location) {
-  localStorage.setItem('backendLocation', location)
-}
-
-function getBackendLocation() {
-  return localStorage.getItem('backendLocation')
-}
-
-function requestBackendData(sock) {
-  if (sock.readyState != WebSocket.CLOSED) {
-    var initData = Object.values(global.streamers)
-    initData = initData.length > 0 ? initData : JSON.parse(streamerData.innerHTML)
-
-    sock.send(JSON.stringify({
-      messageType : 'init',
-      version : supportedBackendVersion,
-      initData : initData,
-    }))
-
-    /* Repeat this call every minute */
-    setTimeout(() => {
-      requestBackendData(sock)
-    }, 1 * 60 * 1000)
-  }
-}
-
-function connectBackend() {
-  if (typeof backendSocket == 'undefined' || backendSocket.readyState == WebSocket.CLOSED) {
-    backendSocket = new WebSocket('ws://' + getBackendLocation())
-    backendSocket.onopen = function() { requestBackendData(backendSocket) }
-    backendSocket.onmessage = processBackendResponse
-    
-    /* Set up the backend error message on second connection attempt */
-    /* This prevents spurious errors if the backend failed on initial page load */
-    if (typeof firstAttempt == 'undefined') {
-      firstAttempt = true
-    } else {
-      firstAttempt = false
-    }
-    
-    /* Update the settings menu checkbox */
-    backendInput.checked = true
-    backendSocket.onclose = function() { backendInput.checked = false }
-    backendSocket.onerror = function() { 
-      if (firstAttempt == false) {
-        alert('Backend encountered a problem connecting to: ' + getBackendLocation())
-      }
-    }
-  } else {
-    backendSocket.close()
-    
-    /* Update the settings menu checkbox */
-    backendInput.checked = false
-  }
-
-  setTimeout(function() {
-    if (backendSocket.readyState != WebSocket.OPEN) {
-      backendSocket.close()
-    }
-  }, 500)
-}
-
-function requestBackendRestart() {
-  backendSocket.send(JSON.stringify({
-    messageType : 'restart',
-    version : supportedBackendVersion,
-    restart : true
-  }))
-}
-
-function requestBackendAutoUpdate() {
-  backendSocket.send(JSON.stringify({
-    messageType : 'autoUpdate',
-    version : supportedBackendVersion,
-    autoUpdate : true
-  }))
-}
-
-function processBackendResponse(response) {
-  var message = JSON.parse(response.data)
-
-  if (message.messageType == 'init') {
-    processInitMessage(message)
-  } else if (message.messageType == 'update') {
-    processUpdateMessage(message)
-  } else if (message.messageType == 'refer') {
-    global.responseHandlers[message.responseId](message)
-  }
-}
-
-function requestBackendResponse(type, data, fun) {
-  if (backendSocket.readyState == WebSocket.OPEN) {
-    global.backendResponseId += 1
-    global.responseHandlers[global.backendResponseId] = fun
-
-    backendSocket.send(JSON.stringify({
-      messageType : type,
-      messageValue : data,
-      version : supportedBackendVersion,
-      responseId : global.backendResponseId,
-    }))
-  }
-}
-
-function processInitMessage(message) {
-
-}
-
-function processUpdateMessage(message) {
-  updateStreamers(message.streamers)
 }
 
 function makeDraggable(element) {
@@ -1496,10 +1417,8 @@ function setup() {
   global.streamers = new Map()
   global.lookup = new Map()
   global.ignoreNextGesture = false
-  global.backendResponseId = 0
-  global.responseHandlers = new Map()
 
-  setBackendLocation(getBackendLocation() || 'localhost:8080')
+  setBackendEnabled(getBackendEnabled() || false)
   crossReference = new Map()
 
   populateOverlayInput()
@@ -1545,8 +1464,6 @@ function finishInitializing() {
   } else {
     promptSize()
   }
-
-  connectBackend()
 }
 
 function fetchStreamers() {
