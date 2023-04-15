@@ -29,7 +29,7 @@ class Handler(SimpleHTTPRequestHandler):
     for handlerPath, handler in self.handlers.items():
       if self.path.startswith(handlerPath):
         try:
-          result = handler(self.path.removeprefix(handlerPath))
+          handler(self.path.removeprefix(handlerPath))
           return
         except:
           self.send_response(500)
@@ -130,7 +130,7 @@ class Handler(SimpleHTTPRequestHandler):
     else:
       result['note'] = 'Failed to determine channelId'
 
-    return self.respond(result)
+    self.respond(200, result)
   
   def handleLive(self, pathQuery):
     parse_result = urlparse(pathQuery)
@@ -147,10 +147,10 @@ class Handler(SimpleHTTPRequestHandler):
     else:
       result['note'] = 'Failed to determine channelId'
 
-    return self.respond(result)
+    self.respond(200, result)
 
-  def respond(self, jdata):
-    self.send_response(200)
+  def respond(self, status, jdata):
+    self.send_response(status)
     self.send_header('Content-Type', 'application/json')
     self.end_headers()
 

@@ -814,7 +814,23 @@ const actions = {
   'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
   'x'  : new Action('cut',           cutElement,                              'Deletes the stream and saves the link to local storage'),
   'v'  : new Action('paste',         pasteElement,                            'Uses local storage to select a stream'),
+  'z'  : new Action('rotate',        rotateElement,                           'Rotates the video by 90°'),
   'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
+}
+
+function rotateElement(element) {
+  if (element && element.classList.contains('grid-element')) {
+    element = element.lastChild
+    if (element.style.transform == '' || element.style.transform.includes('rotate(0deg)')) {
+      element.style.transform = 'rotate(90deg) scale(' + (window.innerHeight / window.innerWidth) + ')'
+    } else if (element.style.transform.includes('rotate(90deg)')) {
+      element.style.transform = 'rotate(180deg)'
+    } else if (element.style.transform.includes('rotate(180deg)')) {
+      element.style.transform = 'rotate(270deg) scale(' + (window.innerHeight / window.innerWidth) + ')'
+    } else if (element.style.transform.includes('rotate(270deg)')) {
+      element.style.transform = 'rotate(0deg)'
+    }
+  }
 }
 
 function setElementFromDrop(element, event) {
