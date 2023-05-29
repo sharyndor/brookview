@@ -1,62 +1,92 @@
-[ 
+[
   {
-    "name" : "Nyatasha Nyanners",
-    "group": ["VShojo"],
-    "ttvChannel" : "nyanners",
-    "aliases" : ["nyanners"]
+    "name": "Amemiya Nazuna",
+    "grouping": "VShojo",
+    "aliases": "nazuna",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "AmemiyaNazuna"
   },
   {
-    "name" : "Projekt Melody",
-    "group": ["VShojo"],
-    "ttvChannel" : "projektmelody",
-    "aliases" : ["melody"]
+    "name": "Apricot (Froot)",
+    "grouping": "VShojo",
+    "aliases": "apricot, froot",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "apricot"
   },
   {
-    "name" : "Apricot (Froot)",
-    "group": ["VShojo"],
-    "ttvChannel" : "apricot",
-    "aliases" : ["apricot", "froot"]
+    "name": "Hime Hajime",
+    "grouping": "VShojo",
+    "aliases": "hajime",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "hajime"
   },
   {
-    "name" : "Zentreya",
-    "group": ["VShojo"],
-    "ttvChannel" : "zentreya",
-    "aliases" : ["zentreya"]
+    "name": "Ironmouse",
+    "grouping": "VShojo",
+    "aliases": "ironmouse",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "ironmouse"
   },
   {
-    "name" : "Silvervale",
-    "group": ["VShojo"],
-    "ttvChannel" : "silvervale",
-    "aliases" : ["silvervale"]
+    "name": "Nyatasha Nyanners",
+    "grouping": "VShojo",
+    "aliases": "nyanners",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "nyanners"
   },
   {
-    "name" : "Ironmouse",
-    "group": ["VShojo"],
-    "ttvChannel" : "ironmouse",
-    "aliases" : ["ironmouse"]
+    "name": "Projekt Melody",
+    "grouping": "VShojo",
+    "aliases": "melody",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "projektmelody"
   },
   {
-    "name" : "Hime Hajime",
-    "group": ["VShojo"],
-    "ttvChannel" : "hajime",
-    "aliases" : ["hajime"]
+    "name": "Silvervale",
+    "grouping": "VShojo",
+    "aliases": "silvervale",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "silvervale"
   },
   {
-    "name" : "Veibae",
-    "group": ["VShojo"],
-    "ttvChannel" : "veibae",
-    "aliases" : ["veibae"]
+    "name": "Veibae",
+    "grouping": "VShojo",
+    "aliases": "veibae",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "veibae"
   },
   {
-    "name" : "kson ONAIR",
-    "group": ["VShojo"],
-    "ytChannel" : "UC9ruVYPv7yJmV0Rh0NKA-Lw",
-    "aliases" : ["kson"]
+    "name": "Zentreya",
+    "grouping": "VShojo",
+    "aliases": "zentreya",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "zentreya"
   },
   {
-    "name" : "Amemiya Nazuna",
-    "group": ["VShojo"],
-    "ttvChannel" : "AmemiyaNazuna",
-    "aliases" : ["nazuna"]
+    "name": "kson ONAIR",
+    "grouping": "VShojo",
+    "aliases": "kson",
+    "yt_id": "UC9ruVYPv7yJmV0Rh0NKA-Lw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

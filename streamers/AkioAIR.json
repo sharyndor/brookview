@@ -1,36 +1,47 @@
-[ 
+[
   {
-    "name" : "Athena Nightingale",
-    "group": ["AkioAIR"],
-    "ytChannel" : "UCzHjYL0ZSVs4tP-JutQLFrA",
-    "ytOldHandle" : "AthenaNightingaleCh",
-    "aliases" : ["athena"]
+    "name": "Athena Nightingale",
+    "grouping": "AkioAIR",
+    "aliases": "athena",
+    "yt_id": "UCzHjYL0ZSVs4tP-JutQLFrA",
+    "yt_handle": null,
+    "yt_old_handle": "AthenaNightingaleCh",
+    "ttv_handle": null
   },
   {
-    "name" : "MEW Horizon",
-    "group": ["AkioAIR"],
-    "ytChannel" : "UC1V0A85U1AGi-zQCC8oE55A",
-    "ytOldHandle" : "mewhorizon",
-    "aliases" : ["mew"]
+    "name": "Kion Dojima",
+    "grouping": "AkioAIR",
+    "aliases": "kion",
+    "yt_id": "UCycPDRVWCQakmKRKh6Z3Dqw",
+    "yt_handle": null,
+    "yt_old_handle": "KionDojima",
+    "ttv_handle": null
   },
   {
-    "name" : "RoaFen",
-    "group": ["AkioAIR"],
-    "ytChannel" : "UC4zOnqo9ZasN1vIHscCvzMg",
-    "ytOldHandle" : "PixieFen",
-    "aliases" : ["fen"]
+    "name": "MEW Horizon",
+    "grouping": "AkioAIR",
+    "aliases": "mew",
+    "yt_id": "UC1V0A85U1AGi-zQCC8oE55A",
+    "yt_handle": null,
+    "yt_old_handle": "mewhorizon",
+    "ttv_handle": null
   },
   {
-    "name" : "Nonoah",
-    "group": ["AkioAIR"],
-    "ytChannel" : "UCbi3MM5-QP4MY1YkWfv4UJA",
-    "aliases" : ["nonoah"]
+    "name": "Nonoah",
+    "grouping": "AkioAIR",
+    "aliases": "nonoah",
+    "yt_id": "UCbi3MM5-QP4MY1YkWfv4UJA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Kion Dojima",
-    "group": ["AkioAIR"],
-    "ytChannel" : "UCycPDRVWCQakmKRKh6Z3Dqw",
-    "ytOldHandle" : "KionDojima",
-    "aliases" : ["kion"]
+    "name": "RoaFen",
+    "grouping": "AkioAIR",
+    "aliases": "fen",
+    "yt_id": "UC4zOnqo9ZasN1vIHscCvzMg",
+    "yt_handle": null,
+    "yt_old_handle": "PixieFen",
+    "ttv_handle": null
   }
 ]

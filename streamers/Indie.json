@@ -1,45 +1,65 @@
 [
   {
-    "name" : "Snuffy",
-    "group": ["Indie"],
-    "ttvChannel" : "snuffy",
-    "aliases" : ["snuffy"]
+    "name": "Artemis of the Blue",
+    "grouping": "Indie",
+    "aliases": "artemis",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "artemisoftheblue"
   },
   {
-    "name" : "Artemis of the Blue",
-    "group": ["Indie"],
-    "ttvChannel" : "artemisoftheblue",
-    "aliases" : ["artemis"]
+    "name": "Kiki",
+    "grouping": "Indie",
+    "aliases": "kiki",
+    "yt_id": "UCqF1M9cLvoB-zJsLQgIxx4Q",
+    "yt_handle": null,
+    "yt_old_handle": "KikiCh-",
+    "ttv_handle": null
   },
   {
-    "name" : "girl_dm_",
-    "group": ["Indie"],
-    "ttvChannel" : "girl_dm_",
-    "aliases" : ["girl_dm_", "girldm"]
+    "name": "Miori Celesta",
+    "grouping": "Indie",
+    "aliases": "miori",
+    "yt_id": "UCyKsg-57XC9pyHbP7v3kCPQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Shylily",
-    "group": ["Indie"],
-    "ttvChannel" : "shylily",
-    "aliases" : ["lily"]
+    "name": "Shylily",
+    "grouping": "Indie",
+    "aliases": "lily",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "shylily"
   },
   {
-    "name" : "Kiki",
-    "group": ["Indie"],
-    "ytChannel" : "UCqF1M9cLvoB-zJsLQgIxx4Q",
-    "ytOldHandle" : "KikiCh-",
-    "aliases" : ["kiki"]
+    "name": "Snuffy",
+    "grouping": "Indie",
+    "aliases": "snuffy",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "snuffy"
   },
   {
-    "name" : "fallenshadow",
-    "group": ["Indie"],
-    "ttvChannel" : "fallenshadow",
-    "aliases" : ["shondo"]
+    "name": "fallenshadow",
+    "grouping": "Indie",
+    "aliases": "shondo",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "fallenshadow"
   },
   {
-    "name" : "Miori Celesta",
-    "group": ["Indie"],
-    "ytChannel" : "UCyKsg-57XC9pyHbP7v3kCPQ",
-    "aliases" : ["miori"]
+    "name": "girl_dm_",
+    "grouping": "Indie",
+    "aliases": "girl_dm_, girldm",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "girl_dm_"
   }
 ]

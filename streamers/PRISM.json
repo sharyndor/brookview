@@ -1,74 +1,110 @@
-[ 
+[
   {
-    "name" : "Iku Hoshifuri",
-    "group": ["PRISM"],
-    "ytChannel" : "UC2hWFlqMew61Jy6A8zu5HzQ",
-    "aliases" : ["iku"]
+    "name": "Aoi Tokimori",
+    "grouping": "PRISM",
+    "aliases": "aoi",
+    "yt_id": "UCRWF6QSuklmwY3UJHyVTQ1w",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Aoi Tokimori",
-    "group": ["PRISM"],
-    "ytChannel" : "UCRWF6QSuklmwY3UJHyVTQ1w",
-    "aliases" : ["aoi"]
+    "name": "Ibuki Meno",
+    "grouping": "PRISM",
+    "aliases": "meno",
+    "yt_id": "UCZfQRuwSLty74QAj55BaKlA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Ibuki Meno",
-    "group": ["PRISM"],
-    "ytChannel" : "UCZfQRuwSLty74QAj55BaKlA",
-    "aliases" : ["meno"]
+    "name": "Iku Hoshifuri",
+    "grouping": "PRISM",
+    "aliases": "iku",
+    "yt_id": "UC2hWFlqMew61Jy6A8zu5HzQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Rita Kamishiro",
-    "group": ["PRISM"],
-    "ytChannel" : "UCBJFsaCvgBa1a9BnEaxu97Q",
-    "aliases" : ["rito"]
+    "name": "Luto Araka",
+    "grouping": "PRISM",
+    "aliases": "luto",
+    "yt_id": "UCnYhIk9aGEx_bIgheVjs53w",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Luto Araka",
-    "group": ["PRISM"],
-    "ytChannel" : "UCnYhIk9aGEx_bIgheVjs53w",
-    "aliases" : ["luto"]
+    "name": "Naki Kamizuki",
+    "grouping": "PRISM",
+    "aliases": "naki",
+    "yt_id": "UCgM1sly6rnxqWe8GLbceEag",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Shiki Miyoshino",
-    "group": ["PRISM"],
-    "ytChannel" : "UCswvd6_YWmd6riRk-8oT-sA",
-    "aliases" : ["shiki"]
+    "name": "Nia Suzune",
+    "grouping": "PRISM",
+    "aliases": "nia",
+    "yt_id": "UCw1KNjVqfrJSfcFd6zlcSzA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Nia Suzune",
-    "group": ["PRISM"],
-    "ytChannel" : "UCw1KNjVqfrJSfcFd6zlcSzA",
-    "aliases" : ["nia"]
+    "name": "Non Anon",
+    "grouping": "PRISM",
+    "aliases": "non",
+    "yt_id": "UCx_A6fns9qKjybu-6k0ur1g",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Pina Pengin",
-    "group": ["PRISM"],
-    "ytChannel" : "UCpeRj9-GaLGNUoKdI5I7vZA",
-    "aliases" : ["pina"]
+    "name": "Pina Pengin",
+    "grouping": "PRISM",
+    "aliases": "pina",
+    "yt_id": "UCpeRj9-GaLGNUoKdI5I7vZA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Yura Rikudou",
-    "group": ["PRISM"],
-    "ytChannel" : "UC0ZTVxCHkZanT5dnP2FZD4Q",
-    "aliases" : ["yura"]
+    "name": "Rita Kamishiro",
+    "grouping": "PRISM",
+    "aliases": "rito",
+    "yt_id": "UCBJFsaCvgBa1a9BnEaxu97Q",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Naki Kamizuki",
-    "group": ["PRISM"],
-    "ytChannel" : "UCgM1sly6rnxqWe8GLbceEag",
-    "aliases" : ["naki"]
+    "name": "Sara Nagare",
+    "grouping": "PRISM",
+    "aliases": "sara",
+    "yt_id": "UCkJ64W0J7R0zCSAsZfRIhVQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Sara Nagare",
-    "group": ["PRISM"],
-    "ytChannel" : "UCkJ64W0J7R0zCSAsZfRIhVQ",
-    "aliases" : ["sara"]
+    "name": "Shiki Miyoshino",
+    "grouping": "PRISM",
+    "aliases": "shiki",
+    "yt_id": "UCswvd6_YWmd6riRk-8oT-sA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Non Anon",
-    "group": ["PRISM"],
-    "ytChannel" : "UCx_A6fns9qKjybu-6k0ur1g",
-    "aliases" : ["non"]
+    "name": "Yura Rikudou",
+    "grouping": "PRISM",
+    "aliases": "yura",
+    "yt_id": "UC0ZTVxCHkZanT5dnP2FZD4Q",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

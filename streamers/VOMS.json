@@ -1,21 +1,29 @@
 [
   {
-    "name" : "Amano Pikamee",
-    "group": ["VOMS"],
-    "ytChannel" : "UCajhBT4nMrg3DLS-bLL2RCg",
-    "ytOldHandle" : "天野ピカミィPikamee",
-    "aliases" : ["pikamee"]
+    "name": "Amano Pikamee",
+    "grouping": "VOMS",
+    "aliases": "pikamee",
+    "yt_id": "UCajhBT4nMrg3DLS-bLL2RCg",
+    "yt_handle": null,
+    "yt_old_handle": "\u00e5\u00a4\u00a9\u00e9\u2021\u017d\u00e3\u0192\u201d\u00e3\u201a\u00ab\u00e3\u0192\u0178\u00e3\u201a\u00a3Pikamee",
+    "ttv_handle": null
   },
   {
-    "name" : "Hikasa Tomoshika",
-    "group": ["VOMS"],
-    "ytChannel" : "UC3vzVK_N_SUVKqbX69L_X4g",
-    "aliases" : ["tomoshika"]
+    "name": "Haneuzu Miuneru",
+    "grouping": "VOMS",
+    "aliases": "miuneru",
+    "yt_id": "UCE5VgVGRPfNCjXPeTe1QJHA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Haneuzu Miuneru",
-    "group": ["VOMS"],
-    "ytChannel" : "UCE5VgVGRPfNCjXPeTe1QJHA",
-    "aliases" : ["miuneru"]
+    "name": "Hikasa Tomoshika",
+    "grouping": "VOMS",
+    "aliases": "tomoshika",
+    "yt_id": "UC3vzVK_N_SUVKqbX69L_X4g",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

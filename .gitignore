@@ -1,2 +1,3 @@
-history.json
-initData.json
+.vscode/launch.json
+.vscode/settings.json
+brookview.db

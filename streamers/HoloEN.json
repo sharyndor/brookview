@@ -1,69 +1,101 @@
 [
   {
-    "name" : "Calliope Mori",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCL_qhgtOy0dy1Agp8vkySQg",
-    "aliases" : ["calliope", "calli", "mori"]
+    "name": "Calliope Mori",
+    "grouping": "HoloEN",
+    "aliases": "calliope, calli, mori",
+    "yt_id": "UCL_qhgtOy0dy1Agp8vkySQg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Takanashi Kiara",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCHsx4Hqa-1ORjQTh9TYDhww",
-    "aliases" : ["kiara"]
+    "name": "Ceres Fauna",
+    "grouping": "HoloEN",
+    "aliases": "fauna",
+    "yt_id": "UCO_aKKYxn4tvrqPjcTzZ6EQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Ninomae Ina'nis",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCMwGHR0BTZuLsmjY_NT5Pwg",
-    "aliases" : ["ina'nis", "ina"]
+    "name": "Gawr Gura",
+    "grouping": "HoloEN",
+    "aliases": "gura",
+    "yt_id": "UCoSrY_IQQVpmIRZ9Xf-y93g",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Gawr Gura",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCoSrY_IQQVpmIRZ9Xf-y93g",
-    "aliases" : ["gura"]
+    "name": "Hakos Baelz",
+    "grouping": "HoloEN",
+    "aliases": "baelz, bae",
+    "yt_id": "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Watson Amelia",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCyl1z3jo3XHR1riLFKG5UAg",
-    "aliases" : ["amelia", "ame"]
+    "name": "Irys",
+    "grouping": "HoloEN",
+    "aliases": "irys, yabairys",
+    "yt_id": "UC8rcEBzJSleTkf_-agPM20g",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Irys",
-    "group": ["HoloEN"],
-    "ytChannel" : "UC8rcEBzJSleTkf_-agPM20g",
-    "aliases" : ["irys", "yabairys"]
+    "name": "Nanashi Mumei",
+    "grouping": "HoloEN",
+    "aliases": "mumei",
+    "yt_id": "UC3n5uGu18FoCy23ggWWp8tA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Tsukumo Sana",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCsUj0dszADCGbF3gNrQEuSQ",
-    "aliases" : ["sana"]
+    "name": "Ninomae Ina'nis",
+    "grouping": "HoloEN",
+    "aliases": "ina'nis, ina",
+    "yt_id": "UCMwGHR0BTZuLsmjY_NT5Pwg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Ceres Fauna",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCO_aKKYxn4tvrqPjcTzZ6EQ",
-    "aliases" : ["fauna"]
+    "name": "Ouro Kronii",
+    "grouping": "HoloEN",
+    "aliases": "kronii",
+    "yt_id": "UCmbs8T6MWqUHP1tIQvSgKrg",
+    "yt_handle": null,
+    "yt_old_handle": "OuroKroniiCh",
+    "ttv_handle": null
   },
   {
-    "name" : "Ouro Kronii",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCmbs8T6MWqUHP1tIQvSgKrg",
-    "ytOldHandle" : "OuroKroniiCh",
-    "aliases" : ["kronii"]
+    "name": "Takanashi Kiara",
+    "grouping": "HoloEN",
+    "aliases": "kiara",
+    "yt_id": "UCHsx4Hqa-1ORjQTh9TYDhww",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Nanashi Mumei",
-    "group": ["HoloEN"],
-    "ytChannel" : "UC3n5uGu18FoCy23ggWWp8tA",
-    "aliases" : ["mumei"]
+    "name": "Tsukumo Sana",
+    "grouping": "HoloEN",
+    "aliases": "sana",
+    "yt_id": "UCsUj0dszADCGbF3gNrQEuSQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Hakos Baelz",
-    "group": ["HoloEN"],
-    "ytChannel" : "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
-    "aliases" : ["baelz", "bae"]
+    "name": "Watson Amelia",
+    "grouping": "HoloEN",
+    "aliases": "amelia, ame",
+    "yt_id": "UCyl1z3jo3XHR1riLFKG5UAg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

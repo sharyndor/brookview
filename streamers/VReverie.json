@@ -1,26 +1,38 @@
-[  
+[
   {
-    "name" : "Hotaru Iora",
-    "group": ["VReverie"],
-    "ytChannel" : "UC0g_U1QjfhMR-kx8XLmWTCA",
-    "aliases" : ["iora"]
+    "name": "Hotaru Iora",
+    "grouping": "VReverie",
+    "aliases": "iora",
+    "yt_id": "UC0g_U1QjfhMR-kx8XLmWTCA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Nova Aokami",
-    "group": ["VReverie"],
-    "ytChannel" : "UCA4bOB1Jnw5-lbuoSCfxc-w",
-    "aliases" : ["nova"]
+    "name": "Lilrya Prisvielle",
+    "grouping": "VReverie",
+    "aliases": "lilrya",
+    "yt_id": "UCt7vm-7hlwPcYsRacX7QJYw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Lilrya Prisvielle",
-    "group": ["VReverie"],
-    "ytChannel" : "UCt7vm-7hlwPcYsRacX7QJYw",
-    "aliases" : ["lilrya"]
+    "name": "Nova Aokami",
+    "grouping": "VReverie",
+    "aliases": "nova",
+    "yt_id": "UCA4bOB1Jnw5-lbuoSCfxc-w",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Ophelia Midnight",
-    "group": ["VReverie"],
-    "ytChannel" : "UCZyNPQCjju3KIv9X84diljw",
-    "aliases" : ["ophelia"]
+    "name": "Ophelia Midnight",
+    "grouping": "VReverie",
+    "aliases": "ophelia",
+    "yt_id": "UCZyNPQCjju3KIv9X84diljw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

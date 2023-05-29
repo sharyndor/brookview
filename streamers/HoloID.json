@@ -1,56 +1,83 @@
 [
   {
-    "name" : "Ayunda Risu",
-    "group": ["HoloID"],
-    "ytChannel" : "UCOyYb1c43VlX9rc_lT6NKQw",
-    "aliases" : ["risu"]
+    "name": "Airani Iofifteen",
+    "grouping": "HoloID",
+    "aliases": "io15, iofi",
+    "yt_id": "UCAoy6rzhSf4ydcYjJw3WoVg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Moona Hoshinova",
-    "group": ["HoloID"],
-    "ytChannel" : "UCP0BspO_AMEe3aQqqpo89Dg",
-    "aliases" : ["moona"]
+    "name": "Anya Melfissa",
+    "grouping": "HoloID",
+    "aliases": "anya",
+    "yt_id": "UC727SQYUvx5pDDGQpTICNWg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Airani Iofifteen",
-    "group": ["HoloID"],
-    "ytChannel" : "UCAoy6rzhSf4ydcYjJw3WoVg",
-    "aliases" : ["io15", "iofi"]
+    "name": "Ayunda Risu",
+    "grouping": "HoloID",
+    "aliases": "risu",
+    "yt_id": "UCOyYb1c43VlX9rc_lT6NKQw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Kureiji Ollie",
-    "group": ["HoloID"],
-    "ytChannel" : "UCYz_5n-uDuChHtLo7My1HnQ",
-    "aliases" : ["ollie"]
+    "name": "Kaela Kovalskia",
+    "grouping": "HoloID",
+    "aliases": "kaela, kowalski",
+    "yt_id": "UCZLZ8Jjx_RN2CXloOmgTHVg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Anya Melfissa",
-    "group": ["HoloID"],
-    "ytChannel" : "UC727SQYUvx5pDDGQpTICNWg",
-    "aliases" : ["anya"]
+    "name": "Kobo Kanaeru",
+    "grouping": "HoloID",
+    "aliases": "kobo",
+    "yt_id": "UCjLEmnpCNeisMxy134KPwWw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Pavolia Reine",
-    "group": ["HoloID"],
-    "ytChannel" : "UChgTyjG-pdNvxxhdsXfHQ5Q",
-    "aliases" : ["reine"]
+    "name": "Kureiji Ollie",
+    "grouping": "HoloID",
+    "aliases": "ollie",
+    "yt_id": "UCYz_5n-uDuChHtLo7My1HnQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Vestia Zeta",
-    "group": ["HoloID"],
-    "ytChannel" : "UCTvHWSfBZgtxE4sILOaurIQ",
-    "aliases" : ["vestia"]
+    "name": "Moona Hoshinova",
+    "grouping": "HoloID",
+    "aliases": "moona",
+    "yt_id": "UCP0BspO_AMEe3aQqqpo89Dg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Kaela Kovalskia",
-    "group": ["HoloID"],
-    "ytChannel" : "UCZLZ8Jjx_RN2CXloOmgTHVg",
-    "aliases" : ["kaela", "kowalski"]
+    "name": "Pavolia Reine",
+    "grouping": "HoloID",
+    "aliases": "reine",
+    "yt_id": "UChgTyjG-pdNvxxhdsXfHQ5Q",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Kobo Kanaeru",
-    "group": ["HoloID"],
-    "ytChannel" : "UCjLEmnpCNeisMxy134KPwWw",
-    "aliases" : ["kobo"]
+    "name": "Vestia Zeta",
+    "grouping": "HoloID",
+    "aliases": "vestia",
+    "yt_id": "UCTvHWSfBZgtxE4sILOaurIQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

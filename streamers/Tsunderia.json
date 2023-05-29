@@ -1,32 +1,47 @@
 [
   {
-    "name" : "Inukai Purin",
-    "group": ["Tsunderia"],
-    "ytChannel" : "UCdrQWcX7XLDSUEh9SAxnyBg",
-    "aliases" : ["purin"]
+    "name": "Amemachi Hanabi",
+    "grouping": "Tsunderia",
+    "aliases": "hanabi",
+    "yt_id": "UC8yXRB_jKDeapwQak2i30EA",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Amemachi Hanabi",
-    "group": ["Tsunderia"],
-    "ytChannel" : "UC8yXRB_jKDeapwQak2i30EA",
-    "aliases" : ["hanabi"]
+    "name": "Amiya Aranha",
+    "grouping": "Tsunderia",
+    "aliases": "amiya",
+    "yt_id": "UCykMWf8B8I7c_jA8FTy2tGw",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Tsurugi Nen",
-    "group": ["Tsunderia"],
-    "ytChannel" : "UCNUS0XshN1Tf7iLdd0MpPAg",
-    "aliases" : ["nen"]
+    "name": "Chikafuji Lisa",
+    "grouping": "Tsunderia",
+    "aliases": "lisa",
+    "yt_id": "UCdureux7B_V-xhM7tYImASQ",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Chikafuji Lisa",
-    "group": ["Tsunderia"],
-    "ytChannel" : "UCdureux7B_V-xhM7tYImASQ",
-    "aliases" : ["lisa"]
+    "name": "Inukai Purin",
+    "grouping": "Tsunderia",
+    "aliases": "purin",
+    "yt_id": "UCdrQWcX7XLDSUEh9SAxnyBg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   },
   {
-    "name" : "Amiya Aranha",
-    "group": ["Tsunderia"],
-    "ytChannel" : "UCykMWf8B8I7c_jA8FTy2tGw",
-    "aliases" : ["amiya"]
+    "name": "Tsurugi Nen",
+    "grouping": "Tsunderia",
+    "aliases": "nen",
+    "yt_id": "UCNUS0XshN1Tf7iLdd0MpPAg",
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": null
   }
 ]

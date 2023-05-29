@@ -1240,8 +1240,8 @@ class Streamer {
     this.group = group
 
     /* This data can be added to after creation */
-    this.terms = {}
-    this.aliases = {}
+    this.terms = []
+    this.aliases = []
 
     /* This data can be changed from null after creation */
     this.ytHandle = null
@@ -1276,32 +1276,28 @@ function updateGlobalLookup(streamer, lookup) {
 }
 
 function updateStreamerTerms(streamer, term) {
-  streamer.terms[term] = term
+  term = term.toLowerCase()
+  if (!streamer.terms.includes(term)) {
+    streamer.terms.push(term)
+  }
 }
 
 function updateLookups(streamer) {
   /* Add name lookups */
   updateGlobalLookup(streamer, streamer.name)
-  for (var subname in streamer.name.split(' ')) {
+  for (var subname of streamer.name.split(' ')) {
     updateStreamerTerms(streamer, subname)
   }
 
   /* Add group lookups */
-  for (var subgroup in streamer.group) {
+  for (var subgroup of streamer.group) {
     updateStreamerTerms(streamer, subgroup)
   }
 
   /* Add alias lookups */
-  for (var alias in streamer.aliases) {
+  for (var alias of streamer.aliases) {
     updateGlobalLookup(streamer, alias)
     updateStreamerTerms(streamer, alias)
-  }
-
-  /* Add stream lookups */
-  for (var prop in streamer) {
-    if (prop in embedFuns && streamer[prop]) {
-      updateGlobalLookup(streamer, [prop, streamer[prop]])
-    }
   }
 }
 
@@ -1322,7 +1318,9 @@ function updateStreamer(streamerData) {
 
   /* Update aliases */
   for (var alias of streamerData.aliases) {
-    streamer.aliases[alias] = alias
+    if (!streamer.aliases.includes(alias)) {
+      streamer.aliases.push(alias)
+    }
   }
 
   /* Update channel data */
@@ -1411,7 +1409,7 @@ function populateOverlayInput() {
 
     /* Every search term must have some matching streamer term */
     var streamerMatches = Object.values(global.streamers).filter(
-      streamer => searchTerms.every(term => Object.keys(streamer.terms).some(info => info.startsWith(term)))
+      streamer => searchTerms.every(term => streamer.terms.some(info => info.startsWith(term)))
     )
 
     /* Add using the same logic as the list */

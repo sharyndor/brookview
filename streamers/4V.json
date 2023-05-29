@@ -1,49 +1,65 @@
 [
   {
-    "name" : "Vivian Voss",
-    "group": ["4V"],
-    "ytChannel" : "UCNnsUBscSpTZgTPgShcuG_Q",
-    "ytOldHandle" : "VivianVoss4VLive",
-    "aliases" : ["vivian"]
+    "name": "Angelina Kumalo",
+    "grouping": "4V",
+    "aliases": "angelina",
+    "yt_id": "UCLT3br0YnmS2t3aba_w275A",
+    "yt_handle": null,
+    "yt_old_handle": "AngelinaKumalo",
+    "ttv_handle": null
   },
   {
-    "name" : "Orion Juno",
-    "group": ["4V"],
-    "ytChannel" : "UC_l_7Da8HB2cLTx7U88RrsA",
-    "ytOldHandle" : "OrionJunoCh-4VLive",
-    "aliases" : ["orion"]
+    "name": "Boomi Mamana",
+    "grouping": "4V",
+    "aliases": "boomi",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": "BoomiMamanaCh-4VLive",
+    "ttv_handle": "stfuboomi"
   },
   {
-    "name" : "Angelina Kumalo",
-    "group": ["4V"],
-    "ytChannel" : "UCLT3br0YnmS2t3aba_w275A",
-    "ytOldHandle" : "AngelinaKumalo",
-    "aliases" : ["angelina"]
+    "name": "Cecilia Amberfall",
+    "grouping": "4V",
+    "aliases": "cecilia",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "cloverelfy"
   },
   {
-    "name" : "Boomi Mamana",
-    "group": ["4V"],
-    "ttvChannel" : "stfuboomi",
-    "ytOldHandle" : "BoomiMamanaCh-4VLive",
-    "aliases" : ["boomi"]
+    "name": "Neiomi Cielo",
+    "grouping": "4V",
+    "aliases": "neiomi",
+    "yt_id": null,
+    "yt_handle": null,
+    "yt_old_handle": null,
+    "ttv_handle": "neiomicielo"
   },
   {
-    "name" : "Cecilia Amberfall",
-    "group": ["4V"],
-    "ttvChannel" : "cloverelfy",
-    "aliases" : ["cecilia"]
+    "name": "Orion Juno",
+    "grouping": "4V",
+    "aliases": "orion",
+    "yt_id": "UC_l_7Da8HB2cLTx7U88RrsA",
+    "yt_handle": null,
+    "yt_old_handle": "OrionJunoCh-4VLive",
+    "ttv_handle": null
   },
   {
-    "name" : "Neiomi Cielo",
-    "group": ["4V"],
-    "ttvChannel" : "neiomicielo",
-    "aliases" : ["neiomi"]
+    "name": "Roza Coatl",
+    "grouping": "4V",
+    "aliases": "roza",
+    "yt_id": "UCI4PLfuiL9jFOpsEIA20Kjg",
+    "yt_handle": null,
+    "yt_old_handle": "RozaCoatl",
+    "ttv_handle": null
   },
   {
-    "name" : "Roza Coatl",
-    "group": ["4V"],
-    "ytChannel" : "UCI4PLfuiL9jFOpsEIA20Kjg",
-    "ytOldHandle" : "RozaCoatl",
-    "aliases" : ["roza"]
+    "name": "Vivian Voss",
+    "grouping": "4V",
+    "aliases": "vivian",
+    "yt_id": "UCNnsUBscSpTZgTPgShcuG_Q",
+    "yt_handle": null,
+    "yt_old_handle": "VivianVoss4VLive",
+    "ttv_handle": null
   }
 ]
