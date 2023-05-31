@@ -16,8 +16,8 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 class Handler(SimpleHTTPRequestHandler):
   def __init__(self, *args, **kwargs):
     self.handlers = {
-      '/refer/youtube' : self.handleRefer,
-      '/live/youtube'  : self.handleLive,
+      # '/refer/youtube' : self.handleRefer,
+      # '/live/youtube'  : self.handleLive,
     }
 
     super(Handler, self).__init__(*args, **kwargs)
@@ -181,5 +181,9 @@ def log_to_file(data, name):
 history = History('brookview.db', 300)
 
 if __name__ == '__main__':
-  server = ThreadedHTTPServer(('localhost', 8080), Handler)
+  host = 'localhost'
+  port = 8080
+  print('Starting on {}:{}'.format(host, port))
+
+  server = ThreadedHTTPServer((host, port), Handler)
   server.serve_forever()

@@ -24,10 +24,10 @@ const referFuns = [
 const embedFuns = { 
   'blank'      : null,
   'name'       : embedName,
-  'ytVideo'    : embedYoutubeVideo,
-  'ytChannel'  : embedYoutubeChannel,
-  'ttvVideo'   : embedTwitchVideo,
-  'ttvChannel' : embedTwitchChannel,
+  'yt_video'    : embedYoutubeVideo,
+  'yt_id'  : embedYoutubeChannel,
+  'ttv_video'   : embedTwitchVideo,
+  'ttv_handle' : embedTwitchChannel,
 }
 
 function convertToURL(str) {
@@ -66,14 +66,14 @@ function referYoutube(str) {
   if (url.host.includes('www.youtube.com') && url.searchParams.has('v')) { 
     var timeStamp = url.searchParams.get('t')
     var extras = timeStamp ? '&start=' + timeStamp : ''
-    return ['ytVideo', url.searchParams.get('v'), extras]
+    return ['yt_video', url.searchParams.get('v'), extras]
   }
 
   /* Youtube handle - www.youtube.com/@Handle */
   if (url.host.includes('www.youtube.com') && pathPieces[1].startsWith('@')) {
-    var lookup = global.lookup.get(['ytHandle', pathPieces[1]])
+    var lookup = global.lookup.get(['yt_handle', pathPieces[1]])
     if (lookup) {
-      return ['ytChannel', lookup.ytChannel]
+      return ['yt_id', lookup.yt_id]
     } else {
       return null
     }
@@ -81,14 +81,14 @@ function referYoutube(str) {
 
   /* Youtube channel id - www.youtube.com/channel/ChannelId */
   if (url.host.includes('www.youtube.com') && pathPieces[1] == 'channel') { 
-    return ['ytChannel', pathPieces[2]]
+    return ['yt_id', pathPieces[2]]
   }
 
   /* Youtube video link - youtu.be/id */
   if (url.host.includes('youtu.be')) { 
     var timestamp = url.searchParams.get('t')
     var extras = timestamp ? '&start=' + timestamp : ''
-    return ['ytVideo', pathPieces[1], extras]
+    return ['yt_video', pathPieces[1], extras]
   }
 
   return null
@@ -97,7 +97,7 @@ function referYoutube(str) {
 function referTwitch(str) {
   /* Start with ttv- as shorthand for twitch channels */
   if (str.startsWith('ttv-')) {
-    return ['ttvChannel', str.substring(4)]
+    return ['ttv_handle', str.substring(4)]
   }
 
   /* Try to treat the string as a URL */
@@ -114,12 +114,12 @@ function referTwitch(str) {
   if (url.host.includes('www.twitch.tv') && pathPieces[1] == 'videos') { 
     var timeStamp = url.searchParams.get('t')
     var extras = timeStamp ? '&time=' + timeStamp : ''
-    return ['ttvVideo', pathPieces[2], extras]
+    return ['ttv_video', pathPieces[2], extras]
   }
    
   /* Twitch Channel - www.twitch.tv/channel */
   if (url.host.includes('www.twitch.tv')) {
-    return ['ttvChannel', pathPieces[1]]
+    return ['ttv_handle', pathPieces[1]]
   }
 
   return null
@@ -128,10 +128,10 @@ function referTwitch(str) {
 function embedName(value, extras) {
   var lookup = global.lookup[value]
   if (lookup) {
-    if (lookup.ytChannel) {
-      return embedYoutubeChannel(lookup.ytChannel)
-    } else if (lookup.ytChannel) {
-      return embedTwitchChannel(lookup.ttvChannel)
+    if (lookup.yt_id) {
+      return embedYoutubeChannel(lookup.yt_id)
+    } else if (lookup.yt_id) {
+      return embedTwitchChannel(lookup.ttv_handle)
     }
   }
   return null
@@ -474,10 +474,10 @@ function populateChat() {
       chatFrame.setAttribute('src', '')
     } else {
       var [type, value] = event.target.value.split('=')
-      if (type == 'ytVideo') {
+      if (type == 'yt_video') {
         chatFrame.setAttribute('src', 'https://www.youtube.com/live_chat?v=' + value + '&embed_domain=' + hostDomain)
       }
-      else if (type == 'ttvChannel') {
+      else if (type == 'ttv_handle') {
         chatFrame.setAttribute('src', 'https://www.twitch.tv/embed/' + value + '/chat?darkpopout&parent=' + hostDomain)
       }
     }
@@ -631,16 +631,16 @@ function addOverlayListStreamer(element, name) {
   var child = null
   var template = document.createElement('template')
 
-  if (streamer.ytChannel) {
+  if (streamer.yt_id) {
     template.innerHTML = '<span>[YT]</span>'
     child = div.appendChild(template.content.firstChild)
-    addOverlayStreamerInteraction(child, 'ytChannel', streamer.ytChannel)
+    addOverlayStreamerInteraction(child, 'yt_id', streamer.yt_id)
   }
 
-  if (streamer.ttvChannel) {
+  if (streamer.ttv_handle) {
     template.innerHTML = '<span>[TTV]</span>'
     child = div.appendChild(template.content.firstChild)
-    addOverlayStreamerInteraction(child, 'ttvChannel', streamer.ttvChannel)
+    addOverlayStreamerInteraction(child, 'ttv_handle', streamer.ttv_handle)
   }
 
   div.name = streamer.name
@@ -878,11 +878,11 @@ function setElementFromString(element, str) {
 function convertElementDataToLink(type, value) {
   conversions = {
     'name' : value,
-    'ytVideo' : 'www.youtube.com/watch?v=' + value,
-    'ytChannel' : 'www.youtube.com/channel/' + value,
-    'ytHandle' : 'www.youtube.com/@' + value,
-    'ttvVideo' : 'www.twitch.tv/videos/' + value,
-    'ttvChannel' : 'www.twitch.tv/' + value,
+    'yt_video' : 'www.youtube.com/watch?v=' + value,
+    'yt_id' : 'www.youtube.com/channel/' + value,
+    'yt_handle' : 'www.youtube.com/@' + value,
+    'ttv_video' : 'www.twitch.tv/videos/' + value,
+    'ttv_handle' : 'www.twitch.tv/' + value,
   }
 
   if (type in conversions) {
@@ -1244,9 +1244,9 @@ class Streamer {
     this.aliases = []
 
     /* This data can be changed from null after creation */
-    this.ytHandle = null
-    this.ytChannel = null
-    this.ttvChannel = null
+    this.yt_handle = null
+    this.yt_id = null
+    this.ttv_handle = null
 
     /* This data will only come from the backend and may change whenever */
     this.status = null
@@ -1311,27 +1311,27 @@ function updateStreamer(streamerData) {
   var streamer = global.streamers[streamerData.name] ?? null
   if (streamer == null) {
     /* Streamer not found, create one */
-    var [name, group] = [streamerData.name, streamerData.group]
+    var [name, group] = [streamerData.name, streamerData.grouping.split(', ')]
     streamer = global.streamers[name] = new Streamer(name, group)
     newStreamer = true
   }
 
   /* Update aliases */
-  for (var alias of streamerData.aliases) {
+  for (var alias of streamerData.aliases.split(', ')) {
     if (!streamer.aliases.includes(alias)) {
       streamer.aliases.push(alias)
     }
   }
 
   /* Update channel data */
-  streamer.ytHandle = streamer.ytHandle ?? streamerData.ytHandle
-  streamer.ytChannel = streamer.ytChannel ?? streamerData.ytChannel
-  streamer.ttvChannel = streamer.ttvChannel ?? streamerData.ttvChannel
+  streamer.yt_handle = streamer.yt_handle ?? streamerData.yt_handle
+  streamer.yt_id = streamer.yt_id ?? streamerData.yt_id
+  streamer.ttv_handle = streamer.ttv_handle ?? streamerData.ttv_handle
 
   /* New streamer added, update the groups */
   /* Must be done after setting channel data for links to be populated */
   if (newStreamer) {
-    updateGroups(name, group)
+    updateGroups(name, streamer.group)
   }
 
   /* Update live status */
