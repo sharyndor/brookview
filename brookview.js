@@ -24,9 +24,9 @@ const referFuns = [
 const embedFuns = { 
   'blank'      : null,
   'name'       : embedName,
-  'yt_video'    : embedYoutubeVideo,
-  'yt_id'  : embedYoutubeChannel,
-  'ttv_video'   : embedTwitchVideo,
+  'yt_video'   : embedYoutubeVideo,
+  'yt_id'      : embedYoutubeChannel,
+  'ttv_video'  : embedTwitchVideo,
   'ttv_handle' : embedTwitchChannel,
 }
 
@@ -130,7 +130,7 @@ function embedName(value, extras) {
   if (lookup) {
     if (lookup.yt_id) {
       return embedYoutubeChannel(lookup.yt_id)
-    } else if (lookup.yt_id) {
+    } else if (lookup.ttv_handle) {
       return embedTwitchChannel(lookup.ttv_handle)
     }
   }
@@ -337,7 +337,7 @@ function handleStreamGesture(element, event) {
 
   var key = ' '
   if (distance < 50) {       // Neutral
-    if (element.lastChild.tagName == 'DIV') { // Blank element
+    if (element.contentDiv.content.tagName == 'DIV') { // Blank element
       key = 's'
     } else if (gestureDuration > 800) { // Do nothing with long press in center
       key = ''
@@ -376,20 +376,24 @@ function makeBlankElement() {
   div.type = 'blank'
   div.setAttribute('type', 'blank')
   
-  var gridOverlay = div.appendChild(document.createElement('div'))
-  gridOverlay.classList.add('grid-overlay')
+  /* Grid element - First child is the overlay */
+  div.gridOverlay = div.appendChild(document.createElement('div'))
+  div.gridOverlay.classList.add('grid-overlay')
 
-  /* First child is the box/text displayed on hover */
-  var gridAction = gridOverlay.appendChild(document.createElement('div'))
-  gridAction.classList.add('gridAction')
+  /* Overlay - First child is the box/text displayed on hover */
+  div.gridOverlay.gridAction = div.gridOverlay.appendChild(document.createElement('div'))
+  div.gridOverlay.gridAction.classList.add('gridAction')
 
-  /* Second child is shown when cycling between next/prev */
-  var gridStatus = gridOverlay.appendChild(document.createElement('div'))
-  gridStatus.classList.add('gridStatus')
+  /* Overlay - Second child is shown when cycling between next/prev */
+  div.gridOverlay.gridStatus = div.gridOverlay.appendChild(document.createElement('div'))
+  div.gridOverlay.gridStatus.classList.add('gridStatus')
 
-  /* Last child is the actual content */
-  var content = div.appendChild(document.createElement('div'))
-  content.classList.add('content')
+  /* Grid element - Second child contains the actual content */
+  div.contentDiv = div.appendChild(document.createElement('div'))
+  div.contentDiv.classList.add('content')
+
+  /* Actual content starts as a blank div */
+  div.contentDiv.content = div.contentDiv.appendChild(document.createElement('div'))
   
   /* Add extra variables */
   div.channelNameTimeout = null
@@ -432,7 +436,8 @@ function setIFrameContent(element, src) {
   frame.setAttribute('allow', 'fullscreen')
   
   /* last child is the actual content */
-  element.replaceChild(frame, element.querySelector('.content'))
+  element.contentDiv.replaceChild(frame, element.contentDiv.content)
+  element.contentDiv.content = frame
 }
 
 function embedLink(element) {
@@ -820,15 +825,32 @@ const actions = {
 
 function rotateElement(element) {
   if (element && element.classList.contains('grid-element')) {
-    element = element.lastChild
+    /* Grab the number of rows/columns to calculate vh/vw sizing */
+    var params = new URLSearchParams(window.location.search)
+    var rows    = params.get('rows')
+    var columns = params.get('columns')
+
+    /* Operate upon the actual content size */
+    element = element.contentDiv.content
+
+    /* Preserve the transform/rotation center and rotate/resize the content */
+    transform = 'translate(-50%, -50%) '
     if (element.style.transform == '' || element.style.transform.includes('rotate(0deg)')) {
-      element.style.transform = 'rotate(90deg) scale(' + (window.innerHeight / window.innerWidth) + ')'
+      element.style.width = (100 / rows) + 'vh'
+      element.style.height = (100 / columns) + 'vw'
+      element.style.transform = transform + 'rotate(90deg)'
     } else if (element.style.transform.includes('rotate(90deg)')) {
-      element.style.transform = 'rotate(180deg)'
+      element.style.width = '100%'
+      element.style.height = '100%'
+      element.style.transform = transform + 'rotate(180deg)'
     } else if (element.style.transform.includes('rotate(180deg)')) {
-      element.style.transform = 'rotate(270deg) scale(' + (window.innerHeight / window.innerWidth) + ')'
+      element.style.width = (100 / rows) + 'vh'
+      element.style.height = (100 / columns) + 'vw'
+      element.style.transform = transform + 'rotate(270deg)'
     } else if (element.style.transform.includes('rotate(270deg)')) {
-      element.style.transform = 'rotate(0deg)'
+      element.style.width = '100%'
+      element.style.height = '100%'
+      element.style.transform = transform + 'rotate(0deg)'
     }
   }
 }
@@ -1012,7 +1034,7 @@ function findAdjacentEntry(list, entry, offset) {
 
 function setChannelNameTimer(element, name) {
   /* Set the name */
-  element.firstChild.lastChild.textContent = name.charAt(0).toUpperCase() + name.slice(1)
+  element.gridOverlay.gridStatus.textContent = name.charAt(0).toUpperCase() + name.slice(1)
   
   /* Clear any existing timers */
   if (element.channelNameTimeout != null) {
@@ -1021,9 +1043,9 @@ function setChannelNameTimer(element, name) {
   
   /* Create a new one remove the text */
   element.channelNameTimeout = setTimeout(
-  function() {
-    element.firstChild.lastChild.textContent = ''
-  }, 1000
+    function() {
+      element.firstChild.lastChild.textContent = ''
+    }, 1000
   )
 }
 
@@ -1066,6 +1088,7 @@ function setElementRelative(gridElement, listElement, elements, offset) {
 
 function setElementRelativeToGroup(element, offset) {
   var listElement = findListElementFromGridElement(element)
+  setChannelNameTimer(element, listElement.name)
   return setElementRelative(
     element, 
     listElement, 

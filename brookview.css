@@ -97,6 +97,17 @@ details > details {
   z-index: 200;
 }
 
+.grid-element > .content > * {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: none;
+  height: 100%;
+  width: 100%;
+  z-index: 200;
+}
+
 .grid-element > .content {
   z-index: 100;
 }

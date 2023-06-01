@@ -1,3 +1,5 @@
+brookview.db
+
 .vscode/launch.json
 .vscode/settings.json
-brookview.db
+history.cpython*
