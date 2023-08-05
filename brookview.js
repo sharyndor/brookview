@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Copyright 2022 Sharyndor
 
 // This program is free software: you can redistribute it and/or modify
@@ -42,12 +44,16 @@ function convertToURL(str) {
   }
 }
 
-
 function referName(str) {
-  if (str in global.lookup) {
-    return ['name', str]
+  var lookup = globalThis.lookup[str] ?? null
+  if (lookup) {
+    if (lookup.yt_id) {
+      return ['yt_id', lookup.yt_id]
+    }
+    if (lookup.ttv_handle) {
+      return ['ttv_handle', lookup.ttv_handle]
+    }
   }
-
   return null
 }
 
@@ -71,12 +77,7 @@ function referYoutube(str) {
 
   /* Youtube handle - www.youtube.com/@Handle */
   if (url.host.includes('www.youtube.com') && pathPieces[1].startsWith('@')) {
-    var lookup = global.lookup.get(['yt_handle', pathPieces[1]])
-    if (lookup) {
-      return ['yt_id', lookup.yt_id]
-    } else {
-      return null
-    }
+    return ['yt_handle', pathPieces[1].substring(1)]
   }
 
   /* Youtube channel id - www.youtube.com/channel/ChannelId */
@@ -126,7 +127,7 @@ function referTwitch(str) {
 }
 
 function embedName(value, extras) {
-  var lookup = global.lookup[value]
+  var lookup = globalThis.lookup[value]
   if (lookup) {
     if (lookup.yt_id) {
       return embedYoutubeChannel(lookup.yt_id)
@@ -263,25 +264,25 @@ function adaptMouseToTouch(fun) {
   }
 }
 
-function makeGesturable(element, callback) {
+function makeGesturable(element) {
   element.onmousedown = function(event) {
-    gestureMouseDown(element, event, callback)
+    gestureMouseDown(element, event)
   }
   element.ontouchstart = adaptMouseToTouch(element.onmousedown)
 }
 
 function gestureMouseDown(element, event) {
   /* Gesture was ignored, probably because window focus was lost */
-  if (global.ignoreNextGesture) {
-    global.ignoreNextGesture = false
+  if (globalThis.ignoreNextGesture) {
+    globalThis.ignoreNextGesture = false
     return
   }
 
   /* Left mouse only */
   if (event.button == 0) {
-    gestureStartTime = (new Date()).getTime()
-    gestureStartX = event.clientX
-    gestureStartY = event.clientY
+    globalThis.gestureStartTime = (new Date()).getTime()
+    globalThis.gestureStartX = event.clientX
+    globalThis.gestureStartY = event.clientY
     
     var key = handleStreamGesture(element, event)
     myKeyDown({ key: key })
@@ -298,7 +299,7 @@ function gestureMouseDown(element, event) {
     window.ontouchmove = adaptMouseToTouch(window.onmousemove)
 
     /* Ensure a long press is registered and displayed if the mouse doesn't move */
-    gestureTimeout = setTimeout(() => {
+    globalThis.gestureTimeout = setTimeout(() => {
       handleStreamGesture(element, event)
     }, 800);
   }
@@ -324,13 +325,13 @@ function gestureMouseMove(element, event) {
 
 function handleStreamGesture(element, event) {
   /* Clear the long press timer */
-  if (typeof gestureTimeout != 'undefined') {
-    clearTimeout(gestureTimeout)
+  if (typeof globalThis.gestureTimeout != 'undefined') {
+    clearTimeout(globalThis.gestureTimeout)
   }
 
-  var gestureX = event.clientX - gestureStartX
-  var gestureY = event.clientY - gestureStartY
-  var gestureDuration = (new Date()).getTime() - gestureStartTime
+  var gestureX = event.clientX - globalThis.gestureStartX
+  var gestureY = event.clientY - globalThis.gestureStartY
+  var gestureDuration = (new Date()).getTime() - globalThis.gestureStartTime
 
   var distance = Math.sqrt(gestureX * gestureX + gestureY * gestureY)
   var angle = 180.0 + Math.atan2(gestureX, gestureY) * 180.0 / Math.PI
@@ -409,14 +410,11 @@ function setElement(element, type, value, extras) {
   /* Clear the element if blank, otherwise construct the embed based on the type/value */
   if (type == 'blank') {
     removeElement(element)
+  } else if (canUpgradeFromBackend(type)) {
+    setElementFromBackend(element, type, value)
   } else {
     /* Add bookkeeping */
-    [element.type, element.value, element.extras] = [type, value, extras]
-    /* Remove null properties */
-    element.type   ? element.setAttribute('type',   element.type)   : element.removeAttribute('type')
-    element.value  ? element.setAttribute('value',  element.value)  : element.removeAttribute('value')
-    element.extras ? element.setAttribute('extras', element.extras) : element.removeAttribute('extras')
-    
+    setElementBookkeeping(element, type, value, extras)
     /* Create and set up the iframe */
     var embedString = checkEmbeds(type, value, extras)
     if (embedString) {
@@ -426,6 +424,16 @@ function setElement(element, type, value, extras) {
       updateURL()
     }
   }
+}
+
+function setElementBookkeeping(element, type, value, extras) {
+  /* Add bookkeeping */
+  [element.type, element.value, element.extras] = [type, value, extras]
+  /* Remove null properties */
+  element.type   ? element.setAttribute('type',   element.type)   : element.removeAttribute('type')
+  element.value  ? element.setAttribute('value',  element.value)  : element.removeAttribute('value')
+  element.extras ? element.setAttribute('extras', element.extras) : element.removeAttribute('extras')
+  
 }
 
 function setIFrameContent(element, src) {
@@ -512,14 +520,14 @@ function updateChat() {
     option.setAttribute('type', type)
 
     option.value = type + '=' + value
-    option.textContent = crossReference[[type, value]] ?? option.value
+    option.textContent = globalThis.crossReference[[type, value]] ?? option.value
   }
 }
 
 function resizeGrid() {
   var params = new URLSearchParams(window.location.search)
-  var rows    = params.get('rows')
-  var columns = params.get('columns')
+  var rows    = parseInt(params.get('rows') ?? '1')
+  var columns = parseInt(params.get('columns') ?? '1')
   
   /* Use integer math to find a row/column multiple for evenly sized divs */
   var realHeight = Math.floor(window.innerHeight / rows)    * rows
@@ -527,7 +535,7 @@ function resizeGrid() {
   
   /* TODO: Rework chat */
   if (chat.hasAttribute('style') == false) {
-    chatWidth = Math.floor(window.innerWidth * 0.20)
+    var chatWidth = Math.floor(window.innerWidth * 0.20)
     realWidth -= chatWidth;
     
     chat.style.width = chatWidth + 'px'
@@ -541,7 +549,7 @@ function resizeGrid() {
 }
 
 function populateOverlayHelp() {
-  global.listElement = null
+  globalThis.listElement = null
   
   var escapeDiv = document.createElement('div')
   escapeDiv.textContent = ('Esc to close')
@@ -556,7 +564,7 @@ function populateOverlayHelp() {
 }
 
 function populateOverlayList() {
-  global.listElement = null
+  globalThis.listElement = null
   
   var escapeDiv = document.createElement('div')
   escapeDiv.textContent = ('Esc to close')
@@ -598,22 +606,21 @@ function updateOverlayListGroup(element, name, group) {
 }
 
 function updateOverlayListStreamer(listElement, name) {
-  var streamer = global.streamers[name]
+  var streamer = globalThis.streamers[name]
 
-  var status = streamer.status ?? null
-  if (status) {
-    var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
-    var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
+  // if (streamer.live) {
+  //   var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
+  //   var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
 
-    var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
+  //   var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
     
-    listElement.setAttribute('status', statusType)
-    listElement.lastChild.textContent = streamer.name + ' ' + status.title
-    listElement.lastChild = status.type
-    listElement.lastChild = status.value
+  //   listElement.setAttribute('status', statusType)
+  //   listElement.lastChild.textContent = streamer.name + ' ' + status.title
+  //   listElement.lastChild = status.type
+  //   listElement.lastChild = status.value
 
-    crossReference[[status.type, status.value]] = listElement.textContent
-  }
+  //   globalThis.crossReference[[status.type, status.value]] = listElement.textContent
+  // }
 }
 
 function addOverlayListSubgroup(element, name) {
@@ -628,7 +635,7 @@ function addOverlayListSubgroup(element, name) {
 }
 
 function addOverlayListStreamer(element, name) {
-  var streamer = global.streamers[name]
+  var streamer = globalThis.streamers[name]
 
   var div = document.createElement('div')
   div.classList.add('overlayListElement')
@@ -655,14 +662,14 @@ function addOverlayListStreamer(element, name) {
 
   div.name = streamer.name
 
-  if (streamer.status) {
-    var status = streamer.status
-    var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
-    var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
+  // if (streamer.status) {
+  //   var status = streamer.status
+  //   var dTime = (status.startTime ?? 0) - (new Date().getTime() / 1000)
+  //   var lateTime = 4 * 60 * 60 /* Treat as offline if longer than 4 hours til start time */
 
-    var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
-    div.setAttribute('status', statusType)
-  }
+  //   var statusType = status.status == 'upcoming' && (dTime > lateTime) ? 'offline' : status.status
+  //   div.setAttribute('status', statusType)
+  // }
   
   return element.appendChild(div)
 }
@@ -672,7 +679,7 @@ function addOverlayStreamerInteraction(element, type, value) {
   element.value = value
 
   element.onclick = function(event){ 
-    setElement(global.listElement, event.target.type, event.target.value, [])
+    setElement(globalThis.listElement, event.target.type, event.target.value, [])
 
     toggleOverlayInput(false)
   }
@@ -705,8 +712,8 @@ function populateOverlaySettings() {
   var form = overlaySettings.appendChild(document.createElement('form'))
   form.onsubmit = function(e) { e.preventDefault() }
   
-  backendInput = addOverlaySetting(form, 'Backend', 'checkbox', updateBackendEnabled)
-  backendInput.checked = getBackendEnabled()
+  globalThis.backendInput = addOverlaySetting(form, 'Backend', 'checkbox', updateBackendEnabled)
+  globalThis.backendInput.checked = getBackendEnabled()
 }
 
 function populateOverlayMod() {
@@ -726,7 +733,7 @@ function populateOverlayMod() {
 }
 
 function dumpStreamersToPrompt() {
-  var values = Object.values(global.streamers)
+  var values = Object.values(globalThis.streamers)
   console.log(values)
   prompt('JSON Dump of Streamers', JSON.stringify(values, null, 4))
 }
@@ -739,7 +746,7 @@ function loadStreamersFromPrompt() {
       var promptData = JSON.parse(load)
 
       /* Clear old map */
-      global.streamers = new Map()
+      globalThis.streamers = new Map()
 
       /* Update with provided data */
       updateStreamers(promptData)
@@ -799,42 +806,43 @@ class Action {
 
 const actions = {
   /*                Name             UpAction                                 HelpText */
-  'h'  : new Action('help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'),
-  'l'  : new Action('list',          toggleOverlayList,                       'Toggles the stream list overlay'),
-  's'  : new Action('switch',        setElementFromPrompt,                    'Prompts to select a new stream'),
-  'n'  : new Action('next',          e => setElementRelativeToGroup(e,  1),   'Skips to the next stream within the current group'),
-  'p'  : new Action('previous',      e => setElementRelativeToGroup(e, -1),   'Skips to the previous stream within the current group'),
-  'j'  : new Action('next+',         e => setElementRelativeToGlobal(e, 1),   'Skips to the next stream, regardless of current group'),
-  'k'  : new Action('previous+',     e => setElementRelativeToGlobal(e, -1),  'Skips to the previous stream, regardless of current group'),
-  'd'  : new Action('delete',        deleteElement,                           'Removes the stream, the link will be saved to local storage'),
-  'm'  : new Action('move',          moveElement,                             'Moves the stream between locations'),
-  'c'  : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
-  'r'  : new Action('reload',        reloadElement,                           'Reloads the stream'),
-  'f'  : new Action('fullscreen',    toggleFullscreen,                        'Toggles fullscreen'),
-  'a'  : new Action('adjust layout', promptSize,                              'Prompts to select new row/column inputs'),
-  'b'  : new Action('backend',       toggleBackend,                           'Enables use of the backend for fetching video data'),
-  '`'  : new Action('settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'),
-  '\\' : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
-  ' '  : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
-  'e'  : new Action('embed',         embedLink,                               'Embeds the target link'),
-  'x'  : new Action('cut',           cutElement,                              'Deletes the stream and saves the link to local storage'),
-  'v'  : new Action('paste',         pasteElement,                            'Uses local storage to select a stream'),
-  'z'  : new Action('rotate',        rotateElement,                           'Rotates the video by 90°'),
-  'escape' : new Action('',          () => toggleOverlays(),                  'Closes all overlay windows'),
+  'h'   : new Action('help',          () => toggleOverlay(overlayHelp),        'Toggles the help overlay'),
+  'l'   : new Action('list',          toggleOverlayList,                       'Toggles the stream list overlay'),
+  's'   : new Action('switch',        setElementFromPrompt,                    'Prompts to select a new stream'),
+  'n'   : new Action('next',          e => setElementRelativeToGroup(e,  1),   'Skips to the next stream within the current group'),
+  'p'   : new Action('previous',      e => setElementRelativeToGroup(e, -1),   'Skips to the previous stream within the current group'),
+  'j'   : new Action('next+',         e => setElementRelativeToGlobal(e, 1),   'Skips to the next stream, regardless of current group'),
+  'k'   : new Action('previous+',     e => setElementRelativeToGlobal(e, -1),  'Skips to the previous stream, regardless of current group'),
+  'd'   : new Action('delete',        deleteElement,                           'Removes the stream, the link will be saved to local storage'),
+  'm'   : new Action('move',          moveElement,                             'Moves the stream between locations'),
+  'c'   : new Action('chat',          toggleChat,                              'Toggles the chat panel'),
+  'r'   : new Action('reload',        reloadElement,                           'Reloads the stream'),
+  'f'   : new Action('fullscreen',    toggleFullscreen,                        'Toggles fullscreen'),
+  'F11' : new Action('fullscreen',    toggleFullscreen,                        'Toggles fullscreen'),
+  'a'   : new Action('adjust layout', promptSize,                              'Prompts to select new row/column inputs'),
+  'b'   : new Action('backend',       toggleBackend,                           'Enables use of the backend for fetching video data'),
+  '`'   : new Action('settings',      () => toggleOverlay(overlaySettings),    'Toggles the settings menu'),
+  '\\'  : new Action('modify list',   () => toggleOverlay(overlayMod),         'Toggles the window for modifying the streamer list'),
+  ' '   : new Action('interact',      allowStreamInteractions,                 'Disable page interactions and allow access to the stream'),
+  'e'   : new Action('embed',         embedLink,                               'Embeds the target link'),
+  'x'   : new Action('cut',           cutElement,                              'Deletes the stream and saves the link to local storage'),
+  'v'   : new Action('paste',         pasteElement,                            'Uses local storage to select a stream'),
+  'z'   : new Action('rotate',        rotateElement,                           'Rotates the video by 90°'),
+  'escape' : new Action('',          () => toggleOverlays(),                   'Closes all overlay windows'),
 }
 
 function rotateElement(element) {
   if (element && element.classList.contains('grid-element')) {
     /* Grab the number of rows/columns to calculate vh/vw sizing */
     var params = new URLSearchParams(window.location.search)
-    var rows    = params.get('rows')
-    var columns = params.get('columns')
+    var rows    = parseInt(params.get('rows') ?? '1')
+    var columns = parseInt(params.get('columns') ?? '1')
 
     /* Operate upon the actual content size */
     element = element.contentDiv.content
 
     /* Preserve the transform/rotation center and rotate/resize the content */
-    transform = 'translate(-50%, -50%) '
+    var transform = 'translate(-50%, -50%) '
     if (element.style.transform == '' || element.style.transform.includes('rotate(0deg)')) {
       element.style.width = (100 / rows) + 'vh'
       element.style.height = (100 / columns) + 'vw'
@@ -865,7 +873,7 @@ function setElementFromDrop(element, event) {
 
 function setElementFromPrompt(element) {
   if (element && element.classList.contains('grid-element')) {
-    global.listElement = element
+    globalThis.listElement = element
     toggleOverlayInput(true)
   }
 }
@@ -887,23 +895,18 @@ function pasteElement(element) {
 
 function setElementFromString(element, str) {
   if (element && element.classList.contains('grid-element')) {
-    var lookup = checkReferers(str)
-    if (lookup) {
-      var [type, value, extras] = checkReferers(str) ?? [null, null, null]
-      setElement(element, type, value, extras)
-    } else {
-      setElementFromBackend(element, str)
-    }
+    var [type, value, extras] = checkReferers(str)
+    setElement(element, type, value, extras)
   }
 }
 
 function convertElementDataToLink(type, value) {
-  conversions = {
+  var conversions = {
     'name' : value,
-    'yt_video' : 'www.youtube.com/watch?v=' + value,
-    'yt_id' : 'www.youtube.com/channel/' + value,
-    'yt_handle' : 'www.youtube.com/@' + value,
-    'ttv_video' : 'www.twitch.tv/videos/' + value,
+    'yt_video'   : 'www.youtube.com/watch?v=' + value,
+    'yt_id'      : 'www.youtube.com/channel/' + value,
+    'yt_handle'  : 'www.youtube.com/@' + value,
+    'ttv_video'  : 'www.twitch.tv/videos/' + value,
     'ttv_handle' : 'www.twitch.tv/' + value,
   }
 
@@ -960,8 +963,8 @@ function moveElement(element, firstElement) {
 }
 
 function setCurrentAction(action, element) {
-  global.currentAction = action
-  global.originalElement = element
+  globalThis.currentAction = action
+  globalThis.originalElement = element
 
   /* Add the overlay text for the active action */
   document.querySelectorAll('.grid-overlay :first-child').forEach(function(overlay) {
@@ -974,28 +977,47 @@ function clearCurrentAction() {
 }
 
 function activateAction(action, element) {
-  if (action && action == global.currentAction) {
-    action.action(element, global.originalElement)
+  if (action && action == globalThis.currentAction) {
+    action.action(element, globalThis.originalElement)
 
     clearCurrentAction()
   }
 }
 
-function getAction(key) {
-  key = key.toLowerCase()
-  return key in actions ? actions[key.toLowerCase()] : null
+function getAction(key, shift) {
+  /* Based on shift, try upper/lower first/second */
+  var key1 = shift ? key.toUpperCase() : key.toLowerCase()
+  var key2 = shift ? key.toLowerCase() : key.toUpperCase()
+
+  return key1 in actions ? actions[key1] : key2 in actions ? actions[key2] : null
 }
 
 function myKeyDown(event) {
-  /* Grab whatever is underneath when an action is started */
-  global.originalElement = global.originalElement ? global.originalElement : document.querySelector('.grid-element:hover')
-  setCurrentAction(getAction(event.key), global.originalElement)
+  /* Find the action */
+  var action = getAction(event.key, event.shiftKey)
+
+  /* Only do something if the action exists */
+  if (action) {
+    /* Prevent anything associated with the original action */
+    if (event.preventDefault) { event.preventDefault() }
+    /* Grab whatever is underneath when an action is started */
+    globalThis.originalElement = globalThis.originalElement ? globalThis.originalElement : document.querySelector('.grid-element:hover')
+    setCurrentAction(action, globalThis.originalElement)
+  }
 }
 
 function myKeyUp(event) {
-  /* Grab whatever is underneath when an action is completed */
-  activateAction(getAction(event.key), document.querySelector('.grid-element:hover'))
-  global.originalElement = null
+  /* Find the action */
+  var action = getAction(event.key)
+
+  /* Only do something if the action exists */
+  if (action) {
+    /* Prevent anything associated with the original action */
+    if (event.preventDefault) { event.preventDefault() }
+    /* Grab whatever is underneath when an action is completed */
+    activateAction(action, document.querySelector('.grid-element:hover'))
+    globalThis.originalElement = null
+  }
 }
 
 function findAdjacentEntry(list, entry, offset) {
@@ -1045,21 +1067,19 @@ function setChannelNameTimer(element, name) {
   element.channelNameTimeout = setTimeout(
     function() {
       element.firstChild.lastChild.textContent = ''
-    }, 1000
+    }, 1500
   )
 }
 
 /* TODO: Update */
 function findStreamer(type, value) {
-  for (var streamer of Object.values(global.streamers)) {
-    if (streamer.status && streamer.status.type == type && streamer.status.value == value) {
-      return streamer
-    }
+  if (type == 'blank') {
+    return null
+  }
 
-    for (var stream of streamer.streams) {
-      if (stream.type == type && stream.value == value) {
-        return streamer
-      }
+  for (var streamer of Object.values(globalThis.streamers)) {
+    if (streamer[type] == value) {
+      return streamer
     }
   }
 
@@ -1067,7 +1087,7 @@ function findStreamer(type, value) {
 }
 
 function findListElementFromGridElement(element) {
-  var streamer = global.lookup[element.value] ?? null
+  var streamer = globalThis.lookup[element.value] ?? null
   streamer = streamer ?? findStreamer(element.type, element.value)
   streamer = streamer ?? findStreamer(element.getAttribute('type'), element.getAttribute('value'))
   return streamer ? Array.prototype.find.call(overlayList.querySelectorAll('.overlayListElement'), e => e.name == streamer.name) : null
@@ -1084,22 +1104,22 @@ function setElementRelative(gridElement, listElement, elements, offset) {
   if (adjElement) {
     setElementFromString(gridElement, adjElement.name)
   }
+
+  return adjElement
 }
 
 function setElementRelativeToGroup(element, offset) {
   var listElement = findListElementFromGridElement(element)
-  setChannelNameTimer(element, listElement.name)
-  return setElementRelative(
-    element, 
-    listElement, 
-    listElement ? listElement.parentElement.querySelectorAll('.overlayListElement') : null, 
-    offset
-  )
+  var parentElements = listElement ? listElement.parentElement.querySelectorAll('.overlayListElement') : null
+  var adjElement = setElementRelative(element, listElement, parentElements, offset)
+  setChannelNameTimer(element, adjElement.name)
 }
 
 function setElementRelativeToGlobal(element, offset) {
   var listElement = findListElementFromGridElement(element)
-  return setElementRelative(element, listElement, overlayList.querySelectorAll('.overlayListElement'), offset)
+  var parentElements = overlayList.querySelectorAll('.overlayListElement')
+  var adjElement = setElementRelative(element, listElement, parentElements, offset)
+  setChannelNameTimer(element, adjElement.name)
 }
 
 function toggleFullscreen(element) {
@@ -1137,18 +1157,18 @@ function toggleOverlays(overlay) {
 }
 
 function toggleOverlayList(element) {
-  global.listElement = element
+  globalThis.listElement = element
   toggleOverlays(overlayList)
 }
 
 function hideOverlays() {
   /* Reset the overlay elements */
-  global.listElement = null
+  globalThis.listElement = null
   toggleOverlays(null)
 }
 
 function toggleBackend() {
-  backendInput.checked = !backendInput.checked
+  globalThis.backendInput.checked = !globalThis.backendInput.checked
   updateBackendEnabled()
 }
 
@@ -1161,30 +1181,35 @@ function setBackendEnabled(enabled) {
 }
 
 function updateBackendEnabled() {
-  setBackendEnabled(backendInput.checked == true)
+  setBackendEnabled(globalThis.backendInput.checked == true)
 }
 
-function setElementFromBackend(element, str) {
+function canUpgradeFromBackend(type) {
+  const upgradableTypes = [
+    'yt_id',
+    'yt_handle',
+  ]
+  return getBackendEnabled() && upgradableTypes.includes(type)
+}
+
+function setElementFromBackend(element, type, value) {
   if (element && element.classList.contains('grid-element')) {
     if (getBackendEnabled()) {
-      var path = ''
-      if (path = lstripFromFind(str, 'youtube.com/')) {
-        fetch('/refer/youtube/' + path)
-        .then(response => response.json())
-        .then(json => setElementFromBackendResponse(element, json))
-      } else if (path = lstripFromFind(str, 'youtu.be/')) {
-        fetch('/refer/youtube/' + path)
-        .then(response => response.json())
-        .then(json => setElementFromBackendResponse(element, json))
-      }
+      fetch('/live?id_type=' + type + '&id=' + value)
+      .then(response => response.json())
+      .then(json => setElementFromBackendResponse(element, json, type, value))
     }
   }
 }
 
-function setElementFromBackendResponse(element, response) {
+function setElementFromBackendResponse(element, response, type, value) {
   if (element && element.classList.contains('grid-element')) {
-    console.log(response)
-    setElementFromString(element, 'www.youtube.com/channel/' + response.channelId.channelId)
+    if (response.video_id) {
+      setElement(element, 'yt_video', response.video_id)
+    } else {
+      setChannelNameTimer(element, response.name + '\nNot Live')
+      setElementBookkeeping(element, type, value, null)
+    }
   }
 }
 
@@ -1215,8 +1240,8 @@ function dragMouseDown(element, event) {
     /* Disable interactions via css to allow for keep dragging smooth */
     disableStreamInteractions(element)
     
-    dragStartX = event.clientX
-    dragStartY = event.clientY
+    globalThis.dragStartX = event.clientX
+    globalThis.dragStartY = event.clientY
     
     window.onmouseup = function(event) {
       dragMouseUp(element, event)
@@ -1236,8 +1261,8 @@ function dragMouseUp(element, event) {
 }
 
 function dragMouseMove(element, event) {
-  var dragX = event.clientX - dragStartX
-  var dragY = event.clientY - dragStartY
+  var dragX = event.clientX - globalThis.dragStartX
+  var dragY = event.clientY - globalThis.dragStartY
   
   var box = element.getBoundingClientRect()
   
@@ -1249,8 +1274,8 @@ function dragMouseMove(element, event) {
   element.style.left = (100 * (element.offsetLeft + dragX) / window.innerWidth)+ '%'
   element.style.top  = (100 * (element.offsetTop  + dragY) / window.innerHeight)+ '%'
   
-  dragStartX = event.clientX
-  dragStartY = event.clientY
+  globalThis.dragStartX = event.clientX
+  globalThis.dragStartY = event.clientY
   
   /* Prevent text selection while dragging */
   event.preventDefault()
@@ -1271,9 +1296,10 @@ class Streamer {
     this.yt_id = null
     this.ttv_handle = null
 
-    /* This data will only come from the backend and may change whenever */
-    this.status = null
-    this.streams = []
+    this.live = false
+    this.video_id = null
+    this.video_name = null
+    this.start_time = null
   }
 }
 
@@ -1281,20 +1307,16 @@ function updateGroups(name, group) {
   updateOverlayListGroup(overlayList, name, group)
 }
 
-function updateLiveStatus(streamer, status, streams) {
-  
-}
-
 function updateGlobalLookup(streamer, lookup) {
   /* Check for an existing lookup */
-  if (lookup in global.lookup) {
+  if (lookup in globalThis.lookup) {
     /* Fail if the lookup is for something else */
-    if (global.lookup[lookup] != streamer) {
-      console.log("Warning: data exists for:", global.lookup[lookup].name, "vs", streamer.name)
+    if (globalThis.lookup[lookup] != streamer) {
+      console.log("Warning: data exists for:", globalThis.lookup[lookup].name, "vs", streamer.name)
     }
   }
   else {
-    global.lookup[lookup] = streamer
+    globalThis.lookup[lookup] = streamer
   }
 }
 
@@ -1331,18 +1353,20 @@ function updateStreamer(streamerData) {
   }
 
   var newStreamer = false
-  var streamer = global.streamers[streamerData.name] ?? null
+  var streamer = globalThis.streamers[streamerData.name] ?? null
   if (streamer == null) {
     /* Streamer not found, create one */
     var [name, group] = [streamerData.name, streamerData.grouping.split(', ')]
-    streamer = global.streamers[name] = new Streamer(name, group)
+    streamer = globalThis.streamers[name] = new Streamer(name, group)
     newStreamer = true
   }
 
   /* Update aliases */
-  for (var alias of streamerData.aliases.split(', ')) {
-    if (!streamer.aliases.includes(alias)) {
-      streamer.aliases.push(alias)
+  if (streamerData.aliases) {
+    for (var alias of streamerData.aliases.split(', ')) {
+      if (!streamer.aliases.includes(alias)) {
+        streamer.aliases.push(alias)
+      }
     }
   }
 
@@ -1356,9 +1380,6 @@ function updateStreamer(streamerData) {
   if (newStreamer) {
     updateGroups(name, streamer.group)
   }
-
-  /* Update live status */
-  updateLiveStatus(streamer, streamerData.status, streamerData.streams)
 
   /* Update lookups */
   updateLookups(streamer)
@@ -1401,7 +1422,7 @@ function populateOverlayInput() {
     if (e.key == 'Enter') {
       var lookup = inputList.children.length > 0 ? inputList.children[0].name : inputText.value
       e.preventDefault()
-      setElementFromString(global.listElement, lookup)
+      setElementFromString(globalThis.listElement, lookup)
       inputText.blur()
       toggleOverlayInput(false)
     }
@@ -1431,7 +1452,7 @@ function populateOverlayInput() {
     var searchTerms = searchString.split(' ').map(e => e.trim().toLowerCase()).filter(e => e)
 
     /* Every search term must have some matching streamer term */
-    var streamerMatches = Object.values(global.streamers).filter(
+    var streamerMatches = Object.values(globalThis.streamers).filter(
       streamer => searchTerms.every(term => streamer.terms.some(info => info.startsWith(term)))
     )
 
@@ -1450,13 +1471,12 @@ function setup() {
   window.onblur = function() { clearCurrentAction() }
   
   /* Set globals here */
-  global = {}
-  global.streamers = new Map()
-  global.lookup = new Map()
-  global.ignoreNextGesture = false
+  globalThis.streamers = new Map()
+  globalThis.lookup = new Map()
+  globalThis.ignoreNextGesture = false
 
   setBackendEnabled(getBackendEnabled() || false)
-  crossReference = new Map()
+  globalThis.crossReference = new Map()
 
   populateOverlayInput()
   populateOverlayHelp()
@@ -1482,10 +1502,10 @@ function setup() {
 }
 
 function initializePage(streamerList) {
-  global.initialized = global.initialized ?? false
+  globalThis.initialized = globalThis.initialized ?? false
 
-  if (!global.initialized) {
-    global.initialized = true
+  if (!globalThis.initialized) {
+    globalThis.initialized = true
 
     Promise.all(fetchStreamers())
     .then(streamerLists => streamerLists.map(streamerList => updateStreamers(streamerList)))
@@ -1504,14 +1524,14 @@ function finishInitializing() {
 }
 
 function fetchStreamers() {
-  return defaultStreamers.map(
+  return globalThis.defaultStreamers.map(
     streamer => 
       fetch(streamer)
       .then(response => response.json())
   )
 }
 
-defaultStreamers = [
+globalThis.defaultStreamers = [
   'streamers/HoloEN.json',
   'streamers/HoloJP.json',
   'streamers/HoloID.json',
@@ -1519,12 +1539,14 @@ defaultStreamers = [
   'streamers/VOMS.json',
   'streamers/PhaseConnect.json',
   'streamers/PRISM.json',
+  'streamers/Idol.json',
   'streamers/Tsunderia.json',
   'streamers/4V.json',
   'streamers/AkioAIR.json',
   'streamers/VShojo.json',
   'streamers/VReverie.json',
   'streamers/Indie.json',
+  'streamers/Ungrouped.json',
 ]
 
 window.addEventListener('load', setup)

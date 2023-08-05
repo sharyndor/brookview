@@ -166,6 +166,8 @@ details > details {
   top: 30%;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  white-space: pre-line;
+  text-align: center;
   
   font-family: Arial;
   font-size: 3vw;

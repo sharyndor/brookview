@@ -4,7 +4,7 @@
     "grouping": "HoloEN",
     "aliases": "calliope, calli, mori",
     "yt_id": "UCL_qhgtOy0dy1Agp8vkySQg",
-    "yt_handle": null,
+    "yt_handle": "MoriCalliope",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -13,7 +13,7 @@
     "grouping": "HoloEN",
     "aliases": "fauna",
     "yt_id": "UCO_aKKYxn4tvrqPjcTzZ6EQ",
-    "yt_handle": null,
+    "yt_handle": "CeresFauna",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -22,7 +22,7 @@
     "grouping": "HoloEN",
     "aliases": "gura",
     "yt_id": "UCoSrY_IQQVpmIRZ9Xf-y93g",
-    "yt_handle": null,
+    "yt_handle": "GawrGura",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -31,7 +31,7 @@
     "grouping": "HoloEN",
     "aliases": "baelz, bae",
     "yt_id": "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
-    "yt_handle": null,
+    "yt_handle": "HakosBaelz",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -40,7 +40,7 @@
     "grouping": "HoloEN",
     "aliases": "irys, yabairys",
     "yt_id": "UC8rcEBzJSleTkf_-agPM20g",
-    "yt_handle": null,
+    "yt_handle": "IRyS",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -49,7 +49,7 @@
     "grouping": "HoloEN",
     "aliases": "mumei",
     "yt_id": "UC3n5uGu18FoCy23ggWWp8tA",
-    "yt_handle": null,
+    "yt_handle": "NanashiMumei",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -58,7 +58,7 @@
     "grouping": "HoloEN",
     "aliases": "ina'nis, ina",
     "yt_id": "UCMwGHR0BTZuLsmjY_NT5Pwg",
-    "yt_handle": null,
+    "yt_handle": "NinomaeInanis",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -67,7 +67,7 @@
     "grouping": "HoloEN",
     "aliases": "kronii",
     "yt_id": "UCmbs8T6MWqUHP1tIQvSgKrg",
-    "yt_handle": null,
+    "yt_handle": "OuroKronii",
     "yt_old_handle": "OuroKroniiCh",
     "ttv_handle": null
   },
@@ -76,7 +76,7 @@
     "grouping": "HoloEN",
     "aliases": "kiara",
     "yt_id": "UCHsx4Hqa-1ORjQTh9TYDhww",
-    "yt_handle": null,
+    "yt_handle": "TakanashiKiara",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -85,7 +85,7 @@
     "grouping": "HoloEN",
     "aliases": "sana",
     "yt_id": "UCsUj0dszADCGbF3gNrQEuSQ",
-    "yt_handle": null,
+    "yt_handle": "TsukumoSana",
     "yt_old_handle": null,
     "ttv_handle": null
   },
@@ -94,8 +94,32 @@
     "grouping": "HoloEN",
     "aliases": "amelia, ame",
     "yt_id": "UCyl1z3jo3XHR1riLFKG5UAg",
-    "yt_handle": null,
+    "yt_handle": "WatsonAmelia",
     "yt_old_handle": null,
     "ttv_handle": null
+  },
+  {
+    "name": "FUWAMOCO",
+    "yt_handle": "FUWAMOCOch",
+    "yt_id": "UCt9H_RpQzhxzlyBxFqrdHqA",
+    "grouping": "HoloEN"
+  },
+  {
+    "name": "Nerissa Ravencroft",
+    "yt_id": "UC_sFNM0z0MWm9A6WlKPuMMg",
+    "yt_handle": "NerissaRavencroft",
+    "grouping": "HoloEN"
+  },
+  {
+    "name": "Koseki Bijou",
+    "yt_handle": "KosekiBijou",
+    "yt_id": "UC9p_lqQ0FEDz327Vgf5JwqA",
+    "grouping": "HoloEN"
+  },
+  {
+    "name": "Shiori Novella",
+    "yt_handle": "ShioriNovella",
+    "yt_id": "UCgnfPPb9JI3e9A4cXHnWbyg",
+    "grouping": "HoloEN"
   }
 ]

@@ -1,5 +1,6 @@
-brookview.db
-
 .vscode/launch.json
 .vscode/settings.json
 history.cpython*
+resolve.html
+resolve.json
+__pycache__/*
