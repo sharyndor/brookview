@@ -103,7 +103,7 @@ def collect_from_channel(id_type, id):
         keep_data,
         replace_data = {
           'live'       : False,
-          'video_id'   : vdata['videoId'],
+          'yt_video'   : vdata['videoId'],
           'video_name' : find_key_like(vdata['title'], 'text')[0],
           'start_time' : upcomingEventData[0]['startTime'],
         }
@@ -115,7 +115,7 @@ def collect_from_channel(id_type, id):
           keep_data,
           replace_data = {
             'live'       : True,
-            'video_id'   : vdata['videoId'],
+            'yt_video'   : vdata['videoId'],
             'video_name' : find_key_like(vdata['title'], 'text')[0],
             'start_time' : None,
           }
@@ -126,14 +126,14 @@ def collect_from_channel(id_type, id):
     keep_data,
     replace_data = {
       'live'       : False,
-      'video_id'   : None,
+      'yt_video'   : None,
       'video_name' : None,
       'start_time' : None,
     }
   )
 
 def collect_from_video(id_type, id):
-  if id_type == 'video_id':  status, jdata = query_youtube(f'/watch?v={id}')
+  if id_type == 'yt_video':  status, jdata = query_youtube(f'/watch?v={id}')
   else: return HTTPStatus.BAD_REQUEST, None
 
   if status == HTTPStatus.NOT_FOUND:
@@ -162,7 +162,7 @@ def collect_from_video(id_type, id):
     keep_data,
     replace_data = {
       'live'       : True if live else False,
-      'video_id'   : id   if live else None,
+      'yt_video'   : id   if live else None,
       'video_name' : None if live else None,
       'start_time' : None,
     }
@@ -284,7 +284,7 @@ def get_YT_JSON(data : bytes):
 history = History(max_age=300)
 
 info_getters = {
-  'video_id'      : collect_from_video  ,
+  'yt_video'      : collect_from_video  ,
   'yt_id'         : collect_from_channel,
   'yt_handle'     : collect_from_channel,
   'yt_old_handle' : collect_from_channel,

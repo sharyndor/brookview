@@ -12,7 +12,7 @@ class Channel():
   ]
 
   video_tags = [
-    'live', 'video_id', 'video_name'
+    'live', 'yt_video', 'video_name'
   ]
 
   def __init__(self, data : dict):
