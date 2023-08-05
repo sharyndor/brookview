@@ -2,7 +2,7 @@ from http.client import HTTPSConnection
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from http import HTTPStatus
 from socketserver import ThreadingMixIn
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 import json
 import math
@@ -22,6 +22,7 @@ class Handler(SimpleHTTPRequestHandler):
     self.get_handlers = {
       '/info' : handle_info_get,
       '/live' : handle_live_get,
+      '/search' : handle_search_get,
     }
 
     self.post_handlers = {
@@ -166,6 +167,23 @@ def collect_from_video(id_type, id):
     }
   )
 
+def collect_from_search(query_type, query):
+  if query_type == 'channel':
+    search_param = 'EgIQAg%3D%3D'
+    query_string = f'/results?search_query={quote(query)}&sp={quote(search_param)}'
+    status, jdata = query_youtube(query_string)
+  else: return HTTPStatus.BAD_REQUEST, None
+
+  if status == HTTPStatus.NOT_FOUND:
+    return HTTPStatus.NOT_FOUND, None
+
+  # If results exist, grab the first one
+  if (channels:= find_key_like(jdata, 'shortBylineText')) and (result:= channels[0]):
+    # Delegate accordingly
+    return collect_from_channel('yt_id', find_key_like(result, 'browseId')[0])
+
+  return HTTPStatus.NOT_FOUND, None
+
 def handle_generic_get_update(id_type : str, id, collect_fun : Callable[[Any, Any], tuple[HTTPStatus, Channel | None]], check_time : bool):
   status, data = HTTPStatus.OK, history.find_channel({ id_type : id })
 
@@ -200,6 +218,18 @@ def handle_live_get(pathQuery : str):
   
   # Missing fields
   return HTTPStatus.BAD_REQUEST, None
+
+def handle_search_get(pathQuery : str):
+  parse_result  = urlparse(pathQuery)
+  queries = parse_qs(parse_result.query)
+
+  if 'query_type' in queries and 'query' in queries and queries['query_type'][0] in search_getters:
+    query_type, query = queries['query_type'][0], queries['query'][0]
+    return handle_generic_get_update(query_type, query, search_getters[query_type], check_time=False)
+  
+  # Missing fields
+  return HTTPStatus.BAD_REQUEST, None
+
 
 def handle_info_post(pathQuery : str):
   pass
@@ -248,6 +278,10 @@ info_getters = {
   'yt_id'         : collect_from_channel,
   'yt_handle'     : collect_from_channel,
   'yt_old_handle' : collect_from_channel,
+}
+
+search_getters = {
+  'channel' : collect_from_search,
 }
 
 if __name__ == '__main__':

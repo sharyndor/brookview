@@ -895,8 +895,13 @@ function pasteElement(element) {
 
 function setElementFromString(element, str) {
   if (element && element.classList.contains('grid-element')) {
-    var [type, value, extras] = checkReferers(str)
-    setElement(element, type, value, extras)
+    const YT_PREFIX = 'yt-'
+    if (getBackendEnabled() && str.startsWith(YT_PREFIX)) {
+      setElementFromBackend(element, 'yt_search', str.slice(YT_PREFIX.length))
+    } else {
+      var [type, value, extras] = checkReferers(str)
+      setElement(element, type, value, extras)
+    }
   }
 }
 
@@ -1188,6 +1193,7 @@ function canUpgradeFromBackend(type) {
   const upgradableTypes = [
     'yt_id',
     'yt_handle',
+    'name',
   ]
   return getBackendEnabled() && upgradableTypes.includes(type)
 }
@@ -1195,9 +1201,22 @@ function canUpgradeFromBackend(type) {
 function setElementFromBackend(element, type, value) {
   if (element && element.classList.contains('grid-element')) {
     if (getBackendEnabled()) {
-      fetch('/live?id_type=' + type + '&id=' + value)
-      .then(response => response.json())
-      .then(json => setElementFromBackendResponse(element, json, type, value))
+      if (type == 'name') {
+        var streamer = findStreamer(type, value)
+        if (streamer.yt_id) {
+          [type, value] = ['yt_id', streamer.yt_id]
+        }
+      }
+
+      if (type == 'yt_search') {
+        fetch('/search?query_type=channel&query=' + value)
+        .then(response => response.json())
+        .then(json => setElementFromBackendResponse(element, json, type, value))
+      } else {
+        fetch('/live?id_type=' + type + '&id=' + value)
+        .then(response => response.json())
+        .then(json => setElementFromBackendResponse(element, json, type, value))
+      }
     }
   }
 }
