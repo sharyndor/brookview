@@ -107,6 +107,10 @@ class History:
       # Lookup failed, return None
       return None
 
+  def find_channels(self, search : dict[str, Any]):
+    with self.lock:
+      return [channel for channel in self.channels if search.items() <= channel.data.items()]
+
   def update_channel(self, search : dict[str, Any], keep_data : dict[str, Any] = {}, replace_data : dict[str, Any] = {}):
     with self.lock:
       if channel := self.find_channel(search):

@@ -23,6 +23,7 @@ class Handler(SimpleHTTPRequestHandler):
       '/info' : handle_info_get,
       '/live' : handle_live_get,
       '/search' : handle_search_get,
+      '/streamers/' : handle_streamers_get,
     }
 
     self.post_handlers = {
@@ -230,6 +231,15 @@ def handle_search_get(pathQuery : str):
   # Missing fields
   return HTTPStatus.BAD_REQUEST, None
 
+def handle_streamers_get(pathQuery : str):
+  parse_result  = urlparse(pathQuery)
+  
+  if parse_result.path.endswith('.json'):
+    grouping = parse_result.path.removesuffix('.json')
+    channels = history.find_channels({ 'grouping' : grouping })
+    return HTTPStatus.OK, [channel.encode() for channel in channels]
+
+  return HTTPStatus.BAD_REQUEST, None
 
 def handle_info_post(pathQuery : str):
   pass
